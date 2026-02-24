@@ -1,0 +1,703 @@
+/**
+ * AI Agent Runtime（重构版）
+ * 
+ * 职责：
+ * - 协调各个模块
+ * - 管理 Agent 生命周期
+ * - 提供统一的对外接口
+ * 
+ */
+
+import { getConfig } from '../config';
+import { wrapToolWithAbortSignal, OperationTracker, wrapToolWithDuplicateDetection } from '../tools/tool-abort';
+import type { AgentRuntimeConfig, AgentStateInfo, AgentInstanceManager } from './types';
+import { AgentInitializer } from './agent-initializer';
+import { MessageHandler } from './message-handler';
+import { StepTracker } from './step-tracker';
+import type { TaskPlan } from './step-tracker';
+import { callAI } from '../utils/ai-client';
+import { getErrorMessage } from '../../shared/utils/error-handler';
+
+/**
+ * Agent Runtime 类
+ */
+export class AgentRuntime {
+  private config: ReturnType<typeof getConfig>;
+  private runtimeConfig: AgentRuntimeConfig;
+  private systemPrompt: string = '';
+  private initPromise: Promise<void> | null = null;
+  
+  // 模块实例
+  private initializer: AgentInitializer;
+  private messageHandler: MessageHandler;
+  private stepTracker: StepTracker;
+  
+  // Agent 实例管理
+  private instanceManager: AgentInstanceManager = {
+    agent: null,
+  };
+  
+  // 工具列表（缓存）
+  private tools: any[] = [];
+  private originalTools: any[] = []; // 原始工具列表（不带重复检测）
+  
+  // 重复检测
+  private lastResponsePart: string = '';
+  private repeatCount: number = 0;
+  
+  // 操作追踪器
+  private operationTracker = new OperationTracker();
+
+  /**
+   * 创建 AgentRuntime 实例
+   * 
+   * @param workspaceDir - 工作区目录路径（必须提供，不应使用默认值）
+   * @param sessionId - 会话 ID（可选，默认为 'default'）
+   */
+  constructor(workspaceDir: string, sessionId?: string) {
+    this.config = getConfig();
+    
+    // 构建运行时配置
+    this.runtimeConfig = {
+      workspaceDir: workspaceDir, // 必须提供工作目录，不使用默认值
+      sessionId: sessionId || 'default',
+      model: {
+        api: 'openai-completions',
+        id: this.config.modelId,
+        name: this.config.modelName,
+        provider: this.config.providerName,
+        input: ['text'],
+        reasoning: false,
+        baseUrl: this.config.baseUrl,
+        contextWindow: 8192,
+        maxTokens: 8192,
+        cost: {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
+      },
+      apiKey: this.config.apiKey,
+      baseUrl: this.config.baseUrl,
+      maxConcurrentSubAgents: 8,
+    };
+    
+    console.log('✅ AgentRuntime 构造函数完成');
+    console.log('   模型:', this.runtimeConfig.model.id);
+    console.log('   提供商:', this.runtimeConfig.model.provider);
+    console.log('   Base URL:', this.runtimeConfig.baseUrl);
+    console.log('   工作区:', this.runtimeConfig.workspaceDir);
+    console.log('   会话ID:', this.runtimeConfig.sessionId);
+    
+    // 初始化模块
+    this.initializer = new AgentInitializer(
+      this.runtimeConfig.workspaceDir,
+      this.runtimeConfig.sessionId,
+      this.runtimeConfig.model,
+      this.runtimeConfig.apiKey
+    );
+    
+    this.messageHandler = new MessageHandler(null);
+    this.stepTracker = new StepTracker();
+    
+    // 异步初始化（不阻塞构造函数）
+    this.initPromise = this.initialize();
+  }
+
+  /**
+   * 异步初始化
+   */
+  private async initialize(): Promise<void> {
+    try {
+      // 初始化 Agent
+      const { agent, tools } = await this.initializer.initialize();
+      this.instanceManager.agent = agent;
+      
+      // 保存原始工具列表（用于 Skill Manager 等不需要重复检测的场景）
+      this.originalTools = tools;
+      
+      // 包装工具添加重复检测
+      this.tools = tools.map(tool => 
+        wrapToolWithDuplicateDetection(tool, this.operationTracker)
+      );
+      
+      // 更新 MessageHandler 的 Agent 引用
+      this.messageHandler.setAgent(agent);
+      
+      // 异步初始化系统提示词（不阻塞）
+      void this.initializeSystemPrompt();
+      
+      console.log('✅ AgentRuntime 初始化完成');
+    } catch (error) {
+      console.error('❌ AgentRuntime 初始化失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 确保 Agent 已初始化
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (this.initPromise) {
+      await this.initPromise;
+    }
+    
+    if (!this.instanceManager.agent) {
+      throw new Error('Agent 未初始化');
+    }
+  }
+
+  /**
+   * 初始化系统提示词
+   */
+  private async initializeSystemPrompt(): Promise<void> {
+    await this.ensureInitialized();
+    
+    if (!this.instanceManager.agent) {
+      return;
+    }
+    
+    this.systemPrompt = await this.initializer.initializeSystemPrompt(
+      this.instanceManager.agent,
+      this.tools
+    );
+  }
+
+  /**
+   * 重新加载系统提示词
+   * 
+   * 用于在记忆更新后重新加载系统提示词
+   */
+  async reloadSystemPrompt(): Promise<void> {
+    console.log('\n' + '='.repeat(80));
+    console.log('[AgentRuntime] 🔄 重新加载系统提示词...');
+    console.log('   会话ID:', this.runtimeConfig.sessionId);
+    console.log('='.repeat(80));
+    
+    await this.initializeSystemPrompt();
+    
+    console.log('='.repeat(80));
+    console.log('[AgentRuntime] ✅ 系统提示词已重新加载');
+    console.log('   新提示词长度:', this.systemPrompt.length, '字符');
+    console.log('='.repeat(80) + '\n');
+  }
+
+  /**
+   * 销毁 AgentRuntime 实例
+   */
+  async destroy(): Promise<void> {
+    // 停止 Browser Control Server
+    await this.initializer.cleanup();
+    
+    console.log(`✅ AgentRuntime 已销毁: ${this.runtimeConfig.sessionId}`);
+  }
+
+
+
+  /**
+   * 设置会话 ID
+   */
+  async setSessionId(sessionId: string): Promise<void> {
+    const oldSessionId = this.runtimeConfig.sessionId;
+    
+    if (oldSessionId === sessionId) {
+      return;
+    }
+    
+    console.info(`[AgentRuntime] 切换会话: ${oldSessionId} -> ${sessionId}`);
+    
+    // 更新配置
+    this.runtimeConfig.sessionId = sessionId;
+    
+    // 确保 Agent 已初始化
+    await this.ensureInitialized();
+    
+    if (!this.instanceManager.agent) {
+      throw new Error('Agent 未初始化');
+    }
+    
+    // 重新创建 Agent（使用新的 sessionId）
+    this.instanceManager.agent = await this.initializer.recreateAgent(
+      this.instanceManager.agent,
+      this.tools,
+      this.systemPrompt
+    );
+    
+    // 更新 MessageHandler 的 Agent 引用
+    this.messageHandler.setAgent(this.instanceManager.agent);
+    
+    console.info(`[AgentRuntime] Agent 已重新创建，工具数量: ${this.tools.length}`);
+    
+    // 重新初始化系统提示词
+    await this.initializeSystemPrompt();
+  }
+
+  /**
+   * 获取当前会话 ID
+   */
+  getSessionId(): string {
+    return this.runtimeConfig.sessionId;
+  }
+
+  /**
+   * 使用 AI 判断响应的语义，决定是否需要继续执行
+   * 
+   * 直接调用大模型 API 进行语义判断，不使用关键字匹配
+   * 
+   * @param response - AI 的完整响应
+   * @param hasToolCalls - 本轮是否有工具调用
+   * @returns 是否有未完成的意图
+   */
+  private async detectUnfinishedIntent(response: string, hasToolCalls: boolean): Promise<boolean> {
+    console.log('🔍 [detectUnfinishedIntent] 开始检测...');
+    console.log(`   hasToolCalls: ${hasToolCalls}`);
+    console.log(`   response 长度: ${response.length} 字符`);
+    console.log(`   response 最后 100 字符: ${response.slice(-100)}`);
+    
+    // 提取最后 400 字符作为判断依据（增加上下文）
+    const lastPart = response.slice(-400).trim();
+    
+    // 1. 检测重复响应
+    console.log('🔍 [detectUnfinishedIntent] 检查重复响应...');
+    if (this.lastResponsePart && this.lastResponsePart === lastPart) {
+      this.repeatCount++;
+      console.log(`⚠️ [detectUnfinishedIntent] 检测到重复响应 (第 ${this.repeatCount} 次)，返回 false（停止继续）`);
+      console.log(`   重复内容: ${lastPart.substring(0, 50)}...`);
+      return false;
+    }
+    
+    // 更新重复检测状态
+    this.lastResponsePart = lastPart;
+    this.repeatCount = 0;
+    
+    try {
+      console.log('🤖 使用 AI 判断语义...');
+      
+      const judgmentPrompt = `分析以下 AI 助手的回复结尾，判断是否需要继续执行任务。
+
+回复结尾：
+"""
+${lastPart}
+"""
+
+判断标准（两个维度）：
+
+**维度1：执行状态**
+- 正在执行中："→ 正在..."、"正在生成..."、"正在发送..." → YES
+- 准备执行："我将..."、"我接下来会..."、"即将..." → YES
+- 已完成："✅ 已完成"、"✅ 成功"、"已发送" → 看维度2
+
+**维度2：任务进度**
+- 中间步骤："第 X 位"、"接下来处理"、"继续处理" → YES
+- 最后步骤："全部完成"、"任务结束"、"所有员工" → NO
+- 等待用户："请告诉我"、"需要什么帮助"、"想让我做什么" → NO
+- 询问用户：以"？"结尾的问句 → NO
+
+**综合判断**：
+- 如果执行状态是"正在执行"或"准备执行" → YES
+- 如果执行状态是"已完成"，但任务进度是"中间步骤" → YES
+- 如果执行状态是"已完成"，且任务进度是"最后步骤"或"等待用户" → NO
+
+只回答 YES 或 NO，不要解释。`;
+
+      // 使用公共 AI 客户端
+      const response = await callAI([
+        {
+          role: 'system',
+          content: '你是一个判断助手，只回答 YES 或 NO，不要解释。',
+        },
+        {
+          role: 'user',
+          content: judgmentPrompt,
+        },
+      ], {
+        temperature: 0.1,
+        maxTokens: 10,
+      });
+      
+      const answer = response.content.trim().toUpperCase();
+      
+      const shouldContinue = answer.includes('YES');
+      
+      console.log(`🤖 [detectUnfinishedIntent] AI 判断结果: ${answer}`);
+      console.log(`   shouldContinue: ${shouldContinue}`);
+      
+      if (shouldContinue) {
+        console.log('🔍 [detectUnfinishedIntent] AI 判断：需要继续执行，返回 true');
+        console.log(`   判断依据: ${lastPart.substring(0, 50)}...`);
+      } else {
+        console.log('✅ [detectUnfinishedIntent] AI 判断：任务完成或等待用户输入，返回 false');
+      }
+      
+      return shouldContinue;
+    } catch (error) {
+      console.error('❌ [detectUnfinishedIntent] AI 判断失败:', error);
+      console.log('   使用默认策略：不继续（返回 false）');
+      return false;
+    }
+  }
+
+  /**
+   * 清空消息历史
+   * 
+   * 用于定时任务场景，避免历史消息干扰
+   */
+  async clearMessageHistory(): Promise<void> {
+    await this.ensureInitialized();
+    
+    if (this.instanceManager.agent) {
+      const messageCount = this.instanceManager.agent.state.messages.length;
+      this.instanceManager.agent.state.messages = [];
+      console.log(`[AgentRuntime] 🗑️ 已清空 ${messageCount} 条历史消息`);
+    }
+  }
+
+  /**
+   * 发送消息并获取流式响应
+   * 
+   * @param content - 消息内容
+   * @param autoContinue - 是否自动继续
+   * @param maxContinuations - 最大自动继续次数
+   * @param isAutoContinue - 是否为自动继续调用（内部使用）
+   */
+  async *sendMessage(
+    content: string, 
+    autoContinue: boolean = true, 
+    maxContinuations: number = 100,
+    isAutoContinue: boolean = false
+  ): AsyncGenerator<string, void, unknown> {
+    // 🔥 只在非自动继续时清空操作追踪器
+    // 自动继续时保留 tracker，以便检测重复操作
+    if (!isAutoContinue) {
+      this.operationTracker.clear();
+      console.log('🗑️ 清空操作追踪器（新消息）');
+    } else {
+      console.log('✅ 保留操作追踪器（自动继续）');
+    }
+    
+    console.log('📤 发送消息到 AI:', content.substring(0, 50));
+
+    // 确保 Agent 已初始化
+    await this.ensureInitialized();
+    
+    // 等待系统提示词初始化完成
+    if (!this.systemPrompt) {
+      console.log('⏳ 等待系统提示词初始化...');
+      await this.initializeSystemPrompt();
+    }
+
+    console.log('📋 使用系统提示词 (前100字符):', this.systemPrompt.substring(0, 100));
+    
+    // ✅ 新增：上下文管理（在发送消息前）
+    if (this.instanceManager.agent) {
+      const { manageContext } = await import('../context/context-manager');
+      const currentMessages = this.instanceManager.agent.state.messages;
+      
+      const result = manageContext({
+        messages: currentMessages,
+        modelId: this.runtimeConfig.model.id,
+      });
+      
+      if (result.compressed) {
+        console.info(
+          `[Context Manager] 📊 压缩统计: ` +
+          `${result.stats.messagesBefore} → ${result.stats.messagesAfter} 条消息, ` +
+          `${result.stats.tokensBefore} → ${result.stats.tokensAfter} tokens ` +
+          `(${(result.stats.usageRatioBefore * 100).toFixed(1)}% → ${(result.stats.usageRatioAfter * 100).toFixed(1)}%)`
+        );
+        
+        // 更新 Agent 的消息列表
+        this.instanceManager.agent.state.messages = result.messages;
+      }
+    }
+    
+    // 重新包装工具，使用新的 AbortSignal
+    const abortController = this.messageHandler.getAbortController();
+    if (abortController && this.instanceManager.agent) {
+      const toolsWithAbort = this.tools.map(tool => 
+        wrapToolWithAbortSignal(tool, abortController.signal)
+      );
+      
+      // 更新 Agent 的工具列表
+      this.instanceManager.agent.state.tools = toolsWithAbort as any;
+      
+      console.log('✅ 已为工具添加取消支持');
+    }
+
+    // 收集完整的响应和工具调用信息
+    let fullResponse = '';
+    let hasToolCalls = false;
+    
+    try {
+      // 使用 MessageHandler 处理消息
+      console.log('🔄 开始调用 MessageHandler.sendMessage...');
+      for await (const chunk of this.messageHandler.sendMessage(content)) {
+        fullResponse += chunk;
+        yield chunk;
+      }
+      console.log('✅ MessageHandler.sendMessage 完成，响应长度:', fullResponse.length);
+      console.log('📊 Agent 执行完成后的状态:');
+      if (this.instanceManager.agent) {
+        console.log(`   消息总数: ${this.instanceManager.agent.state.messages.length}`);
+        console.log(`   最后一条消息角色: ${this.instanceManager.agent.state.messages[this.instanceManager.agent.state.messages.length - 1]?.role}`);
+      }
+      
+      // 检查响应是否为空
+      // 🔥 如果是用户主动停止（aborted），不抛出错误
+      const abortController = this.messageHandler.getAbortController();
+      const wasAborted = abortController?.signal.aborted || false;
+      
+      if (fullResponse.trim().length === 0 && !wasAborted) {
+        throw new Error('AI 返回空响应，可能是 API 配置错误或网络问题');
+      }
+      
+      // 如果是用户主动停止，直接返回（不继续执行）
+      if (wasAborted) {
+        console.log('⏹️ 用户主动停止生成，结束执行');
+        return;
+      }
+    } catch (error) {
+      console.error('❌ MessageHandler.sendMessage 失败:', error);
+      
+      // 🔥 如果是用户主动停止，不抛出错误
+      const abortController = this.messageHandler.getAbortController();
+      if (abortController?.signal.aborted) {
+        console.log('⏹️ 用户主动停止生成（捕获异常），结束执行');
+        return;
+      }
+      
+      throw error; // 重新抛出其他错误
+    }
+    
+    // 检查本轮是否有工具调用（只检查最后一条消息）
+    console.log('🔍 检查最后一条消息是否有工具调用...');
+    if (this.instanceManager.agent) {
+      const messages = this.instanceManager.agent.state.messages;
+      const lastMessage = messages[messages.length - 1];
+      
+      console.log(`   最后一条消息: role=${lastMessage?.role}, contentType=${Array.isArray(lastMessage?.content) ? 'array' : typeof lastMessage?.content}`);
+      
+      if (lastMessage?.role === 'assistant' && lastMessage.content) {
+        const content = lastMessage.content;
+        if (Array.isArray(content)) {
+          hasToolCalls = content.some(c => 
+            typeof c === 'object' && 'type' in c && c.type === 'toolCall'
+          );
+          
+          // 打印内容类型统计
+          const contentTypes = content.map(c => typeof c === 'object' && 'type' in c ? c.type : 'unknown');
+          console.log(`   内容类型: ${contentTypes.join(', ')}`);
+        }
+      }
+      
+      if (hasToolCalls) {
+        console.log('✅ 最后一条消息有工具调用');
+      } else {
+        console.log('❌ 最后一条消息没有工具调用');
+      }
+    }
+    console.log('🔍 开始检测未完成的意图...');
+    console.log(`   autoContinue: ${autoContinue}, maxContinuations: ${maxContinuations}, hasToolCalls: ${hasToolCalls}`);
+    
+    if (autoContinue && maxContinuations > 0 && this.instanceManager.agent) {
+      const hasUnfinishedIntent = await this.detectUnfinishedIntent(fullResponse, hasToolCalls);
+      
+      console.log(`   detectUnfinishedIntent 返回: ${hasUnfinishedIntent}`);
+      
+      if (hasUnfinishedIntent) {
+        console.log('🔄 检测到未完成的意图，自动继续执行...');
+        console.log(`   剩余继续次数: ${maxContinuations - 1}`);
+        
+        // 发送明确的执行指令，而不是简单的"继续"
+        // 🔥 传递 isAutoContinue=true，保留 operationTracker
+        yield '\n\n';
+        yield* this.sendMessage(
+          '立即执行你刚才说的操作。直接调用工具，不要再说明。',
+          true,
+          maxContinuations - 1,
+          true  // 标记为自动继续
+        );
+      } else {
+        console.log('✅ 任务已完成或等待用户输入，不继续');
+      }
+    } else {
+      console.log('⏭️ 跳过未完成意图检测（autoContinue=false 或 maxContinuations=0）');
+    }
+  }
+
+  /**
+   * 停止当前的生成
+   */
+  async stopGeneration(): Promise<void> {
+    this.messageHandler.stopGeneration();
+    
+    // 重新创建 Agent 实例（解决 "already processing" 问题）
+    if (this.instanceManager.agent) {
+      console.log('🔄 重新创建 Agent 实例...');
+      this.instanceManager.agent = await this.initializer.recreateAgent(
+        this.instanceManager.agent,
+        this.tools,
+        this.systemPrompt
+      );
+      this.messageHandler.setAgent(this.instanceManager.agent);
+    }
+  }
+
+  /**
+   * 检查是否正在生成
+   */
+  isCurrentlyGenerating(): boolean {
+    return this.messageHandler.isCurrentlyGenerating();
+  }
+
+  /**
+   * 获取当前系统提示词
+   */
+  getSystemPrompt(): string {
+    return this.systemPrompt;
+  }
+
+  /**
+   * 设置执行步骤更新回调
+   */
+  setExecutionStepCallback(callback: (steps: any[]) => void): void {
+    this.messageHandler.setExecutionStepCallback(callback);
+  }
+
+  /**
+   * 获取当前的执行步骤
+   */
+  getExecutionSteps(): any[] {
+    return this.messageHandler.getExecutionSteps();
+  }
+
+  /**
+   * 设置任务计划更新回调
+   */
+  setTaskPlanCallback(callback: (plan: TaskPlan) => void): void {
+    this.stepTracker.setOnPlanUpdate(callback);
+  }
+
+  /**
+   * 获取当前任务计划
+   */
+  getCurrentTaskPlan(): TaskPlan | null {
+    return this.stepTracker.getCurrentPlan();
+  }
+
+  /**
+   * 获取 Agent 状态
+   */
+  getAgentState(): AgentStateInfo {
+    if (!this.instanceManager.agent) {
+      return {
+        isStreaming: false,
+        messageCount: 0,
+        toolCount: 0,
+        tools: [],
+      };
+    }
+    
+    return {
+      isStreaming: this.instanceManager.agent.state.isStreaming,
+      messageCount: this.instanceManager.agent.state.messages.length,
+      toolCount: this.instanceManager.agent.state.tools.length,
+      tools: this.instanceManager.agent.state.tools.map(t => ({
+        name: t.name,
+        label: t.label,
+        description: t.description,
+      })),
+    };
+  }
+
+
+
+  /**
+   * 处理 Skill Manager 请求
+   * 
+   * @param request - Skill Manager 请求
+   * @returns 处理结果
+   */
+  async handleSkillManagerRequest(request: any): Promise<any> {
+    console.log('[AgentRuntime] 处理 Skill Manager 请求:', request);
+    
+    // 等待初始化完成
+    if (this.initPromise) {
+      console.log('[AgentRuntime] 等待 AgentRuntime 初始化完成...');
+      await this.initPromise;
+      console.log('[AgentRuntime] AgentRuntime 初始化完成');
+    }
+    
+    // 使用原始工具列表（不带重复检测），因为 Skill Manager 的操作应该允许重复调用
+    const skillManagerTool = this.originalTools.find((tool) => tool.name === 'skill_manager');
+    
+    if (!skillManagerTool) {
+      console.error('[AgentRuntime] Skill Manager Tool 未找到');
+      console.error('[AgentRuntime] 可用工具列表:', this.originalTools.map(t => t.name));
+      return {
+        success: false,
+        error: 'Skill Manager Tool 未找到',
+      };
+    }
+    
+    console.log('[AgentRuntime] 找到 Skill Manager Tool，准备调用...');
+    
+    try {
+      // 调用 Skill Manager Tool
+      // Tool.execute 签名: (toolCallId, params, signal, onUpdate)
+      const toolCallId = `skill-manager-${Date.now()}`;
+      console.log('[AgentRuntime] 调用 Tool.execute:', { toolCallId, params: request });
+      
+      const result = await skillManagerTool.execute(
+        toolCallId,
+        request, // params
+        undefined, // signal
+        undefined  // onUpdate
+      );
+      
+      console.log('[AgentRuntime] Tool 执行完成，结果:', result);
+      
+      // Tool 返回格式: { content: [...], details: actualData }
+      // 我们需要从 details 中提取实际数据
+      if (result.isError) {
+        console.error('[AgentRuntime] Tool 返回错误:', result.details);
+        return {
+          success: false,
+          error: result.details?.error || '未知错误',
+        };
+      }
+      
+      // 对于 list 操作，details 是数组，需要包装成 { skills: [...] }
+      if (request.action === 'list' && Array.isArray(result.details)) {
+        console.log('[AgentRuntime] 返回 Skill 列表，数量:', result.details.length);
+        return {
+          success: true,
+          skills: result.details,
+        };
+      }
+      
+      // 对于 info 操作，details 是 SkillInfo 对象，需要包装成 { skill: {...} }
+      if (request.action === 'info') {
+        console.log('[AgentRuntime] 返回 Skill 详情:', result.details);
+        return {
+          success: true,
+          skill: result.details,
+        };
+      }
+      
+      // 对于其他操作，直接返回 details
+      console.log('[AgentRuntime] 返回操作结果:', result.details);
+      return {
+        success: true,
+        ...result.details,
+      };
+    } catch (error) {
+      console.error('[AgentRuntime] Skill Manager 请求失败:', error);
+      return {
+        success: false,
+        error: getErrorMessage(error),
+      };
+    }
+  }
+}

@@ -1,0 +1,180 @@
+/**
+ * Agent Tabs 样式 - 深蓝色调（匹配终端主题）
+ */
+
+.agent-tabs-wrapper {
+  background: #0f1419;
+  border-bottom: 1px solid #1e2936;
+  padding: 0;
+  height: 36px;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  z-index: 3;
+}
+
+.agent-tabs-container {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+}
+
+.agent-tabs-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.agent-tabs-container::-webkit-scrollbar-thumb {
+  background: #2d3748;
+  border-radius: 2px;
+}
+
+.agent-tabs-container::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}
+
+.agent-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 36px;
+  background: #0f1419;
+  border-right: 1px solid #1e2936;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  color: #6b7a8f;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Courier New', monospace;
+}
+
+.agent-tab:hover {
+  background: #1a2332;
+  color: #8b9bb0;
+}
+
+.agent-tab.active {
+  background: #0a0e1a;
+  color: #7aa2f7;
+  border-bottom: 2px solid #7aa2f7;
+}
+
+/* 锁定状态的 Tab（定时任务专属） */
+.agent-tab.locked {
+  background: #14141f;
+  border-right: 1px solid #1e1e2e;
+  color: #9b9bff;
+}
+
+.agent-tab.locked:hover {
+  background: #1a1a2a;
+  color: #b5b5ff;
+}
+
+.agent-tab.locked.active {
+  background: #0f0f1a;
+  color: #bb9af7;
+  border-bottom: 2px solid #bb9af7;
+}
+
+.agent-tab.locked.active::before {
+  content: '🔒';
+  margin-right: 4px;
+  color: #bb9af7;
+  font-weight: normal;
+}
+
+.agent-tab.locked .agent-tab-close {
+  color: #9b9bff;
+}
+
+.agent-tab.locked .agent-tab-close:hover {
+  color: #f7768e;
+  background: rgba(247, 118, 142, 0.1);
+}
+
+.agent-tab-title {
+  font-size: 13px;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.agent-tab-close {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: #4a5568;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.agent-tab:hover .agent-tab-close {
+  opacity: 1;
+}
+
+.agent-tab-close:hover {
+  color: #f7768e;
+  background: rgba(247, 118, 142, 0.1);
+}
+
+.agent-tab-close:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.agent-tab-close:disabled:hover {
+  color: #4a5568;
+  background: transparent;
+}
+
+.agent-tab-create {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #4a5568;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  border-right: 1px solid #1e2936;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-tab-create:hover {
+  background: #1a2332;
+  color: #7aa2f7;
+}
+
+.agent-tab-create:active {
+  background: #0a0e1a;
+}
+
+.agent-tab-create:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.agent-tab-create:disabled:hover {
+  background: transparent;
+  color: #4a5568;
+}

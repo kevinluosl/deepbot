@@ -1,0 +1,25 @@
+/**
+ * 系统常量
+ */
+export const CONSTANTS = {
+  // 消息相关
+  MAX_MESSAGES_IN_MEMORY: 100,
+  LOG_PREVIEW_LENGTH: 200,
+  
+  // 重试相关
+  MAX_RETRY_COUNT: 3,
+  RETRY_DELAY_MS: 1000,
+  RETRY_BACKOFF_MULTIPLIER: 2,
+  
+  // 等待时间
+  PAGE_LOAD_WAIT_MS: 2000,
+  PAGE_CHANGE_WAIT_MS: 3000,
+  
+  // 文件相关
+  MAX_FILE_SIZE_MB: 10,
+  MAX_FILES_PER_BATCH: 100,
+  
+  // Sub Agent 相关
+  MAX_CONCURRENT_SUBAGENTS: 5,
+  SUBAGENT_STEP_LIMIT: 50,
+} as const;

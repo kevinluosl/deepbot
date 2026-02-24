@@ -1,0 +1,54 @@
+/* 导入执行步骤样式 */
+@import './styles/execution-steps.css';
+
+/* 导入 Markdown 样式 */
+@import './styles/markdown.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全局样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* 代码块样式 */
+code {
+  font-family: 'SF Mono', Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 13px;
+}
+
+/* 选中文字样式 */
+::selection {
+  background-color: #dbeafe;
+  color: #1f2937;
+}

@@ -1,0 +1,149 @@
+/**
+ * 任务计划样式
+ */
+
+.task-plan {
+  margin: 12px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.task-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.task-plan-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.task-plan-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.task-plan-status-planning {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.task-plan-status-executing {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.task-plan-status-completed {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.task-plan-status-failed {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.task-plan-description {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+}
+
+.task-plan-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-step {
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  border-left: 3px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.task-step-current {
+  border-left-color: #2196f3;
+  background: #f5f9ff;
+}
+
+.task-step-pending {
+  border-left-color: #9e9e9e;
+}
+
+.task-step-running {
+  border-left-color: #ff9800;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.task-step-success {
+  border-left-color: #4caf50;
+}
+
+.task-step-error {
+  border-left-color: #f44336;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.task-step-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.task-step-number {
+  font-weight: 600;
+  color: #666;
+  min-width: 20px;
+}
+
+.task-step-icon {
+  font-size: 14px;
+}
+
+.task-step-description {
+  flex: 1;
+  color: #333;
+}
+
+.task-step-duration {
+  font-size: 11px;
+  color: #999;
+}
+
+.task-step-retry {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #ff9800;
+  padding-left: 26px;
+}
+
+.task-step-error {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #d32f2f;
+  padding: 4px 8px;
+  background: #ffebee;
+  border-radius: 4px;
+  margin-left: 26px;
+}

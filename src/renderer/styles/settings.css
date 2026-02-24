@@ -1,0 +1,545 @@
+/**
+ * 统一模态框样式 - 终端科幻风格
+ * 适用于：系统设置、Skill 管理器、任务监控面板
+ */
+
+/* ========== CSS 变量 ========== */
+:root {
+  --settings-bg: #1a1f2e;
+  --settings-bg-light: #242936;
+  --settings-text: #a8b5c8;
+  --settings-text-dim: #6b7a8f;
+  --settings-border: #2d3748;
+  --settings-accent: #7aa2f7;
+  --settings-success: #9ece6a;
+  --settings-error: #f7768e;
+  --settings-warning: #e0af68;
+}
+
+/* ========== 模态框遮罩层 ========== */
+.settings-overlay,
+.fixed.inset-0.bg-black {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* 🔥 确保模态框在最上层，高于 Tab 栏（z-index: 100） */
+}
+
+/* ========== 模态框容器 ========== */
+.settings-container,
+.fixed .bg-white,
+.fixed .bg-bg-primary {
+  background: var(--settings-bg) !important;
+  color: var(--settings-text) !important;
+  border: 1px solid var(--settings-border) !important;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  width: 90vw;
+  max-width: 1200px;
+  height: 85vh;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== 主内容区域（系统设置专用） ========== */
+.settings-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ========== 标题栏 ========== */
+.settings-header,
+.fixed .border-b:first-child {
+  background: rgba(26, 31, 46, 0.95) !important;
+  border-bottom: 1px solid var(--settings-border) !important;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+/* ========== 底部栏 ========== */
+.settings-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--settings-border);
+  background: var(--settings-bg-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.settings-title,
+.fixed h2 {
+  color: var(--settings-accent) !important;
+  font-family: 'Courier New', Consolas, Monaco, monospace !important;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.settings-title::before {
+  content: '> ';
+}
+
+/* 关闭按钮 */
+.settings-close-button,
+.fixed button[class*="text-gray-400"] {
+  background: transparent !important;
+  border: 1px solid var(--settings-border) !important;
+  color: var(--settings-text-dim) !important;
+  padding: 6px !important;
+}
+
+.settings-close-button:hover,
+.fixed button[class*="text-gray-400"]:hover {
+  color: var(--settings-error) !important;
+  border-color: var(--settings-error) !important;
+  background: rgba(247, 118, 142, 0.1) !important;
+}
+
+/* ========== 侧边栏（系统设置专用） ========== */
+.settings-sidebar {
+  background: var(--settings-bg-light) !important;
+  border-right: 1px solid var(--settings-border) !important;
+  width: 200px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 8px;
+  gap: 4px;
+}
+
+.settings-nav-item {
+  color: var(--settings-text-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  font-size: 14px;
+  padding: 8px 12px;
+  text-align: left;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.settings-nav-item:hover {
+  color: var(--settings-text);
+  background: rgba(122, 162, 247, 0.05);
+  border-color: var(--settings-border);
+}
+
+.settings-nav-item.active {
+  color: var(--settings-accent);
+  background: rgba(122, 162, 247, 0.1);
+  border-color: var(--settings-accent);
+}
+
+/* ========== 内容区域 ========== */
+.settings-panel,
+.fixed .overflow-y-auto,
+.fixed .flex-1 {
+  background: transparent !important;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* ========== 所有文字颜色统一 ========== */
+.settings-panel h3,
+.settings-panel h4,
+.settings-panel h5,
+.settings-panel label,
+.fixed h3,
+.fixed h4,
+.fixed h5,
+.fixed label {
+  color: var(--settings-accent) !important;
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+}
+
+.settings-panel p,
+.fixed p {
+  color: var(--settings-text-dim) !important;
+}
+
+/* Tailwind 灰色文字统一覆盖 */
+.settings-panel [class*="text-gray"],
+.fixed [class*="text-gray"] {
+  color: var(--settings-text-dim) !important;
+}
+
+.settings-panel .text-gray-900,
+.settings-panel .text-gray-800,
+.settings-panel .text-gray-700,
+.fixed .text-gray-900,
+.fixed .text-gray-800,
+.fixed .text-gray-700 {
+  color: var(--settings-text) !important;
+}
+
+/* 状态颜色统一 */
+.settings-panel [class*="text-green"],
+.fixed [class*="text-green"] {
+  color: var(--settings-success) !important;
+}
+
+.settings-panel [class*="text-blue"],
+.fixed [class*="text-blue"] {
+  color: var(--settings-accent) !important;
+}
+
+.settings-panel [class*="text-red"],
+.fixed [class*="text-red"] {
+  color: var(--settings-error) !important;
+}
+
+.settings-panel [class*="text-yellow"],
+.settings-panel [class*="text-orange"],
+.fixed [class*="text-yellow"],
+.fixed [class*="text-orange"] {
+  color: var(--settings-warning) !important;
+}
+
+.text-white,
+.text-text-primary {
+  color: var(--settings-text) !important;
+}
+
+.text-text-secondary,
+.text-text-tertiary {
+  color: var(--settings-text-dim) !important;
+}
+
+/* ========== 所有背景颜色统一 ========== */
+.settings-panel [class*="bg-gray"],
+.fixed [class*="bg-gray"] {
+  background: rgba(26, 31, 46, 0.6) !important;
+}
+
+.settings-panel .bg-gray-100,
+.fixed .bg-gray-100 {
+  background: rgba(107, 122, 143, 0.3) !important;
+}
+
+.settings-panel .bg-gray-200,
+.fixed .bg-gray-200 {
+  background: rgba(45, 55, 72, 0.5) !important;
+}
+
+.settings-panel [class*="bg-green"],
+.fixed [class*="bg-green"] {
+  background: rgba(158, 206, 106, 0.15) !important;
+}
+
+.settings-panel [class*="bg-red"],
+.fixed [class*="bg-red"] {
+  background: rgba(247, 118, 142, 0.15) !important;
+}
+
+.settings-panel [class*="bg-blue"],
+.fixed [class*="bg-blue"]:not(button) {
+  background: rgba(122, 162, 247, 0.15) !important;
+}
+
+.settings-panel [class*="bg-yellow"],
+.settings-panel [class*="bg-orange"],
+.fixed [class*="bg-yellow"],
+.fixed [class*="bg-orange"] {
+  background: rgba(224, 175, 104, 0.15) !important;
+}
+
+/* 自定义背景类 */
+.bg-bg-primary {
+  background: var(--settings-bg) !important;
+}
+
+.bg-bg-secondary {
+  background: var(--settings-bg-light) !important;
+}
+
+.bg-bg-tertiary {
+  background: rgba(26, 31, 46, 0.8) !important;
+}
+
+/* ========== 所有边框颜色统一 ========== */
+.settings-panel [class*="border"],
+.fixed [class*="border"] {
+  border-color: var(--settings-border) !important;
+}
+
+.settings-panel [class*="border-green"],
+.fixed [class*="border-green"] {
+  border-color: var(--settings-success) !important;
+}
+
+.settings-panel [class*="border-red"],
+.fixed [class*="border-red"] {
+  border-color: var(--settings-error) !important;
+}
+
+.settings-panel [class*="border-blue"],
+.fixed [class*="border-blue"] {
+  border-color: var(--settings-accent) !important;
+}
+
+.settings-panel [class*="border-yellow"],
+.settings-panel [class*="border-orange"],
+.fixed [class*="border-yellow"],
+.fixed [class*="border-orange"] {
+  border-color: var(--settings-warning) !important;
+}
+
+.border-border-medium,
+.border-border-dark {
+  border-color: var(--settings-border) !important;
+}
+
+/* ========== 所有输入框统一 ========== */
+.settings-input,
+.settings-textarea,
+.settings-select,
+.settings-panel input,
+.settings-panel textarea,
+.settings-panel select,
+.fixed input,
+.fixed textarea,
+.fixed select {
+  background: rgba(26, 31, 46, 0.8) !important;
+  border: 1px solid var(--settings-border) !important;
+  color: var(--settings-text) !important;
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.settings-input:focus,
+.settings-textarea:focus,
+.settings-select:focus,
+.settings-panel input:focus,
+.settings-panel textarea:focus,
+.settings-panel select:focus,
+.fixed input:focus,
+.fixed textarea:focus,
+.fixed select:focus {
+  border-color: var(--settings-accent) !important;
+  background: rgba(26, 31, 46, 0.95) !important;
+  box-shadow: 0 0 12px rgba(122, 162, 247, 0.4) !important;
+  outline: none !important;
+}
+
+.settings-input::placeholder,
+.settings-textarea::placeholder,
+.settings-panel input::placeholder,
+.settings-panel textarea::placeholder,
+.fixed input::placeholder,
+.fixed textarea::placeholder {
+  color: var(--settings-text-dim) !important;
+  opacity: 0.6;
+}
+
+/* 选择框箭头 */
+.settings-panel select,
+.fixed select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237aa2f7' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-position: right 0.5rem center !important;
+  background-repeat: no-repeat !important;
+  background-size: 1.5em 1.5em !important;
+  padding-right: 2.5rem !important;
+}
+
+/* ========== 所有按钮统一 ========== */
+.settings-button,
+.settings-panel button,
+.fixed button {
+  background: transparent !important;
+  border: 1px solid var(--settings-accent) !important;
+  color: var(--settings-accent) !important;
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.settings-button:hover:not(:disabled),
+.settings-panel button:hover:not(:disabled),
+.fixed button:hover:not(:disabled) {
+  background: var(--settings-accent) !important;
+  color: var(--settings-bg) !important;
+  box-shadow: 0 0 16px rgba(122, 162, 247, 0.6) !important;
+}
+
+.settings-button:disabled,
+.settings-panel button:disabled,
+.fixed button:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+}
+
+/* 危险按钮（删除、取消等） */
+.settings-button.danger,
+.settings-panel button[class*="text-red"],
+.fixed button[class*="text-red"] {
+  border-color: var(--settings-error) !important;
+  color: var(--settings-error) !important;
+}
+
+.settings-button.danger:hover,
+.settings-panel button[class*="text-red"]:hover,
+.fixed button[class*="text-red"]:hover {
+  background: var(--settings-error) !important;
+  color: var(--settings-bg) !important;
+}
+
+/* 成功按钮 */
+.settings-button.success,
+.settings-panel button[class*="text-green"],
+.fixed button[class*="text-green"] {
+  border-color: var(--settings-success) !important;
+  color: var(--settings-success) !important;
+}
+
+.settings-button.success:hover,
+.settings-panel button[class*="text-green"]:hover,
+.fixed button[class*="text-green"]:hover {
+  background: var(--settings-success) !important;
+  color: var(--settings-bg) !important;
+}
+
+/* 警告按钮 */
+.settings-panel button[class*="text-orange"],
+.settings-panel button[class*="text-yellow"],
+.fixed button[class*="text-orange"],
+.fixed button[class*="text-yellow"] {
+  border-color: var(--settings-warning) !important;
+  color: var(--settings-warning) !important;
+}
+
+.settings-panel button[class*="text-orange"]:hover,
+.settings-panel button[class*="text-yellow"]:hover,
+.fixed button[class*="text-orange"]:hover,
+.fixed button[class*="text-yellow"]:hover {
+  background: var(--settings-warning) !important;
+  color: var(--settings-bg) !important;
+}
+
+/* 品牌色按钮 */
+.bg-brand-500,
+.fixed .bg-brand-500 {
+  background: transparent !important;
+  border: 1px solid var(--settings-accent) !important;
+  color: var(--settings-accent) !important;
+}
+
+.bg-brand-500:hover,
+.fixed .bg-brand-500:hover {
+  background: var(--settings-accent) !important;
+  color: var(--settings-bg) !important;
+}
+
+/* ========== 卡片统一 ========== */
+.settings-card,
+.settings-panel .border.rounded-lg,
+.settings-panel .border.rounded,
+.fixed .border.rounded-lg,
+.fixed .border.rounded {
+  background: rgba(26, 31, 46, 0.6) !important;
+  border: 1px solid var(--settings-border) !important;
+  transition: all 0.2s;
+}
+
+.settings-card:hover,
+.settings-panel .border.rounded-lg:hover,
+.settings-panel .border.rounded:hover,
+.fixed .border.rounded-lg:hover,
+.fixed .border.rounded:hover {
+  border-color: var(--settings-accent) !important;
+  box-shadow: 0 0 12px rgba(122, 162, 247, 0.2) !important;
+}
+
+/* ========== 代码块统一 ========== */
+.settings-panel code,
+.fixed code {
+  background: rgba(26, 31, 46, 0.8) !important;
+  color: var(--settings-accent) !important;
+  border: 1px solid var(--settings-border) !important;
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.settings-panel pre,
+.fixed pre {
+  background: rgba(26, 31, 46, 0.8) !important;
+  border: 1px solid var(--settings-border) !important;
+  color: var(--settings-text) !important;
+}
+
+/* ========== 滚动条统一 ========== */
+.settings-panel::-webkit-scrollbar,
+.settings-sidebar::-webkit-scrollbar,
+.fixed *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.settings-panel::-webkit-scrollbar-track,
+.settings-sidebar::-webkit-scrollbar-track,
+.fixed *::-webkit-scrollbar-track {
+  background: rgba(122, 162, 247, 0.05);
+}
+
+.settings-panel::-webkit-scrollbar-thumb,
+.settings-sidebar::-webkit-scrollbar-thumb,
+.fixed *::-webkit-scrollbar-thumb {
+  background: var(--settings-text-dim);
+  border-radius: 4px;
+}
+
+.settings-panel::-webkit-scrollbar-thumb:hover,
+.settings-sidebar::-webkit-scrollbar-thumb:hover,
+.fixed *::-webkit-scrollbar-thumb:hover {
+  background: var(--settings-text);
+}
+
+/* ========== 移除 Tailwind focus ring ========== */
+.settings-panel *:focus,
+.fixed *:focus {
+  --tw-ring-color: transparent !important;
+  outline: none !important;
+}
+
+/* ========== 进度条统一 ========== */
+.fixed .bg-blue-500.h-2 {
+  background: var(--settings-accent) !important;
+}
+
+/* ========== 特殊元素 ========== */
+/* 圆形步骤编号 */
+.fixed .rounded-full {
+  background: rgba(107, 122, 143, 0.3) !important;
+  color: var(--settings-text) !important;
+}
+
+/* 暂停状态 */
+.fixed .opacity-60 {
+  opacity: 0.7 !important;
+}
