@@ -27,9 +27,9 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
-    "@mariozechner/pi-agent-core": "^0.49.3",
-    "@mariozechner/pi-ai": "^0.49.3",
-    "@mariozechner/pi-coding-agent": "0.50.5",
+    "@mariozechner/pi-agent-core": "^0.54.2",
+    "@mariozechner/pi-ai": "^0.54.2",
+    "@mariozechner/pi-coding-agent": "0.54.2",
     "@sinclair/typebox": "^0.34.48",
     "better-sqlite3": "^9.0.0",
     "body-parser": "^2.2.2",
