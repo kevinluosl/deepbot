@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
 [![Electron](https://img.shields.io/badge/Electron-28+-9feaf9.svg)](https://www.electronjs.org/)
 
-[English](README.md) | [简体中文](README_zh-CN.md)
+[English](README_EN.md) | [简体中文](README.md)
 
 </div>
 
@@ -17,11 +17,11 @@
 
 ## 📖 简介
 
-DeepBot Terminal 是一个基于 Electron 的桌面 AI 助手，旨在通过 AI Agent 技术帮助用户自动化日常任务。它支持多 Tab 并行处理、定时任务、技能扩展等功能，并实现了严格的安全限制机制。
+DeepBot Terminal 是由格灵深瞳灵感实验室成员开发的桌面 AI 助手，它就像为你的电脑装上了一个智能大脑。无论是整理文件、定时提醒、网页自动化，还是复杂的多步骤任务，DeepBot 都能通过 AI Agent 技术帮你轻松搞定。它支持多任务并行处理、定时任务、技能扩展等功能，同时通过严格的安全机制保护你的系统安全。
 
 ### ✨ 核心特性
 
-- 🎯 **多 Tab 并行处理** - 同时处理多个任务，互不干扰
+- 🎯 **多任务并行处理** - 同时处理多个任务，互不干扰
 - 🔧 **10 个内置工具** - 文件操作、命令执行、浏览器控制、图片生成等
 - 🧠 **记忆系统** - 长期记忆用户偏好和重要信息
 - ⏰ **定时任务** - 自动化执行周期性任务
@@ -105,7 +105,12 @@ DeepBot 采用模块化架构，主要包含以下层次：
     Skills   定时任务   数据存储
 ```
 
-详细架构请参考：[架构文档](docs/architecture.md)
+### 架构说明
+
+- **Gateway**: 管理所有会话，每个 Tab 对应一个独立会话
+- **Agent Runtime**: 基于 `@mariozechner/pi-agent-core`，负责智能决策和工具编排
+- **Tools**: 10 个内置工具，提供文件、命令、浏览器等核心能力
+- **安全检查**: 所有文件和命令操作都经过路径白名单验证
 
 ---
 
