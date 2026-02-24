@@ -86,6 +86,7 @@
       "cache": "~/Library/Caches/electron"
     },
     "asar": false,
+    "afterSign": "scripts/after-sign.js",
     "directories": {
       "output": "release"
     },
@@ -114,7 +115,8 @@
           ]
         }
       ],
-      "hardenedRuntime": true,
+      "identity": null,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist"

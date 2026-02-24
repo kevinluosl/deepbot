@@ -70,6 +70,34 @@ pnpm run dist:win
 pnpm run dist:linux
 ```
 
+**Note for macOS builds**: The build process automatically performs ad-hoc signing on macOS apps. This prevents the "app is damaged" message but users will still see "cannot verify developer" on first launch (which is normal and can be bypassed with right-click → Open).
+
+### macOS Installation Issues
+
+macOS may show security warnings when first opening DeepBot. Choose the solution based on the message you see:
+
+#### "App is damaged" message
+
+Run this command in Terminal, then reopen the app:
+
+```bash
+sudo xattr -rd com.apple.quarantine /Applications/DeepBot.app
+```
+
+#### "Cannot verify developer" message
+
+**Method 1: Right-click to open**
+
+Right-click the app icon, select "Open", then click "Open" again in the dialog.
+
+**Method 2: System Settings**
+
+1. Try to open the app (you'll see a security warning, click "Cancel")
+2. Open "System Settings" → "Privacy & Security"
+3. Scroll down to the "Security" section
+4. Click "Open Anyway" button
+5. Try opening the app again, click "Open" in the dialog
+
 ---
 
 ## 🏗️ Architecture Design
