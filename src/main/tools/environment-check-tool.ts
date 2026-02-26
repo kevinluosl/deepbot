@@ -11,96 +11,23 @@ import { TOOL_NAMES } from './tool-names';
 import { SystemConfigStore } from '../database/system-config-store';
 import { TIMEOUTS } from '../config/timeouts';
 import { getErrorMessage } from '../../shared/utils/error-handler';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-
-/**
- * 展开路径中的通配符（例如 nvm 的版本号）
- */
-function expandPath(pathPattern: string): string[] {
-  if (!pathPattern.includes('*')) {
-    return [pathPattern];
-  }
-
-  try {
-    const parts = pathPattern.split('/');
-    const wildcardIndex = parts.findIndex(p => p.includes('*'));
-    
-    if (wildcardIndex === -1) {
-      return [pathPattern];
-    }
-
-    // 构建父目录路径
-    const parentPath = parts.slice(0, wildcardIndex).join('/');
-    const wildcardPattern = parts[wildcardIndex];
-    const remainingParts = parts.slice(wildcardIndex + 1);
-
-    // 检查父目录是否存在
-    if (!fs.existsSync(parentPath)) {
-      return [];
-    }
-
-    // 读取父目录
-    const entries = fs.readdirSync(parentPath);
-    const regex = new RegExp('^' + wildcardPattern.replace(/\*/g, '.*') + '$');
-    
-    // 匹配并构建完整路径
-    const matchedPaths: string[] = [];
-    for (const entry of entries) {
-      if (regex.test(entry)) {
-        const fullPath = [parentPath, entry, ...remainingParts].join('/');
-        if (fs.existsSync(fullPath)) {
-          matchedPaths.push(fullPath);
-        }
-      }
-    }
-
-    return matchedPaths;
-  } catch (error) {
-    console.warn(`[EnvironmentCheck] 展开路径失败: ${pathPattern}`, error);
-    return [];
-  }
-}
+import { getShellPathFromLoginShell } from './shell-env';
 
 /**
  * 获取完整的 PATH 环境变量
- * 在 macOS 上，Electron 应用不会继承 shell 的 PATH，需要手动添加常见路径
+ * 
+ * 使用 shell-env.ts 从登录 shell 获取合并后的 PATH
  */
 function getFullPath(): string {
-  const currentPath = process.env.PATH || '';
+  // 从登录 shell 获取合并后的 PATH（包含后备路径）
+  const mergedPath = getShellPathFromLoginShell({
+    env: process.env,
+    timeoutMs: 15_000,
+  });
   
-  // macOS 常见的命令路径（包含通配符的路径）
-  const commonPathPatterns = [
-    '/usr/local/bin',
-    '/usr/bin',
-    '/bin',
-    '/usr/sbin',
-    '/sbin',
-    '/opt/homebrew/bin', // Apple Silicon Homebrew
-    '/usr/local/opt/node/bin', // Homebrew Node.js
-    process.env.HOME + '/.nvm/versions/node/*/bin', // nvm（需要展开）
-    process.env.HOME + '/.pyenv/shims', // pyenv
-    '/Library/Frameworks/Python.framework/Versions/*/bin', // Python.org（需要展开）
-  ];
+  console.log('[EnvironmentCheck] 使用合并后的 PATH');
   
-  // 展开所有路径（处理通配符）
-  const expandedPaths: string[] = [];
-  for (const pattern of commonPathPatterns) {
-    const paths = expandPath(pattern);
-    expandedPaths.push(...paths);
-  }
-  
-  // 合并路径，去重
-  const allPaths = [currentPath, ...expandedPaths]
-    .filter(Boolean)
-    .join(':')
-    .split(':')
-    .filter((p, i, arr) => p && arr.indexOf(p) === i)
-    .join(':');
-  
-  console.log('[EnvironmentCheck] 完整 PATH:', allPaths);
-  
-  return allPaths;
+  return mergedPath;
 }
 
 /**

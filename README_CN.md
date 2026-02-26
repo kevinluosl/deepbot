@@ -241,12 +241,6 @@ tools.push(myTools);
 - 注意事项 2
 ```
 
-4. **运行类型检查**
-
-```bash
-pnpm run type-check
-```
-
 #### 高级功能
 
 - **配置文件**: 从 `~/.deepbot/tools/<tool-name>/config.json` 读取配置

@@ -22,6 +22,7 @@
  */
 
 import type { AgentTool } from '@mariozechner/pi-agent-core';
+import { getShellPathFromLoginShell, applyShellPath } from './shell-env';
 
 /**
  * 危险命令列表（黑名单）
@@ -96,12 +97,13 @@ function isDangerousCommand(command: string): boolean {
 
 
 /**
- * 包装工具，添加安全检查和日志
+ * 包装工具，添加安全检查、PATH 处理和日志
  * 
  * @param tool - 原始工具
+ * @param shellPath - 合并后的 PATH
  * @returns 包装后的工具
  */
-function wrapToolWithSecurity(tool: AgentTool): AgentTool {
+function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
   return {
     ...tool,
     execute: async (toolCallId, params, signal, onUpdate) => {
@@ -119,6 +121,19 @@ function wrapToolWithSecurity(tool: AgentTool): AgentTool {
           console.error(`[Exec Tool] ❌ 危险命令被拦截: ${command}`);
           throw new Error(`危险命令被拦截: ${command}`);
         }
+      }
+      
+      // 🔥 应用 shell PATH 到环境变量
+      // 如果用户没有提供自定义 env，则应用合并后的 PATH
+      if (record && !record.env) {
+        const env = { ...process.env } as Record<string, string>;
+        applyShellPath(env, shellPath);
+        record.env = env;
+        console.log(`[Exec Tool] 📝 已应用合并后的 PATH`);
+        console.log(`[Exec Tool] 🔍 命令执行环境 PATH 前 5 个路径:`);
+        env.PATH?.split(':').slice(0, 5).forEach((p, i) => {
+          console.log(`  ${i + 1}. ${p}`);
+        });
       }
       
       // 执行原始工具
@@ -170,18 +185,35 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
   // eslint-disable-next-line no-eval
   const { createBashTool } = await eval('import("@mariozechner/pi-coding-agent")');
   
+  // 🔥 从登录 shell 获取完整 PATH
+  // 解决 Electron 主进程 PATH 不完整的问题（pnpm、nvm 等工具不在 PATH 中）
+  const shellPath = getShellPathFromLoginShell({
+    env: process.env,
+    timeoutMs: 15_000,
+  });
+  
+  // 🔥 调试日志：输出合并后的 PATH
+  console.info('[Exec Tool] 🔍 合并后的 PATH:');
+  console.info(`  PATH 长度: ${shellPath.length} 字符`);
+  console.info(`  PATH 包含: ${shellPath.split(':').length} 个路径`);
+  console.info(`  前 10 个路径:`);
+  shellPath.split(':').slice(0, 10).forEach((p, i) => {
+    console.info(`    ${i + 1}. ${p}`);
+  });
+  
   // 创建基础工具（使用 pi-coding-agent）
   const bashTool = createBashTool(workspaceDir, {
     // 设置默认超时（5 分钟）
     // commandPrefix: 可以设置命令前缀，如 "shopt -s expand_aliases"
   }) as unknown as AgentTool;
   
-  // 包装安全检查
-  const secureBashTool = wrapToolWithSecurity(bashTool);
+  // 包装安全检查和 PATH 处理
+  const secureBashTool = wrapToolWithSecurity(bashTool, shellPath);
   
   console.info(`[Exec Tool] ✅ Exec Tool 创建完成`);
   console.info(`  工作区: ${workspaceDir}`);
   console.info(`  工具: bash`);
+  console.info(`  PATH 已合并: shell PATH + 后备路径`);
   
   return [secureBashTool];
 }

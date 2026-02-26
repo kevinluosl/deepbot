@@ -242,12 +242,6 @@ Edit `src/main/prompts/templates/CUSTOM-TOOLS.md` to add tool usage instructions
 - Note 2
 ```
 
-4. **Run Type Check**
-
-```bash
-pnpm run type-check
-```
-
 #### Advanced Features
 
 - **Config Files**: Read configuration from `~/.deepbot/tools/<tool-name>/config.json`
