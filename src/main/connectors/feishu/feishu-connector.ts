@@ -18,6 +18,7 @@ import type {
   HealthStatus,
 } from '../../../types/connector';
 import { getErrorMessage } from '../../../shared/utils/error-handler';
+import { safeJsonParse } from '../../../shared/utils/json-utils';
 import type { ConnectorManager } from '../connector-manager';
 import { SystemConfigStore } from '../../database/system-config-store';
 
@@ -224,7 +225,7 @@ export class FeishuConnector implements Connector {
         },
         content: {
           type: 'text',
-          text: JSON.parse(event.message.content).text,
+          text: safeJsonParse(event.message.content, { text: '' }).text || '',
         },
         raw: event,
       };

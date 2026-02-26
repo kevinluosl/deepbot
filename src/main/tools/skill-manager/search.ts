@@ -33,16 +33,19 @@ export async function searchSkillsOnGitHub(query: string): Promise<SkillSearchRe
       
       console.info(`[Skill Manager] 搜索 GitHub: ${searchQuery}`);
       
-      const response = await fetch(url, {
+      const { httpGet } = await import('../../../shared/utils/http-utils');
+      const response = await httpGet(url, {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'DeepBot-Skill-Manager',
         },
       });
       
-      if (response.ok) {
-        const data = await response.json() as any;
-        
+      if (!response.ok) {
+        console.warn(`[Skill Manager] GitHub 搜索失败: ${response.status}`);
+      } else {
+        const data = response.data as any;
+      
         const githubResults: SkillSearchResult[] = data.items.map((repo: any) => ({
           name: extractSkillName(repo.name),
           description: repo.description || '无描述',
@@ -84,14 +87,15 @@ async function searchInAwesomeSkills(query: string): Promise<SkillSearchResult[]
   
   try {
     // 1. 获取 README.md 内容
-    const response = await fetch(AWESOME_SKILLS_README_URL);
+    const { httpGet } = await import('../../../shared/utils/http-utils');
+    const response = await httpGet(AWESOME_SKILLS_README_URL);
     
     if (!response.ok) {
       console.warn(`[Skill Manager] 获取 README 失败: ${response.status} ${response.statusText}`);
       return [];
     }
     
-    const readme = await response.text();
+    const readme = response.data as string;
     console.info(`[Skill Manager] README 大小: ${readme.length} 字符`);
     
     // 2. 解析所有 Skills
@@ -173,7 +177,8 @@ ${skillList}
     console.info(`[Skill Manager] AI 响应: ${responseText}`);
     
     // 解析 AI 返回的索引
-    const indices = JSON.parse(responseText.trim()) as number[];
+    const { safeJsonParse } = await import('../../../shared/utils/json-utils');
+    const indices = safeJsonParse<number[]>(responseText.trim(), []);
     
     // 转换为 SkillSearchResult
     const results: SkillSearchResult[] = indices

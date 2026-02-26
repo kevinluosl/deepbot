@@ -19,8 +19,9 @@ export class TaskExecutor {
    * 执行任务
    */
   async execute(task: ScheduledTask): Promise<TaskExecution> {
+    const { generateExecutionId } = await import('../../shared/utils/id-generator');
     const startTime = new Date();
-    const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const executionId = generateExecutionId('task-exec');
 
     console.log(`[TaskExecutor] ========================================`);
     console.log(`[TaskExecutor] 🚀 开始执行任务: ${task.name}`);
@@ -101,27 +102,29 @@ export class TaskExecutor {
       console.log(`[TaskExecutor] ⏳ Tab ${tab.id} 正在执行任务，等待空闲...`);
       
       // 等待窗口空闲（最多等待 5 分钟）
-      const maxWaitTime = 5 * 60 * 1000; // 5 分钟
-      const startTime = Date.now();
-      const checkInterval = 1000; // 每秒检查一次
+      const { waitUntil } = await import('../../shared/utils/async-utils');
+      const waitStartTime = Date.now();
       
-      while (gatewayInstance.isSessionExecuting(tabSessionId)) {
-        // 检查是否超时
-        if (Date.now() - startTime > maxWaitTime) {
-          throw new Error(`等待窗口空闲超时（5分钟），任务执行失败`);
+      const success = await waitUntil(
+        () => !gatewayInstance.isSessionExecuting(tabSessionId),
+        {
+          timeout: 5 * 60 * 1000, // 5 分钟
+          interval: 1000,
+          onProgress: (elapsed) => {
+            // 每 10 秒打印一次等待状态
+            if (Math.floor(elapsed / 10000) > Math.floor((elapsed - 1000) / 10000)) {
+              const seconds = Math.floor(elapsed / 1000);
+              console.log(`[TaskExecutor] ⏳ 已等待 ${seconds} 秒...`);
+            }
+          }
         }
-        
-        // 等待 1 秒后再检查
-        await new Promise(resolve => setTimeout(resolve, checkInterval));
-        
-        // 每 10 秒打印一次等待状态
-        if ((Date.now() - startTime) % 10000 < checkInterval) {
-          const elapsed = Math.floor((Date.now() - startTime) / 1000);
-          console.log(`[TaskExecutor] ⏳ 已等待 ${elapsed} 秒...`);
-        }
+      );
+      
+      if (!success) {
+        throw new Error(`等待窗口空闲超时（5分钟），任务执行失败`);
       }
       
-      const waitTime = Math.floor((Date.now() - startTime) / 1000);
+      const waitTime = Math.floor((Date.now() - waitStartTime) / 1000);
       console.log(`[TaskExecutor] ✅ 窗口已空闲，等待了 ${waitTime} 秒`);
     }
 
@@ -134,7 +137,8 @@ export class TaskExecutor {
     console.log(`[TaskExecutor] 📝 显示内容（用户）: "${displayContent}"`);
 
     // 等待一小段时间，确保前端已收到 Tab 创建通知（仅首次创建时需要）
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const { sleep } = await import('../../shared/utils/async-utils');
+    await sleep(100);
 
     console.log(`[TaskExecutor] 📤 发送命令到 Tab ${tab.id}...`);
     

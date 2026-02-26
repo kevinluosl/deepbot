@@ -157,13 +157,14 @@ export class AgentRuntime {
     if (this.systemPromptInitializing) {
       console.log('⏳ 系统提示词正在初始化中，等待完成...');
       // 轮询等待初始化完成（最多等待 30 秒）
-      const maxWaitTime = 30000;
-      const startTime = Date.now();
-      while (this.systemPromptInitializing && (Date.now() - startTime) < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      const { waitUntil } = await import('../../shared/utils/async-utils');
+      const { TIMEOUTS } = await import('../config/timeouts');
+      const success = await waitUntil(
+        () => !this.systemPromptInitializing,
+        { timeout: TIMEOUTS.AGENT_MESSAGE_TIMEOUT, interval: 100 }
+      );
       
-      if (this.systemPromptInitializing) {
+      if (!success) {
         console.error('❌ 等待系统提示词初始化超时（30秒）');
         throw new Error('系统提示词初始化超时');
       }
@@ -714,7 +715,8 @@ ${lastPart}
     try {
       // 调用 Skill Manager Tool
       // Tool.execute 签名: (toolCallId, params, signal, onUpdate)
-      const toolCallId = `skill-manager-${Date.now()}`;
+      const { generateExecutionId } = await import('../../shared/utils/id-generator');
+      const toolCallId = generateExecutionId('skill-manager');
       console.log('[AgentRuntime] 调用 Tool.execute:', { toolCallId, params: request });
       
       const result = await skillManagerTool.execute(

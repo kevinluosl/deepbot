@@ -14,6 +14,8 @@ import { execSync } from 'node:child_process';
 import { TIMEOUTS } from '../config/timeouts';
 import { TOOL_NAMES } from './tool-names';
 import { getErrorMessage } from '../../shared/utils/error-handler';
+import { safeJsonParse } from '../../shared/utils/json-utils';
+import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
 import type { SystemConfigStore } from '../database/system-config-store';
 import { assertPathAllowed } from '../utils/path-security';
 
@@ -134,7 +136,7 @@ function expandPath(filePath: string): string {
       const result = execSync(`echo "${expanded}"`, {
         shell: '/bin/bash',
         encoding: 'utf-8',
-        timeout: 5000, // 5 秒超时
+        timeout: TIMEOUTS.COMMAND_EXECUTION_TIMEOUT,
       });
       
       expanded = result.trim();
@@ -306,7 +308,7 @@ async function generateImage(params: {
           ok: res.statusCode === 200,
           status: res.statusCode,
           text: async () => data,
-          json: async () => JSON.parse(data),
+          json: async () => safeJsonParse(data, {}),
         });
       });
     });
@@ -491,7 +493,7 @@ async function analyzeImage(params: {
           ok: res.statusCode === 200,
           status: res.statusCode,
           text: async () => data,
-          json: async () => JSON.parse(data),
+          json: async () => safeJsonParse(data, {}),
         });
       });
     });
@@ -584,9 +586,7 @@ function saveImage(imageData: string, mimeType: string, outputDir: string, outpu
 
   // 确保目录存在
   const dir = dirname(finalPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
+  ensureDirectoryExists(dir);
 
   // 保存图片
   const buffer = Buffer.from(imageData, 'base64');

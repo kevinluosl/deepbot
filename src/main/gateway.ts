@@ -13,6 +13,9 @@ import { IPC_CHANNELS } from '../types/ipc';
 import { AgentRuntime } from './agent-runtime/index';
 import type { AgentTab } from '../types/agent-tab';
 import { getErrorMessage } from '../shared/utils/error-handler';
+import { sleep, waitUntil } from '../shared/utils/async-utils';
+import { generateMessageId, generateUserMessageId, generateTabId, generateExecutionId } from '../shared/utils/id-generator';
+import { sendToWindow } from '../shared/utils/webcontents-utils';
 import { setGatewayInstance } from './tools/scheduled-task-tool';
 import type { GatewayMessage } from '../types/connector';
 import { ConnectorManager } from './connectors/connector-manager';
@@ -128,10 +131,8 @@ export class Gateway {
     console.log('[Gateway] ✅ 模型配置已重新加载，所有会话已重置');
     
     // 🔥 通知前端清空所有聊天记录
-    if (this.mainWindow) {
-      this.mainWindow.webContents.send('message:clear-all');
-      console.log('[Gateway] 📤 已发送清空聊天记录事件到前端');
-    }
+    sendToWindow(this.mainWindow, 'message:clear-all');
+    console.log('[Gateway] 📤 已发送清空聊天记录事件到前端');
     
     // 🔥 发送欢迎消息到默认会话
     const { SystemConfigStore } = await import('./database/system-config-store');
@@ -250,8 +251,8 @@ export class Gateway {
     // 🔥 如果提供了 displayContent，先发送用户消息到前端显示
     // 这样前端会显示原始任务内容，而不是带系统前缀的完整命令
     if (displayContent && this.mainWindow) {
-      const userMessageId = `user-msg-${Date.now()}`;
-      this.mainWindow.webContents.send(IPC_CHANNELS.MESSAGE_STREAM, {
+      const userMessageId = generateUserMessageId();
+      sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
         messageId: userMessageId,
         content: displayContent,
         done: true,
@@ -281,22 +282,23 @@ export class Gateway {
         console.log(`[Gateway] 🆔 Session ID: ${currentSessionId}`);
         
         // 等待上一次执行完成（最多等待 120 秒）
-        const maxWaitTime = 120000;
-        const startTime = Date.now();
-        let waitCount = 0;
-        
-        while (runtime.isCurrentlyGenerating() && (Date.now() - startTime) < maxWaitTime) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          waitCount++;
-          
-          // 每 5 秒打印一次等待状态
-          if (waitCount % 50 === 0) {
-            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            console.log(`[Gateway] ⏳ 已等待 ${elapsed} 秒...`);
+        const { TIMEOUTS } = await import('./config/timeouts');
+        const success = await waitUntil(
+          () => !runtime.isCurrentlyGenerating(),
+          {
+            timeout: TIMEOUTS.AGENT_MESSAGE_TIMEOUT,
+            interval: 100,
+            onProgress: (elapsed) => {
+              // 每 5 秒打印一次等待状态
+              if (Math.floor(elapsed / 5000) > Math.floor((elapsed - 100) / 5000)) {
+                const seconds = (elapsed / 1000).toFixed(1);
+                console.log(`[Gateway] ⏳ 已等待 ${seconds} 秒...`);
+              }
+            }
           }
-        }
+        );
         
-        if (runtime.isCurrentlyGenerating()) {
+        if (!success) {
           console.error('[Gateway] ❌ 等待超时（120秒），强制停止上一次执行');
           console.error(`[Gateway] 📝 被放弃的消息: "${content}"`);
           
@@ -304,7 +306,7 @@ export class Gateway {
           await runtime.stopGeneration();
           
           // 再等待 1 秒确保清理完成
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await sleep(1000);
           
           console.log('[Gateway] ✅ 已强制停止上一次执行，继续处理新消息');
         } else {
@@ -337,9 +339,11 @@ export class Gateway {
         
         // 等待当前消息完成
         console.log('[Gateway] ⏳ 等待当前消息完成...');
-        while (runtime.isCurrentlyGenerating()) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        const { TIMEOUTS } = await import('./config/timeouts');
+        await waitUntil(
+          () => !runtime.isCurrentlyGenerating(),
+          { timeout: TIMEOUTS.AGENT_MESSAGE_TIMEOUT, interval: 100 }
+        );
         
         // 处理队列中的消息
         await this.processMessageQueue(currentSessionId);
@@ -392,8 +396,8 @@ export class Gateway {
     
     // 如果提供了 displayContent，发送用户消息到前端
     if (message.displayContent && this.mainWindow) {
-      const userMessageId = `user-msg-${Date.now()}`;
-      this.mainWindow.webContents.send(IPC_CHANNELS.MESSAGE_STREAM, {
+      const userMessageId = generateUserMessageId();
+      sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
         messageId: userMessageId,
         content: message.displayContent,
         done: true,
@@ -444,20 +448,18 @@ export class Gateway {
    * @param sessionId - 会话 ID
    */
   private async sendAIResponse(runtime: AgentRuntime, userMessage: string, sessionId: string): Promise<void> {
-    const messageId = `msg-${Date.now()}`;
+    const messageId = generateMessageId();
     let fullResponse = ''; // 收集完整响应
 
     try {
       // 设置执行步骤更新回调
       runtime.setExecutionStepCallback((steps) => {
         // 发送执行步骤更新到前端
-        if (this.mainWindow) {
-          this.mainWindow.webContents.send(IPC_CHANNELS.EXECUTION_STEP_UPDATE, {
-            messageId,
-            executionSteps: steps,
-            sessionId, // 添加 sessionId
-          });
-        }
+        sendToWindow(this.mainWindow, IPC_CHANNELS.EXECUTION_STEP_UPDATE, {
+          messageId,
+          executionSteps: steps,
+          sessionId, // 添加 sessionId
+        });
       });
 
       // 获取流式响应
@@ -505,17 +507,15 @@ export class Gateway {
     executionSteps?: any[],
     sessionId?: string
   ) {
-    if (this.mainWindow) {
-      this.mainWindow.webContents.send(IPC_CHANNELS.MESSAGE_STREAM, {
-        messageId,
-        content,
-        done,
-        isSubAgentResult,
-        subAgentTask,
-        executionSteps,
-        sessionId, // 添加 sessionId
-      });
-    }
+    sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+      messageId,
+      content,
+      done,
+      isSubAgentResult,
+      subAgentTask,
+      executionSteps,
+      sessionId, // 添加 sessionId
+    });
   }
 
   /**
@@ -523,15 +523,10 @@ export class Gateway {
    */
   private sendError(error: string, sessionId?: string) {
     console.log('[Gateway] 📤 发送错误到前端:', error);
-    if (this.mainWindow) {
-      this.mainWindow.webContents.send(IPC_CHANNELS.MESSAGE_ERROR, {
-        error,
-        sessionId, // 添加 sessionId
-      });
-      console.log('[Gateway] ✅ 错误已发送');
-    } else {
-      console.warn('[Gateway] ⚠️ 无法发送错误：主窗口不存在');
-    }
+    sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_ERROR, {
+      error,
+      sessionId, // 添加 sessionId
+    });
   }
 
 
@@ -630,7 +625,7 @@ export class Gateway {
     
     // 生成唯一的 Tab ID
     this.tabIdCounter++;
-    const tabId = `tab-${Date.now()}-${this.tabIdCounter}`;
+    const tabId = generateTabId(this.tabIdCounter);
     
     // 生成默认标题
     const tabTitle = options.title || `Agent ${this.tabCounter + 1}`;
@@ -713,10 +708,8 @@ export class Gateway {
    * @param tab - 新创建的 Tab
    */
   private notifyTabCreated(tab: AgentTab): void {
-    if (this.mainWindow) {
-      this.mainWindow.webContents.send('tab:created', { tab });
-      console.log('[Gateway] 已通知前端 Tab 创建:', tab.id);
-    }
+    sendToWindow(this.mainWindow, 'tab:created', { tab });
+    console.log('[Gateway] 已通知前端 Tab 创建:', tab.id);
   }
   
   /**
@@ -745,7 +738,7 @@ export class Gateway {
         const tool = createScheduledTaskTool();
         
         await tool.execute(
-          `pause-task-${Date.now()}`,
+          generateExecutionId('pause-task'),
           {
             action: 'pause',
             taskId: tab.taskId,

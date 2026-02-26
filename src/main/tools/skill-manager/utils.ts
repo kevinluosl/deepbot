@@ -5,6 +5,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import type { SkillMetadata } from './types';
+import { isFile, safeReadFile, isDirectory } from '../../../shared/utils/fs-utils';
 
 /**
  * 从仓库名称提取 Skill 名称
@@ -27,11 +28,11 @@ export function extractSkillName(repoName: string): string {
 export function parseSkillMetadata(skillDir: string): SkillMetadata {
   const skillMdPath = path.join(skillDir, 'SKILL.md');
   
-  if (!fs.existsSync(skillMdPath)) {
+  if (!isFile(skillMdPath)) {
     throw new Error('SKILL.md 文件不存在');
   }
   
-  const content = fs.readFileSync(skillMdPath, 'utf-8');
+  const content = safeReadFile(skillMdPath);
   
   // 解析 YAML frontmatter
   const frontmatterMatch = content.match(/^---\n([\s\S]+?)\n---/);
@@ -66,7 +67,7 @@ export function parseSkillMetadata(skillDir: string): SkillMetadata {
       // 解析数组 [tag1, tag2]
       const tagsMatch = value.match(/\[(.*?)\]/);
       if (tagsMatch) {
-        metadata.tags = tagsMatch[1].split(',').map(t => t.trim());
+        metadata.tags = tagsMatch[1].split(',').map((t: string) => t.trim());
       }
     }
   }
@@ -82,7 +83,7 @@ export function parseSkillMetadata(skillDir: string): SkillMetadata {
  * 扫描目录，返回文件列表
  */
 export function scanDirectory(dir: string): string[] {
-  if (!fs.existsSync(dir)) {
+  if (!isDirectory(dir)) {
     return [];
   }
   

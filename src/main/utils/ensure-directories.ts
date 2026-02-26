@@ -5,6 +5,7 @@
  */
 
 import { existsSync, mkdirSync } from 'node:fs';
+import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
 import { SystemConfigStore } from '../database/system-config-store';
 
 /**
@@ -28,8 +29,8 @@ export function ensureWorkspaceDirectories(): void {
     console.log('🔧 检查工作目录...');
     
     for (const dir of directories) {
-      if (!existsSync(dir.path)) {
-        mkdirSync(dir.path, { recursive: true });
+      const created = ensureDirectoryExists(dir.path);
+      if (created) {
         console.log(`   ✅ 已创建 ${dir.name}: ${dir.path}`);
       } else {
         console.log(`   ✓ ${dir.name}已存在: ${dir.path}`);
@@ -38,8 +39,8 @@ export function ensureWorkspaceDirectories(): void {
     
     // 确保所有 Skill 目录都存在
     for (const skillDir of settings.skillDirs) {
-      if (!existsSync(skillDir)) {
-        mkdirSync(skillDir, { recursive: true });
+      const created = ensureDirectoryExists(skillDir);
+      if (created) {
         console.log(`   ✅ 已创建 Skill 目录: ${skillDir}`);
       }
     }

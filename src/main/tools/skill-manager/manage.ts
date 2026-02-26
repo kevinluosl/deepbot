@@ -8,6 +8,8 @@ import type Database from 'better-sqlite3';
 import type { InstalledSkill, SkillInfo } from './types';
 import { getAllSkillPaths } from '../../config/skill-paths';
 import { parseSkillMetadata, scanDirectory } from './utils';
+import { isDirectory, isFile, safeReadFile, safeRemove } from '../../../shared/utils/fs-utils';
+import { safeJsonParse } from '../../../shared/utils/json-utils';
 
 /**
  * 列出已安装的 Skill
@@ -21,7 +23,7 @@ export function listInstalledSkills(
   const allSkills: InstalledSkill[] = [];
   
   for (const skillPath of allPaths) {
-    if (!fs.existsSync(skillPath)) {
+    if (!isDirectory(skillPath)) {
       console.warn(`[Skill Manager] 路径不存在: ${skillPath}`);
       continue;
     }
@@ -39,7 +41,7 @@ export function listInstalledSkills(
         
         // 检查是否有 SKILL.md
         const skillMdPath = path.join(fullPath, 'SKILL.md');
-        if (!fs.existsSync(skillMdPath)) {
+        if (!isFile(skillMdPath)) {
           continue;
         }
         
@@ -137,8 +139,8 @@ export function uninstallSkill(name: string, db: Database.Database): void {
     }
   }
   
-  if (skillDir && fs.existsSync(skillDir)) {
-    fs.rmSync(skillDir, { recursive: true, force: true });
+  if (skillDir) {
+    safeRemove(skillDir);
   }
   
   console.info(`[Skill Manager] ✅ Skill 已卸载: ${name}`);
@@ -155,7 +157,7 @@ export function getSkillInfo(name: string, db: Database.Database): SkillInfo {
     throw new Error(`Skill "${name}" 不存在`);
   }
   
-  const metadata = JSON.parse(row.metadata);
+  const metadata = safeJsonParse<any>(row.metadata, {});
   
   // 2. 读取 README
   // 从所有路径中查找 Skill
@@ -164,7 +166,7 @@ export function getSkillInfo(name: string, db: Database.Database): SkillInfo {
   
   for (const basePath of allPaths) {
     const candidatePath = path.join(basePath, name);
-    if (fs.existsSync(candidatePath)) {
+    if (isDirectory(candidatePath)) {
       skillDir = candidatePath;
       break;
     }
@@ -175,9 +177,7 @@ export function getSkillInfo(name: string, db: Database.Database): SkillInfo {
   }
   
   const readmePath = path.join(skillDir, 'SKILL.md');
-  const readme = fs.existsSync(readmePath) 
-    ? fs.readFileSync(readmePath, 'utf-8')
-    : '无说明';
+  const readme = safeReadFile(readmePath, '无说明');
   
   // 3. 扫描文件
   const files = {

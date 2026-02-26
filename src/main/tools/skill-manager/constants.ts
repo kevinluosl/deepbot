@@ -2,8 +2,7 @@
  * Skill Manager 常量定义
  */
 
-import * as path from 'path';
-import * as os from 'os';
+import { expandUserPath } from '../../../shared/utils/path-utils';
 import { getDefaultSkillPath } from '../../config/skill-paths';
 
 /**
@@ -14,7 +13,7 @@ export const getSkillsDir = () => getDefaultSkillPath();
 /**
  * Skill 数据库路径
  */
-export const SKILLS_DB_PATH = path.join(os.homedir(), '.deepbot', 'skills.db');
+export const SKILLS_DB_PATH = expandUserPath('~/.deepbot/skills.db');
 
 /**
  * GitHub API 基础 URL

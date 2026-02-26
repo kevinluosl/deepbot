@@ -353,7 +353,7 @@ export async function createNewPage(url?: string): Promise<Page> {
         
         // 额外等待网络空闲（确保动态内容加载完成）
         await page.waitForLoadState('networkidle', {
-          timeout: 5000, // 网络空闲等待时间较短，避免卡住
+          timeout: TIMEOUTS.BROWSER_NETWORK_IDLE_TIMEOUT,
         }).catch(() => {
           // 如果网络一直不空闲，继续执行
           console.warn('[CreateNewPage] 网络未完全空闲，但继续执行');

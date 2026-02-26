@@ -8,6 +8,8 @@ import * as fs from 'fs';
 import type Database from 'better-sqlite3';
 import type { InstallResult, InstalledSkill } from './types';
 import { getSkillsDir, GITHUB_API_BASE } from './constants';
+import { ensureDirectoryExists, isFile, safeRemove, isDirectory } from '../../../shared/utils/fs-utils';
+import { safeWriteFile } from '../../../shared/utils/fs-utils';
 import { parseSkillMetadata } from './utils';
 
 /**
@@ -51,7 +53,7 @@ async function registerLocalSkill(
   console.info(`[Skill Manager] 注册本地 Skill: ${sourcePath}`);
   
   // 1. 检查源目录是否存在
-  if (!fs.existsSync(sourcePath)) {
+  if (!isDirectory(sourcePath)) {
     throw new Error(`本地 Skill 目录不存在: ${sourcePath}`);
   }
   
@@ -63,7 +65,7 @@ async function registerLocalSkill(
   
   // 3. 检查是否包含 SKILL.md
   const skillMdPath = path.join(sourcePath, 'SKILL.md');
-  if (!fs.existsSync(skillMdPath)) {
+  if (!isFile(skillMdPath)) {
     throw new Error(`目录中缺少 SKILL.md 文件: ${sourcePath}`);
   }
   
@@ -82,9 +84,7 @@ async function registerLocalSkill(
     console.info(`[Skill Manager] 创建符号链接: ${normalizedSource} -> ${normalizedTarget}`);
     
     // 如果目标已存在，先删除
-    if (fs.existsSync(normalizedTarget)) {
-      fs.rmSync(normalizedTarget, { recursive: true, force: true });
-    }
+    safeRemove(normalizedTarget);
     
     // 创建符号链接
     fs.symlinkSync(normalizedSource, normalizedTarget, 'dir');
@@ -95,9 +95,7 @@ async function registerLocalSkill(
   console.info(`[Skill Manager] 复制 Skill 文件: ${sourcePath} -> ${targetDir}`);
   
   // 如果目标已存在，先删除
-  if (fs.existsSync(targetDir)) {
-    fs.rmSync(targetDir, { recursive: true, force: true });
-  }
+  safeRemove(targetDir);
   
   // 递归复制目录
   copyDirectory(sourcePath, targetDir);
@@ -110,9 +108,7 @@ async function registerLocalSkill(
  */
 function copyDirectory(source: string, target: string): void {
   // 创建目标目录
-  if (!fs.existsSync(target)) {
-    fs.mkdirSync(target, { recursive: true });
-  }
+  ensureDirectoryExists(target);
   
   // 读取源目录
   const entries = fs.readdirSync(source, { withFileTypes: true });
@@ -150,9 +146,7 @@ export async function installSkill(
     
     // 2. 确保 skills 目录存在
     const SKILLS_DIR = getSkillsDir();
-    if (!fs.existsSync(SKILLS_DIR)) {
-      fs.mkdirSync(SKILLS_DIR, { recursive: true });
-    }
+    ensureDirectoryExists(SKILLS_DIR);
     
     // 3. 安装 Skill（根据 repository 类型选择安装方式）
     const skillDir = path.join(SKILLS_DIR, name);
@@ -225,7 +219,8 @@ async function downloadSkillFromGitHub(repository: string, targetDir: string): P
   
   console.info(`[Skill Manager] 获取文件列表: ${apiUrl}`);
   
-  const response = await fetch(apiUrl, {
+  const { httpGet } = await import('../../../shared/utils/http-utils');
+  const response = await httpGet(apiUrl, {
     headers: {
       'Accept': 'application/vnd.github.v3+json',
       'User-Agent': 'DeepBot-Skill-Manager',
@@ -236,14 +231,12 @@ async function downloadSkillFromGitHub(repository: string, targetDir: string): P
     throw new Error(`获取文件列表失败: ${response.status} ${response.statusText}`);
   }
   
-  const contents = await response.json() as any[];
+  const contents = response.data as any[];
   
   console.info(`[Skill Manager] 找到 ${contents.length} 个文件/目录`);
   
   // 2. 创建目标目录
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
-  }
+  ensureDirectoryExists(targetDir);
   
   // 3. 递归下载所有文件
   await downloadDirectory(owner, repo, branch, skillPath, targetDir, contents);
@@ -273,14 +266,16 @@ async function downloadDirectory(
       const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${remotePath}/${item.name}`;
       
       try {
-        const fileResponse = await fetch(rawUrl);
-        if (!fileResponse.ok) {
-          console.warn(`[Skill Manager] 下载文件失败: ${item.name} (${fileResponse.status})`);
+        const { httpGet } = await import('../../../shared/utils/http-utils');
+        const response = await httpGet(rawUrl);
+        
+        if (!response.ok) {
+          console.warn(`[Skill Manager] 下载文件失败: ${item.name} (${response.status})`);
           continue;
         }
         
-        const fileContent = await fileResponse.arrayBuffer();
-        fs.writeFileSync(itemLocalPath, Buffer.from(fileContent));
+        const fileContent = response.data as ArrayBuffer;
+        safeWriteFile(itemLocalPath, Buffer.from(fileContent));
       } catch (error) {
         console.warn(`[Skill Manager] 下载文件失败: ${item.name}`, error);
       }
@@ -289,27 +284,26 @@ async function downloadDirectory(
       console.info(`[Skill Manager] 进入目录: ${item.name}`);
       
       // 创建子目录
-      if (!fs.existsSync(itemLocalPath)) {
-        fs.mkdirSync(itemLocalPath, { recursive: true });
-      }
+      ensureDirectoryExists(itemLocalPath);
       
       // 获取子目录的文件列表
       const subApiUrl = `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${remotePath}/${item.name}?ref=${branch}`;
       
       try {
-        const subResponse = await fetch(subApiUrl, {
+        const { httpGet } = await import('../../../shared/utils/http-utils');
+        const response = await httpGet(subApiUrl, {
           headers: {
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'DeepBot-Skill-Manager',
           },
         });
         
-        if (!subResponse.ok) {
-          console.warn(`[Skill Manager] 获取子目录失败: ${item.name} (${subResponse.status})`);
+        if (!response.ok) {
+          console.warn(`[Skill Manager] 获取子目录失败: ${item.name} (${response.status})`);
           continue;
         }
         
-        const subContents = await subResponse.json() as any[];
+        const subContents = response.data as any[];
         
         // 递归下载
         await downloadDirectory(owner, repo, branch, `${remotePath}/${item.name}`, itemLocalPath, subContents);

@@ -18,6 +18,11 @@ export const TIMEOUTS = {
   BROWSER_SNAPSHOT_TIMEOUT: 5 * 1000,          // 5 秒（快照生成）
   BROWSER_NETWORK_IDLE_TIMEOUT: 3 * 1000,      // 3 秒（网络空闲等待）
   BROWSER_WAIT_NAVIGATION_TIMEOUT: 10 * 1000,  // 10 秒（等待导航）
+  BROWSER_CLIENT_NAVIGATE_TIMEOUT: 15 * 1000,  // 15 秒（客户端导航）
+  BROWSER_CLIENT_SNAPSHOT_TIMEOUT: 15 * 1000,  // 15 秒（客户端快照）
+  BROWSER_CLIENT_CONTENT_TIMEOUT: 10 * 1000,   // 10 秒（客户端内容获取）
+  BROWSER_CLIENT_CONSOLE_TIMEOUT: 20 * 1000,   // 20 秒（客户端控制台）
+  BROWSER_CLIENT_TAB_TIMEOUT: 5 * 1000,        // 5 秒（客户端标签操作）
   
   // HTTP 请求相关
   HTTP_REQUEST_TIMEOUT: 5 * 1000,              // 5 秒

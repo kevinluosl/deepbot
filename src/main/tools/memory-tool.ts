@@ -435,8 +435,9 @@ export function createMemoryTool(): AgentTool {
             const { BrowserWindow } = require('electron');
             const mainWindow = BrowserWindow.getAllWindows()[0];
             if (mainWindow) {
+              const { sendToWindow } = await import('../../shared/utils/webcontents-utils');
               const updatedConfig = configStore.getNameConfig();
-              mainWindow.webContents.send('name-config:updated', updatedConfig);
+              sendToWindow(mainWindow, 'name-config:updated', updatedConfig);
               console.log('[Memory Tool] 📤 已发送名字配置更新事件到前端:', updatedConfig);
             }
           }

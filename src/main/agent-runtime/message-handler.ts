@@ -7,6 +7,7 @@
 import type { Agent } from '@mariozechner/pi-agent-core';
 import { isAbortError } from '../../shared/utils/error-handler';
 import { TIMEOUTS } from '../config/timeouts';
+import { generateStepId } from '../../shared/utils/id-generator';
 import type { ExecutionStep, ExecutionStepStatus } from '../../types/message';
 
 /**
@@ -169,9 +170,10 @@ export class MessageHandler {
           console.log(`   工具参数:`, JSON.stringify(event.args, null, 2).substring(0, 300));
           
           // 创建执行步骤
-          currentToolStepId = `step-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+          const stepId = generateStepId();
+          currentToolStepId = stepId;
           this.addExecutionStep({
-            id: currentToolStepId,
+            id: stepId,
             toolName: event.toolName,
             toolLabel: event.toolName, // 可以后续优化为更友好的名称
             params: event.args,
@@ -317,7 +319,10 @@ export class MessageHandler {
           // 等待一小段时间或 prompt 完成
           const raceResult = await Promise.race([
             promptPromise.then(() => 'done'),
-            new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), checkInterval)),
+            new Promise<'timeout'>((resolve) => {
+              const timer = setTimeout(() => resolve('timeout'), checkInterval);
+              return () => clearTimeout(timer);
+            }),
           ]);
           
           if (raceResult === 'done') {

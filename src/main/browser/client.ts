@@ -30,31 +30,24 @@ async function fetchBrowserJson<T>(
     timeoutMs?: number;
   }
 ): Promise<T> {
+  const { httpRequest } = await import('../../shared/utils/http-utils');
   const url = `${baseUrl}${path}`;
   const timeoutMs = options?.timeoutMs ?? DEFAULT_BROWSER_TIMEOUT_MS;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const response = await httpRequest<T>(url, {
+    method: (options?.method ?? 'GET') as any,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: options?.body,
+    timeout: timeoutMs,
+  });
 
-  try {
-    const response = await fetch(url, {
-      method: options?.method ?? 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string };
-      throw new Error(error.error || `HTTP ${response.status}`);
-    }
-
-    return (await response.json()) as T;
-  } finally {
-    clearTimeout(timeout);
+  if (!response.ok) {
+    throw new Error(response.error || `HTTP ${response.status}`);
   }
+
+  return response.data!;
 }
 
 /**
@@ -128,7 +121,7 @@ export async function browserOpenTab(
   return await fetchBrowserJson<BrowserTab>(baseUrl, '/tabs/open', {
     method: 'POST',
     body: { url },
-    timeoutMs: 15000,
+    timeoutMs: TIMEOUTS.BROWSER_CLIENT_NAVIGATE_TIMEOUT,
   });
 }
 
@@ -148,7 +141,7 @@ export async function browserSnapshot(
   return await fetchBrowserJson<SnapshotResult>(baseUrl, '/snapshot', {
     method: 'POST',
     body: { targetId, maxChars },
-    timeoutMs: 10000,
+    timeoutMs: TIMEOUTS.BROWSER_CLIENT_CONTENT_TIMEOUT,
   });
 }
 
@@ -170,7 +163,7 @@ export async function browserScreenshot(
   return await fetchBrowserJson(baseUrl, '/screenshot', {
     method: 'POST',
     body: { targetId, type, fullPage },
-    timeoutMs: 15000,
+    timeoutMs: TIMEOUTS.BROWSER_CLIENT_SNAPSHOT_TIMEOUT,
   });
 }
 
@@ -188,7 +181,7 @@ export async function browserPdf(
   return await fetchBrowserJson(baseUrl, '/pdf', {
     method: 'POST',
     body: { targetId },
-    timeoutMs: 20000,
+    timeoutMs: TIMEOUTS.BROWSER_CLIENT_CONSOLE_TIMEOUT,
   });
 }
 
@@ -258,7 +251,7 @@ export async function browserConsoleMessages(
   return await fetchBrowserJson(baseUrl, '/console', {
     method: 'POST',
     body: { targetId, limit },
-    timeoutMs: 5000,
+    timeoutMs: TIMEOUTS.BROWSER_CLIENT_TAB_TIMEOUT,
   });
 }
 
@@ -274,6 +267,6 @@ export async function browserCloseTab(
 ): Promise<{ ok: true }> {
   return await fetchBrowserJson(baseUrl, `/tabs/${targetId}`, {
     method: 'DELETE',
-    timeoutMs: 5000,
+    timeoutMs: TIMEOUTS.BROWSER_CLIENT_TAB_TIMEOUT,
   });
 }

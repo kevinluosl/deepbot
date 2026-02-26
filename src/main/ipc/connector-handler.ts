@@ -2,7 +2,6 @@
  * 连接器 IPC 处理器
  */
 
-import { ipcMain } from 'electron';
 import { IPC_CHANNELS } from '../../types/ipc';
 import type {
   GetAllConnectorsResponse,
@@ -24,6 +23,7 @@ import type {
   DeletePairingResponse,
 } from '../../types/ipc';
 import { getErrorMessage } from '../../shared/utils/error-handler';
+import { registerIpcHandler } from '../../shared/utils/ipc-utils';
 import { SystemConfigStore } from '../database/system-config-store';
 import type { Gateway } from '../gateway';
 
@@ -41,7 +41,7 @@ export function setGatewayForConnectorHandler(gatewayInstance: Gateway): void {
  */
 export function registerConnectorHandlers(): void {
   // 获取所有连接器
-  ipcMain.handle(
+  registerIpcHandler<void, GetAllConnectorsResponse>(
     IPC_CHANNELS.CONNECTOR_GET_ALL,
     async (): Promise<GetAllConnectorsResponse> => {
       try {
@@ -81,12 +81,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 获取连接器配置
-  ipcMain.handle(
+  registerIpcHandler<GetConnectorConfigRequest, GetConnectorConfigResponse>(
     IPC_CHANNELS.CONNECTOR_GET_CONFIG,
-    async (
-      _event,
-      request: GetConnectorConfigRequest
-    ): Promise<GetConnectorConfigResponse> => {
+    async (_event, request): Promise<GetConnectorConfigResponse> => {
       try {
         console.log('[IPC] 获取连接器配置:', request.connectorId);
         
@@ -117,12 +114,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 保存连接器配置
-  ipcMain.handle(
+  registerIpcHandler<SaveConnectorConfigRequest, SaveConnectorConfigResponse>(
     IPC_CHANNELS.CONNECTOR_SAVE_CONFIG,
-    async (
-      _event,
-      request: SaveConnectorConfigRequest
-    ): Promise<SaveConnectorConfigResponse> => {
+    async (_event, request): Promise<SaveConnectorConfigResponse> => {
       try {
         console.log('[IPC] 保存连接器配置:', request.connectorId);
         
@@ -172,12 +166,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 启动连接器
-  ipcMain.handle(
+  registerIpcHandler<StartConnectorRequest, StartConnectorResponse>(
     IPC_CHANNELS.CONNECTOR_START,
-    async (
-      _event,
-      request: StartConnectorRequest
-    ): Promise<StartConnectorResponse> => {
+    async (_event, request): Promise<StartConnectorResponse> => {
       try {
         console.log('[IPC] 启动连接器:', request.connectorId);
         
@@ -209,12 +200,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 停止连接器
-  ipcMain.handle(
+  registerIpcHandler<StopConnectorRequest, StopConnectorResponse>(
     IPC_CHANNELS.CONNECTOR_STOP,
-    async (
-      _event,
-      request: StopConnectorRequest
-    ): Promise<StopConnectorResponse> => {
+    async (_event, request): Promise<StopConnectorResponse> => {
       try {
         console.log('[IPC] 停止连接器:', request.connectorId);
         
@@ -245,12 +233,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 健康检查
-  ipcMain.handle(
+  registerIpcHandler<HealthCheckConnectorRequest, HealthCheckConnectorResponse>(
     IPC_CHANNELS.CONNECTOR_HEALTH_CHECK,
-    async (
-      _event,
-      request: HealthCheckConnectorRequest
-    ): Promise<HealthCheckConnectorResponse> => {
+    async (_event, request): Promise<HealthCheckConnectorResponse> => {
       try {
         console.log('[IPC] 连接器健康检查:', request.connectorId);
         
@@ -283,12 +268,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 获取 Pairing 记录
-  ipcMain.handle(
+  registerIpcHandler<GetPairingRecordsRequest, GetPairingRecordsResponse>(
     IPC_CHANNELS.CONNECTOR_GET_PAIRING_RECORDS,
-    async (
-      _event,
-      request: GetPairingRecordsRequest
-    ): Promise<GetPairingRecordsResponse> => {
+    async (_event, request): Promise<GetPairingRecordsResponse> => {
       try {
         console.log('[IPC] 获取 Pairing 记录:', request.connectorId);
         
@@ -310,12 +292,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 批准 Pairing
-  ipcMain.handle(
+  registerIpcHandler<ApprovePairingRequest, ApprovePairingResponse>(
     IPC_CHANNELS.CONNECTOR_APPROVE_PAIRING,
-    async (
-      _event,
-      request: ApprovePairingRequest
-    ): Promise<ApprovePairingResponse> => {
+    async (_event, request): Promise<ApprovePairingResponse> => {
       try {
         console.log('[IPC] 批准 Pairing:', request.pairingCode);
         
@@ -338,12 +317,9 @@ export function registerConnectorHandlers(): void {
   );
   
   // 删除 Pairing 记录
-  ipcMain.handle(
+  registerIpcHandler<DeletePairingRequest, DeletePairingResponse>(
     IPC_CHANNELS.CONNECTOR_DELETE_PAIRING,
-    async (
-      _event,
-      request: DeletePairingRequest
-    ): Promise<DeletePairingResponse> => {
+    async (_event, request): Promise<DeletePairingResponse> => {
       try {
         console.log('[IPC] 删除 Pairing 记录:', request.connectorId, request.userId);
         

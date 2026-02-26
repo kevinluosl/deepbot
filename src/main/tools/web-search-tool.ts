@@ -10,6 +10,7 @@ import https from 'node:https';
 import { TIMEOUTS } from '../config/timeouts';
 import { TOOL_NAMES } from './tool-names';
 import { getErrorMessage } from '../../shared/utils/error-handler';
+import { safeJsonParse } from '../../shared/utils/json-utils';
 import type { SystemConfigStore } from '../database/system-config-store';
 
 // 创建禁用 SSL 验证的 Agent
@@ -143,7 +144,7 @@ async function performQwenWebSearch(params: {
           ok: res.statusCode === 200,
           status: res.statusCode,
           text: async () => data,
-          json: async () => JSON.parse(data),
+          json: async () => safeJsonParse(data, {}),
         });
       });
     });
@@ -201,20 +202,16 @@ async function performQwenWebSearch(params: {
   if (choice.message?.tool_calls) {
     for (const toolCall of choice.message.tool_calls) {
       if (toolCall.function?.name === 'web_search' && toolCall.function?.arguments) {
-        try {
-          const args = JSON.parse(toolCall.function.arguments);
-          if (args.results && Array.isArray(args.results)) {
-            for (const item of args.results) {
-              if (item.title && item.url) {
-                sources.push({
-                  title: item.title,
-                  url: item.url,
-                });
-              }
+        const args = safeJsonParse<any>(toolCall.function.arguments, {});
+        if (args.results && Array.isArray(args.results)) {
+          for (const item of args.results) {
+            if (item.title && item.url) {
+              sources.push({
+                title: item.title,
+                url: item.url,
+              });
             }
           }
-        } catch (error) {
-          console.warn('[Web Search] 解析搜索来源失败:', error);
         }
       }
     }
@@ -308,7 +305,7 @@ async function performGeminiWebSearch(params: {
           ok: res.statusCode === 200,
           status: res.statusCode,
           text: async () => data,
-          json: async () => JSON.parse(data),
+          json: async () => safeJsonParse(data, {}),
         });
       });
     });

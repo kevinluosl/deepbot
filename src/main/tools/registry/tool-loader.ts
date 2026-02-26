@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import type { AgentTool } from '@mariozechner/pi-agent-core';
 import { getToolRegistry, ToolRegistry } from './tool-registry';
 import type { ToolConfig } from './tool-interface';
+import { safeJsonParse } from '../../../shared/utils/json-utils';
 
 // 导入内置工具
 import { getFileTools } from '../file-tool';
@@ -76,7 +77,7 @@ export class ToolLoader {
       if (existsSync(configPath)) {
         try {
           const content = readFileSync(configPath, 'utf-8');
-          const configs = JSON.parse(content) as Record<string, ToolConfig>;
+          const configs = safeJsonParse<Record<string, ToolConfig>>(content, {});
           
           for (const [id, config] of Object.entries(configs)) {
             this.registry.setToolConfig(id, config);

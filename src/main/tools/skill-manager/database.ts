@@ -3,9 +3,9 @@
  */
 
 import * as path from 'path';
-import * as fs from 'fs';
 import Database from 'better-sqlite3';
 import { SKILLS_DB_PATH } from './constants';
+import { ensureDirectoryExists } from '../../../shared/utils/fs-utils';
 
 /**
  * 初始化 Skill 数据库
@@ -13,9 +13,7 @@ import { SKILLS_DB_PATH } from './constants';
 export function initDatabase(): Database.Database {
   // 确保目录存在
   const dbDir = path.dirname(SKILLS_DB_PATH);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
+  ensureDirectoryExists(dbDir);
   
   // 打开数据库
   const db = new Database(SKILLS_DB_PATH);

@@ -12,6 +12,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { expandUserPath } from '../../shared/utils/path-utils';
 import {
   DEFAULT_BROWSER_CONTROL_PORT,
   DEFAULT_CDP_PORT,
@@ -91,7 +92,7 @@ export function findChromeExecutableMac(): BrowserExecutable | null {
     },
     {
       kind: 'chrome',
-      path: path.join(os.homedir(), 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+      path: expandUserPath('~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
     },
     {
       kind: 'brave',
@@ -99,7 +100,7 @@ export function findChromeExecutableMac(): BrowserExecutable | null {
     },
     {
       kind: 'brave',
-      path: path.join(os.homedir(), 'Applications/Brave Browser.app/Contents/MacOS/Brave Browser'),
+      path: expandUserPath('~/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'),
     },
     {
       kind: 'edge',
@@ -107,7 +108,7 @@ export function findChromeExecutableMac(): BrowserExecutable | null {
     },
     {
       kind: 'edge',
-      path: path.join(os.homedir(), 'Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'),
+      path: expandUserPath('~/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'),
     },
     {
       kind: 'chromium',
@@ -115,7 +116,7 @@ export function findChromeExecutableMac(): BrowserExecutable | null {
     },
     {
       kind: 'chromium',
-      path: path.join(os.homedir(), 'Applications/Chromium.app/Contents/MacOS/Chromium'),
+      path: expandUserPath('~/Applications/Chromium.app/Contents/MacOS/Chromium'),
     },
     {
       kind: 'canary',
@@ -123,7 +124,7 @@ export function findChromeExecutableMac(): BrowserExecutable | null {
     },
     {
       kind: 'canary',
-      path: path.join(os.homedir(), 'Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'),
+      path: expandUserPath('~/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'),
     },
   ];
 

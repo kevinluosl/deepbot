@@ -7,18 +7,8 @@
  */
 
 import * as path from 'path';
-import * as os from 'os';
 import { SystemConfigStore } from '../database/system-config-store';
-
-/**
- * 展开路径中的 ~ 为实际的用户目录
- */
-function expandPath(p: string): string {
-  if (p.startsWith('~')) {
-    return path.join(os.homedir(), p.slice(1));
-  }
-  return p;
-}
+import { expandUserPath } from '../../shared/utils/path-utils';
 
 /**
  * 获取默认 Skill 路径（展开 ~ 为实际路径）
@@ -28,10 +18,10 @@ export function getDefaultSkillPath(): string {
     const store = SystemConfigStore.getInstance();
     const settings = store.getWorkspaceSettings();
     
-    return expandPath(settings.defaultSkillDir);
+    return expandUserPath(settings.defaultSkillDir);
   } catch (error) {
     console.error('[Skill Paths] 读取配置失败，使用默认路径:', error);
-    return path.join(os.homedir(), '.deepbot', 'skills');
+    return expandUserPath('~/.deepbot/skills');
   }
 }
 
@@ -43,10 +33,10 @@ export function getAllSkillPaths(): string[] {
     const store = SystemConfigStore.getInstance();
     const settings = store.getWorkspaceSettings();
     
-    return settings.skillDirs.map(expandPath);
+    return settings.skillDirs.map(expandUserPath);
   } catch (error) {
     console.error('[Skill Paths] 读取配置失败，使用默认路径:', error);
-    return [path.join(os.homedir(), '.deepbot', 'skills')];
+    return [expandUserPath('~/.deepbot/skills')];
   }
 }
 

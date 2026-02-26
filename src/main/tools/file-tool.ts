@@ -26,6 +26,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { assertPathAllowed } from '../utils/path-security';
 import { expandUserPath } from '../../shared/utils/path-utils';
+import { ensureDirectoryExists, isFile } from '../../shared/utils/fs-utils';
 
 /**
  * 规范化工具参数（支持 Claude 风格参数）
@@ -191,10 +192,7 @@ function wrapToolWithSecurity(
  */
 export async function getFileTools(workspaceDir: string): Promise<AgentTool[]> {
   // 确保工作区目录存在
-  if (!fs.existsSync(workspaceDir)) {
-    console.warn(`[File Tool] 工作区目录不存在: ${workspaceDir}`);
-    // 创建目录
-    fs.mkdirSync(workspaceDir, { recursive: true });
+  if (!ensureDirectoryExists(workspaceDir)) {
     console.info(`[File Tool] 已创建工作区目录: ${workspaceDir}`);
   }
   

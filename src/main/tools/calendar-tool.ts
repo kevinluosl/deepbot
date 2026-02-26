@@ -27,6 +27,7 @@ import { TOOL_NAMES } from './tool-names';
 import { Type } from '@sinclair/typebox';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { generateId } from '../../shared/utils/id-generator';
 
 const execAsync = promisify(exec);
 
@@ -251,7 +252,7 @@ function createGetEventsTool(): AgentTool {
               const notes = parts[4] && parts[4] !== 'missing value' ? parts[4] : undefined;
               
               events.push({
-                id: `event-${Date.now()}-${Math.random()}`,
+                id: generateId('event'),
                 title: parts[0] || '(无标题)',
                 startDate: parts[1] || '',
                 endDate: parts[2] || '',

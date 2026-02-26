@@ -26,6 +26,9 @@ import { IPC_CHANNELS } from '../types/ipc';
 import { registerModelConfigHandlers, setGatewayForModelConfig } from './ipc/model-config-handler';
 import { hasConfig } from './config';
 import { getErrorMessage } from '../shared/utils/error-handler';
+import { ensureDirectoryExists } from '../shared/utils/fs-utils';
+import { generateExecutionId } from '../shared/utils/id-generator';
+import { safeJsonParse } from '../shared/utils/json-utils';
 import { ensureWorkspaceDirectories } from './utils/ensure-directories';
 import { SystemConfigStore } from './database/system-config-store';
 
@@ -288,7 +291,7 @@ function registerIpcHandlers() {
     
     try {
       const result = await tool.execute(
-        `scheduled-task-${Date.now()}`,
+        generateExecutionId('scheduled-task'),
         request,
         new AbortController().signal,
         () => {}
@@ -298,16 +301,15 @@ function registerIpcHandlers() {
       const firstContent = result.content[0];
       if (firstContent && firstContent.type === 'text') {
         // 尝试解析 JSON
-        try {
-          const parsed = JSON.parse(firstContent.text);
+        const parsed = safeJsonParse(firstContent.text, null);
+        if (parsed !== null) {
           return parsed;
-        } catch {
-          // 如果不是 JSON，返回错误
-          return {
-            success: false,
-            message: firstContent.text,
-          };
         }
+        // 如果不是 JSON，返回错误
+        return {
+          success: false,
+          message: firstContent.text,
+        };
       }
       
       // 返回详细信息
@@ -330,7 +332,7 @@ function registerIpcHandlers() {
       const tool = createEnvironmentCheckTool();
       
       const result = await tool.execute(
-        `environment-check-${Date.now()}`,
+        generateExecutionId('environment-check'),
         { action },
         new AbortController().signal,
         () => {}
@@ -549,9 +551,7 @@ function registerIpcHandlers() {
       
       // 创建临时目录（在工作目录下）
       const tempDir = path.join(settings.workspaceDir, '.deepbot', 'temp', 'uploads');
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      ensureDirectoryExists(tempDir);
       
       // 生成唯一文件名
       const id = crypto.randomBytes(8).toString('hex');
@@ -632,7 +632,7 @@ function registerIpcHandlers() {
       return { success: true, config };
     } catch (error) {
       console.error('[IPC] 获取 Web Search 工具配置失败:', error);
-      return { success: false, error: error instanceof Error ? error.message : '未知错误' };
+      return { success: false, error: getErrorMessage(error) };
     }
   });
 
@@ -646,7 +646,7 @@ function registerIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error('[IPC] 保存 Web Search 工具配置失败:', error);
-      return { success: false, error: error instanceof Error ? error.message : '未知错误' };
+      return { success: false, error: getErrorMessage(error) };
     }
   });
   

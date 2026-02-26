@@ -8,6 +8,9 @@ import Database from 'better-sqlite3';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { mkdirSync, existsSync } from 'node:fs';
+import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
+import { generateTaskId } from '../../shared/utils/id-generator';
+import { safeJsonParse } from '../../shared/utils/json-utils';
 import type {
   ScheduledTask,
   TaskExecution,
@@ -27,9 +30,7 @@ export class TaskStore {
 
     // 确保目录存在
     const dir = join(homedir(), '.deepbot');
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
+    ensureDirectoryExists(dir);
 
     // 打开数据库
     this.db = new Database(path);
@@ -98,7 +99,7 @@ export class TaskStore {
    * 创建任务
    */
   create(input: TaskCreateInput): ScheduledTask {
-    const id = `task-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const id = generateTaskId();
     const now = Date.now();
 
     const task: ScheduledTask = {
@@ -311,7 +312,7 @@ export class TaskStore {
       id: row.id,
       name: row.name,
       description: row.description,
-      schedule: JSON.parse(row.schedule_data),
+      schedule: safeJsonParse<any>(row.schedule_data, { type: 'once', datetime: new Date().toISOString() }),
       enabled: row.enabled === 1,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),

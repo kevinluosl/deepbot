@@ -8,6 +8,9 @@ import Database from 'better-sqlite3';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { existsSync, mkdirSync } from 'node:fs';
+import { getKeyValueBatch, setKeyValue } from '../../shared/utils/db-utils';
+import { safeJsonParse, safeJsonStringify } from '../../shared/utils/json-utils';
+import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
 
 /**
  * 环境配置状态
@@ -79,9 +82,7 @@ export class SystemConfigStore {
 
     // 确保目录存在
     const dir = join(homedir(), '.deepbot');
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
+    ensureDirectoryExists(dir);
 
     // 打开数据库
     this.db = new Database(path);
@@ -319,30 +320,27 @@ export class SystemConfigStore {
     const defaultSettings = this.getDefaultWorkspaceSettings();
 
     try {
-      const workspaceDirRow = this.db.prepare('SELECT value FROM workspace_settings WHERE key = ?').get('workspaceDir') as any;
-      const scriptDirRow = this.db.prepare('SELECT value FROM workspace_settings WHERE key = ?').get('scriptDir') as any;
-      const skillDirsRow = this.db.prepare('SELECT value FROM workspace_settings WHERE key = ?').get('skillDirs') as any;
-      const defaultSkillDirRow = this.db.prepare('SELECT value FROM workspace_settings WHERE key = ?').get('defaultSkillDir') as any;
-      const imageDirRow = this.db.prepare('SELECT value FROM workspace_settings WHERE key = ?').get('imageDir') as any;
-      const memoryDirRow = this.db.prepare('SELECT value FROM workspace_settings WHERE key = ?').get('memoryDir') as any;
+      const values = getKeyValueBatch(this.db, 'workspace_settings', [
+        'workspaceDir',
+        'scriptDir',
+        'skillDirs',
+        'defaultSkillDir',
+        'imageDir',
+        'memoryDir'
+      ]);
 
       // 解析 skillDirs（JSON 数组）
-      let skillDirs = defaultSettings.skillDirs;
-      if (skillDirsRow?.value) {
-        try {
-          skillDirs = JSON.parse(skillDirsRow.value);
-        } catch (error) {
-          console.error('解析 skillDirs 失败:', error);
-        }
-      }
+      const skillDirs = values.skillDirs
+        ? safeJsonParse<string[]>(values.skillDirs, defaultSettings.skillDirs)
+        : defaultSettings.skillDirs;
 
       return {
-        workspaceDir: workspaceDirRow?.value || defaultSettings.workspaceDir,
-        scriptDir: scriptDirRow?.value || defaultSettings.scriptDir,
+        workspaceDir: values.workspaceDir || defaultSettings.workspaceDir,
+        scriptDir: values.scriptDir || defaultSettings.scriptDir,
         skillDirs,
-        defaultSkillDir: defaultSkillDirRow?.value || defaultSettings.defaultSkillDir,
-        imageDir: imageDirRow?.value || defaultSettings.imageDir,
-        memoryDir: memoryDirRow?.value || defaultSettings.memoryDir,
+        defaultSkillDir: values.defaultSkillDir || defaultSettings.defaultSkillDir,
+        imageDir: values.imageDir || defaultSettings.imageDir,
+        memoryDir: values.memoryDir || defaultSettings.memoryDir,
       };
     } catch (error) {
       console.error('获取工作目录配置失败:', error);
@@ -354,11 +352,7 @@ export class SystemConfigStore {
    * 保存 Python 脚本目录配置
    */
   saveScriptDir(scriptDir: string): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO workspace_settings (key, value)
-      VALUES (?, ?)
-    `);
-    stmt.run('scriptDir', scriptDir);
+    setKeyValue(this.db, 'workspace_settings', 'scriptDir', scriptDir);
     console.info('[SystemConfigStore] ✅ Python 脚本目录已保存:', scriptDir);
   }
 
@@ -366,11 +360,7 @@ export class SystemConfigStore {
    * 保存 Skill 目录列表
    */
   saveSkillDirs(skillDirs: string[]): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO workspace_settings (key, value)
-      VALUES (?, ?)
-    `);
-    stmt.run('skillDirs', JSON.stringify(skillDirs));
+    setKeyValue(this.db, 'workspace_settings', 'skillDirs', safeJsonStringify(skillDirs));
     console.info('[SystemConfigStore] ✅ Skill 目录列表已保存:', skillDirs);
   }
 
@@ -378,11 +368,7 @@ export class SystemConfigStore {
    * 保存默认 Skill 目录
    */
   saveDefaultSkillDir(defaultSkillDir: string): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO workspace_settings (key, value)
-      VALUES (?, ?)
-    `);
-    stmt.run('defaultSkillDir', defaultSkillDir);
+    setKeyValue(this.db, 'workspace_settings', 'defaultSkillDir', defaultSkillDir);
     console.info('[SystemConfigStore] ✅ 默认 Skill 目录已保存:', defaultSkillDir);
   }
 
@@ -450,11 +436,7 @@ export class SystemConfigStore {
    * 保存图片生成目录配置
    */
   saveImageDir(imageDir: string): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO workspace_settings (key, value)
-      VALUES (?, ?)
-    `);
-    stmt.run('imageDir', imageDir);
+    setKeyValue(this.db, 'workspace_settings', 'imageDir', imageDir);
     console.info('[SystemConfigStore] ✅ 图片生成目录已保存:', imageDir);
   }
 
@@ -462,11 +444,7 @@ export class SystemConfigStore {
    * 保存记忆管理目录配置
    */
   saveMemoryDir(memoryDir: string): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO workspace_settings (key, value)
-      VALUES (?, ?)
-    `);
-    stmt.run('memoryDir', memoryDir);
+    setKeyValue(this.db, 'workspace_settings', 'memoryDir', memoryDir);
     console.info('[SystemConfigStore] ✅ 记忆管理目录已保存:', memoryDir);
   }
 
@@ -486,11 +464,7 @@ export class SystemConfigStore {
    * 保存默认工作目录
    */
   private saveWorkspaceDir(workspaceDir: string): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO workspace_settings (key, value)
-      VALUES (?, ?)
-    `);
-    stmt.run('workspaceDir', workspaceDir);
+    setKeyValue(this.db, 'workspace_settings', 'workspaceDir', workspaceDir);
     console.info('[SystemConfigStore] ✅ 默认工作目录已保存:', workspaceDir);
   }
 
@@ -829,7 +803,7 @@ export class SystemConfigStore {
       connectorId,
       connectorName,
       enabled ? 1 : 0,
-      JSON.stringify(config),
+      safeJsonStringify(config),
       connectorId,
       now,
       now
@@ -851,7 +825,7 @@ export class SystemConfigStore {
       if (!row) return null;
 
       return {
-        config: JSON.parse(row.config_json),
+        config: safeJsonParse(row.config_json, {}),
         enabled: row.enabled === 1,
       };
     } catch (error) {
@@ -873,7 +847,7 @@ export class SystemConfigStore {
       return rows.map((row) => ({
         connectorId: row.connector_id,
         connectorName: row.connector_name,
-        config: JSON.parse(row.config_json),
+        config: safeJsonParse(row.config_json, {}),
         enabled: row.enabled === 1,
       }));
     } catch (error) {

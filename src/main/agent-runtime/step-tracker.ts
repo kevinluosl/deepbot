@@ -7,6 +7,8 @@
  * - 检测步骤完成状态
  */
 
+import { generatePlanId, generateStepId } from '../../shared/utils/id-generator';
+
 export interface TaskStep {
   id: string;
   description: string;
@@ -45,10 +47,10 @@ export class StepTracker {
    */
   createPlan(description: string, steps: string[]): TaskPlan {
     this.currentPlan = {
-      id: `plan-${Date.now()}`,
+      id: generatePlanId(),
       description,
-      steps: steps.map((desc, index) => ({
-        id: `step-${index + 1}`,
+      steps: steps.map((desc) => ({
+        id: generateStepId(),
         description: desc,
         status: 'pending',
         retryCount: 0,

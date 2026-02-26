@@ -18,6 +18,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { homedir } from 'node:os';
 import { getErrorMessage } from '../../shared/utils/error-handler';
+import { safeJsonParse } from '../../shared/utils/json-utils';
 import { expandUserPath } from '../../shared/utils/path-utils';
 import { TIMEOUTS } from '../config/timeouts';
 import { TOOL_NAMES } from './tool-names';
@@ -88,7 +89,7 @@ function loadEmailConfig(workspaceDir: string): EmailConfig {
     if (existsSync(configPath)) {
       try {
         const content = readFileSync(configPath, 'utf-8');
-        const config = JSON.parse(content) as EmailConfig;
+        const config = safeJsonParse<EmailConfig>(content, {} as EmailConfig);
         
         // 验证必填字段
         if (!config.user || !config.user.trim()) {
