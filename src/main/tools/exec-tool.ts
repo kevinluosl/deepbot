@@ -202,9 +202,57 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
   });
   
   // 创建基础工具（使用 pi-coding-agent）
+  // 🔥 使用 operations 自定义命令执行，确保 PATH 被正确应用
   const bashTool = createBashTool(workspaceDir, {
-    // 设置默认超时（5 分钟）
-    // commandPrefix: 可以设置命令前缀，如 "shopt -s expand_aliases"
+    operations: {
+      exec: async (command: string, cwd: string, options: any) => {
+        // 🔥 强制应用合并后的 PATH
+        const env = { ...process.env, PATH: shellPath };
+        
+        console.log(`[Exec Tool] 🔧 operations.exec 被调用`);
+        console.log(`[Exec Tool] 📝 命令: ${command}`);
+        console.log(`[Exec Tool] 📝 工作目录: ${cwd}`);
+        console.log(`[Exec Tool] 📝 PATH 前 3 个: ${env.PATH?.split(':').slice(0, 3).join(':')}`);
+        
+        // 使用 Node.js spawn 执行命令
+        const { spawn } = require('node:child_process');
+        
+        return new Promise((resolve) => {
+          const child = spawn(command, [], {
+            cwd,
+            env,
+            shell: true,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            timeout: options.timeout,
+          });
+          
+          // 监听输出
+          child.stdout?.on('data', (data: Buffer) => {
+            options.onData(data);
+          });
+          
+          child.stderr?.on('data', (data: Buffer) => {
+            options.onData(data);
+          });
+          
+          // 监听取消信号
+          if (options.signal) {
+            options.signal.addEventListener('abort', () => {
+              child.kill();
+            });
+          }
+          
+          // 监听退出
+          child.on('close', (code: number | null) => {
+            resolve({ exitCode: code });
+          });
+          
+          child.on('error', () => {
+            resolve({ exitCode: null });
+          });
+        });
+      },
+    },
   }) as unknown as AgentTool;
   
   // 包装安全检查和 PATH 处理

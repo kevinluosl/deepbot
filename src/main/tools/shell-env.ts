@@ -133,22 +133,28 @@ function getNvmPath(): string[] {
     const fs = require('fs');
     const homeDir = process.env.HOME;
     if (!homeDir) {
+      console.warn('[Shell Env] ⚠️ HOME 环境变量不存在');
       return paths;
     }
     
+    console.info('[Shell Env] 🔍 开始检测 nvm PATH...');
+    
     // 1. 优先使用 NVM_BIN 环境变量（如果 nvm.sh 已加载）
     const nvmBin = process.env.NVM_BIN;
+    console.info(`[Shell Env] 📝 NVM_BIN 环境变量: ${nvmBin || '(不存在)'}`);
     if (nvmBin && fs.existsSync(nvmBin)) {
       paths.push(nvmBin);
-      console.info(`[Shell Env] 📝 使用 NVM_BIN 环境变量: ${nvmBin}`);
+      console.info(`[Shell Env] ✅ 使用 NVM_BIN 环境变量: ${nvmBin}`);
       return paths;
     }
     
     // 2. 检查 NVM_DIR 环境变量
     let nvmDir = process.env.NVM_DIR;
+    console.info(`[Shell Env] 📝 NVM_DIR 环境变量: ${nvmDir || '(不存在)'}`);
     
     // 3. 如果没有，尝试从配置文件中读取
     if (!nvmDir) {
+      console.info('[Shell Env] 📝 尝试从配置文件读取 NVM_DIR...');
       const configFiles = [
         `${homeDir}/.zshrc`,
         `${homeDir}/.zprofile`,
@@ -162,6 +168,7 @@ function getNvmPath(): string[] {
           const match = content.match(/export\s+NVM_DIR=["']?([^"'\n]+)["']?/);
           if (match) {
             nvmDir = match[1].replace(/\$HOME/g, homeDir).replace(/~/g, homeDir);
+            console.info(`[Shell Env] ✅ 从 ${configFile} 读取到 NVM_DIR: ${nvmDir}`);
             break;
           }
         }
@@ -171,45 +178,61 @@ function getNvmPath(): string[] {
     // 4. 默认 nvm 目录
     if (!nvmDir) {
       nvmDir = `${homeDir}/.nvm`;
+      console.info(`[Shell Env] 📝 使用默认 NVM_DIR: ${nvmDir}`);
     }
     
     // 5. 检查 nvm 目录是否存在
     if (!fs.existsSync(nvmDir)) {
+      console.warn(`[Shell Env] ⚠️ nvm 目录不存在: ${nvmDir}`);
       return paths;
     }
     
+    console.info(`[Shell Env] ✅ nvm 目录存在: ${nvmDir}`);
+    
     // 6. 读取默认 Node.js 版本
     const defaultAliasPath = `${nvmDir}/alias/default`;
+    console.info(`[Shell Env] 📝 检查 alias/default 文件: ${defaultAliasPath}`);
+    
     if (fs.existsSync(defaultAliasPath)) {
       let version = fs.readFileSync(defaultAliasPath, 'utf-8').trim();
+      console.info(`[Shell Env] 📝 读取到版本号: "${version}"`);
       
       // 如果版本号不是完整格式（如 "24" 而不是 "v24.11.1"），需要解析实际版本
       if (!version.startsWith('v')) {
+        console.info(`[Shell Env] 📝 版本号不完整，尝试解析...`);
         // 尝试从 versions/node/ 目录找到匹配的版本
         const versionsDir = `${nvmDir}/versions/node`;
         if (fs.existsSync(versionsDir)) {
           const allVersions = fs.readdirSync(versionsDir);
+          console.info(`[Shell Env] 📝 找到 ${allVersions.length} 个已安装版本: ${allVersions.join(', ')}`);
           // 找到以 "v{version}." 开头的版本（如 v24.11.1）
           const matchedVersion = allVersions.find((v: string) => v.startsWith(`v${version}.`));
           if (matchedVersion) {
             version = matchedVersion;
-            console.info(`[Shell Env] 📝 nvm alias 解析: ${fs.readFileSync(defaultAliasPath, 'utf-8').trim()} -> ${version}`);
+            console.info(`[Shell Env] ✅ nvm alias 解析: ${fs.readFileSync(defaultAliasPath, 'utf-8').trim()} -> ${version}`);
+          } else {
+            console.warn(`[Shell Env] ⚠️ 未找到匹配的版本，查找模式: v${version}.*`);
           }
+        } else {
+          console.warn(`[Shell Env] ⚠️ versions/node 目录不存在: ${versionsDir}`);
         }
       }
       
       const nvmNodeBin = `${nvmDir}/versions/node/${version}/bin`;
+      console.info(`[Shell Env] 📝 构建 nvm bin 路径: ${nvmNodeBin}`);
       
       if (fs.existsSync(nvmNodeBin)) {
         paths.push(nvmNodeBin);
-        console.info(`[Shell Env] 📝 从 nvm alias/default 读取版本: ${version}`);
-        console.info(`[Shell Env] 📝 nvm PATH: ${nvmNodeBin}`);
+        console.info(`[Shell Env] ✅ 从 nvm alias/default 读取版本: ${version}`);
+        console.info(`[Shell Env] ✅ nvm PATH: ${nvmNodeBin}`);
       } else {
         console.warn(`[Shell Env] ⚠️ nvm bin 目录不存在: ${nvmNodeBin}`);
       }
+    } else {
+      console.warn(`[Shell Env] ⚠️ alias/default 文件不存在: ${defaultAliasPath}`);
     }
   } catch (error) {
-    console.warn('[Shell Env] ⚠️ 检测 nvm PATH 失败:', getErrorMessage(error));
+    console.error('[Shell Env] ❌ 检测 nvm PATH 失败:', getErrorMessage(error));
   }
   
   return paths;
