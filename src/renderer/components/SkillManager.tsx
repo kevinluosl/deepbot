@@ -267,6 +267,9 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
               搜索
             </button>
           </div>
+          <p className="text-xs text-text-tertiary mt-2">
+            💡 提示：搜索功能需要能正常访问 GitHub
+          </p>
         </div>
 
         {/* 标签页 */}

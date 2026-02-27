@@ -6,8 +6,8 @@
 /* 终端主题色 - 护眼的深色科幻风格 */
 :root {
   --terminal-bg: #0a0e1a;
-  --terminal-text: #a8b5c8;
-  --terminal-text-dim: #6b7a8f;
+  --terminal-text: #d4dce8;
+  --terminal-text-dim: #8b9aaf;
   --terminal-prompt-user: #7aa2f7;
   --terminal-prompt-agent: #bb9af7;
   --terminal-border: #2d3748;

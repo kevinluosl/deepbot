@@ -18,7 +18,7 @@ interface ImageGenerationConfig {
 }
 
 export function ToolConfig({ onClose }: ToolConfigProps) {
-  const [activeTab, setActiveTab] = useState<'image' | 'websearch'>('image');
+  const [activeTab, setActiveTab] = useState<'image' | 'websearch' | 'email'>('image');
   const [imageGenConfig, setImageGenConfig] = useState<ImageGenerationConfig>({
     model: 'gemini-3-pro-image-preview',
     apiUrl: 'https://www.im-director.com/api/gemini-proxy',
@@ -122,6 +122,16 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
           >
             网络搜索
           </button>
+          <button
+            onClick={() => setActiveTab('email')}
+            className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'email'
+                ? 'border-blue-500 text-blue-600 bg-blue-50'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            邮件发送
+          </button>
         </nav>
       </div>
 
@@ -211,6 +221,121 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
       {/* Web Search 工具配置 */}
       {activeTab === 'websearch' && (
         <WebSearchToolConfig onClose={onClose} />
+      )}
+
+      {/* 邮件工具配置 */}
+      {activeTab === 'email' && (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-base font-medium text-gray-900 mb-2">邮件发送工具配置</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              邮件工具需要通过配置文件进行设置。你可以直接告诉 Agent 配置信息，它会帮你创建配置文件。
+            </p>
+          </div>
+
+          {/* 配置说明 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h5 className="text-sm font-semibold text-blue-900 mb-2">📝 配置方法</h5>
+            <p className="text-sm text-blue-800 mb-3">
+              直接在聊天中告诉 Agent 你的邮箱配置信息，例如：
+            </p>
+            <div className="bg-white border border-blue-200 rounded p-3 text-sm font-mono text-gray-800">
+              帮我配置邮件工具：<br/>
+              - 邮箱：your-email@qq.com<br/>
+              - 授权码：your-authorization-code<br/>
+              - SMTP服务器：smtp.qq.com<br/>
+              - 端口：465<br/>
+              - 使用SSL：是<br/>
+              - 发件人名称：你的名字
+            </div>
+          </div>
+
+          {/* 配置文件位置 */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h5 className="text-sm font-semibold text-gray-900 mb-2">📂 配置文件位置</h5>
+            <p className="text-sm text-gray-700 mb-2">
+              配置文件将保存在：
+            </p>
+            <code className="block bg-gray-800 text-gray-100 px-3 py-2 rounded text-xs font-mono">
+              ~/.deepbot/tools/email-tool/config.json
+            </code>
+          </div>
+
+          {/* 配置文件格式 */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h5 className="text-sm font-semibold text-gray-900 mb-2">📋 配置文件格式</h5>
+            <pre className="bg-gray-800 text-gray-100 px-3 py-2 rounded text-xs font-mono overflow-x-auto">
+{`{
+  "user": "your-email@example.com",
+  "password": "your-password-or-auth-code",
+  "smtpServer": "smtp.example.com",
+  "smtpPort": 465,
+  "useSsl": true,
+  "fromName": "Your Name"
+}`}
+            </pre>
+          </div>
+
+          {/* 常见邮箱配置 */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h5 className="text-sm font-semibold text-gray-900 mb-3">📮 常见邮箱配置</h5>
+            <div className="space-y-3">
+              {/* QQ 邮箱 */}
+              <details className="bg-white border border-gray-200 rounded p-3">
+                <summary className="text-sm font-medium text-gray-900 cursor-pointer">QQ 邮箱</summary>
+                <div className="mt-2 text-xs text-gray-700 space-y-1">
+                  <p>• SMTP服务器：smtp.qq.com</p>
+                  <p>• 端口：465</p>
+                  <p>• 使用SSL：是</p>
+                  <p className="text-orange-600">⚠️ 密码必须使用授权码，不是QQ密码</p>
+                  <p className="text-blue-600">💡 获取授权码：QQ邮箱设置 → 账户 → POP3/IMAP/SMTP服务 → 生成授权码</p>
+                </div>
+              </details>
+
+              {/* Gmail */}
+              <details className="bg-white border border-gray-200 rounded p-3">
+                <summary className="text-sm font-medium text-gray-900 cursor-pointer">Gmail</summary>
+                <div className="mt-2 text-xs text-gray-700 space-y-1">
+                  <p>• SMTP服务器：smtp.gmail.com</p>
+                  <p>• 端口：465</p>
+                  <p>• 使用SSL：是</p>
+                  <p className="text-orange-600">⚠️ 需要开启两步验证并使用应用专用密码</p>
+                </div>
+              </details>
+
+              {/* 163 邮箱 */}
+              <details className="bg-white border border-gray-200 rounded p-3">
+                <summary className="text-sm font-medium text-gray-900 cursor-pointer">163 邮箱</summary>
+                <div className="mt-2 text-xs text-gray-700 space-y-1">
+                  <p>• SMTP服务器：smtp.163.com</p>
+                  <p>• 端口：465</p>
+                  <p>• 使用SSL：是</p>
+                  <p className="text-orange-600">⚠️ 密码必须使用授权码</p>
+                </div>
+              </details>
+
+              {/* Outlook */}
+              <details className="bg-white border border-gray-200 rounded p-3">
+                <summary className="text-sm font-medium text-gray-900 cursor-pointer">Outlook / Hotmail</summary>
+                <div className="mt-2 text-xs text-gray-700 space-y-1">
+                  <p>• SMTP服务器：smtp-mail.outlook.com</p>
+                  <p>• 端口：587</p>
+                  <p>• 使用SSL：否（使用STARTTLS）</p>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          {/* 安全提示 */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h5 className="text-sm font-semibold text-yellow-900 mb-2">🔒 安全提示</h5>
+            <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+              <li>使用授权码而非邮箱登录密码</li>
+              <li>配置文件会保存在本地，请妥善保管</li>
+              <li>定期更换授权码以提高安全性</li>
+            </ul>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -7,8 +7,8 @@
 :root {
   --settings-bg: #1a1f2e;
   --settings-bg-light: #242936;
-  --settings-text: #a8b5c8;
-  --settings-text-dim: #6b7a8f;
+  --settings-text: #d4dce8;
+  --settings-text-dim: #8b9aaf;
   --settings-border: #2d3748;
   --settings-accent: #7aa2f7;
   --settings-success: #9ece6a;
@@ -182,10 +182,18 @@
 .settings-panel .text-gray-900,
 .settings-panel .text-gray-800,
 .settings-panel .text-gray-700,
+.settings-panel .text-gray-600,
 .fixed .text-gray-900,
 .fixed .text-gray-800,
-.fixed .text-gray-700 {
+.fixed .text-gray-700,
+.fixed .text-gray-600 {
   color: var(--settings-text) !important;
+}
+
+/* 特别处理按钮中的文字颜色 */
+.settings-panel button[class*="text-"],
+.fixed button[class*="text-"] {
+  /* 按钮文字颜色由按钮样式控制，不被 Tailwind 覆盖 */
 }
 
 /* 状态颜色统一 */
@@ -369,14 +377,14 @@
   background: transparent !important;
   border: 1px solid var(--settings-accent) !important;
   color: var(--settings-accent) !important;
-  font-family: 'Courier New', Consolas, Monaco, monospace;
-  font-size: 13px;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-family: 'Courier New', Consolas, Monaco, monospace !important;
+  font-size: 13px !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
 }
 
 .settings-button:hover:not(:disabled),
@@ -400,6 +408,7 @@
 .fixed button[class*="text-red"] {
   border-color: var(--settings-error) !important;
   color: var(--settings-error) !important;
+  background: transparent !important;
 }
 
 .settings-button.danger:hover,
@@ -415,6 +424,7 @@
 .fixed button[class*="text-green"] {
   border-color: var(--settings-success) !important;
   color: var(--settings-success) !important;
+  background: transparent !important;
 }
 
 .settings-button.success:hover,
@@ -431,6 +441,7 @@
 .fixed button[class*="text-yellow"] {
   border-color: var(--settings-warning) !important;
   color: var(--settings-warning) !important;
+  background: transparent !important;
 }
 
 .settings-panel button[class*="text-orange"]:hover,
@@ -441,16 +452,34 @@
   color: var(--settings-bg) !important;
 }
 
-/* 品牌色按钮 */
+/* 品牌色按钮（蓝色按钮） */
 .bg-brand-500,
-.fixed .bg-brand-500 {
+.fixed .bg-brand-500,
+.settings-panel button[class*="bg-blue"],
+.fixed button[class*="bg-blue"] {
   background: transparent !important;
   border: 1px solid var(--settings-accent) !important;
   color: var(--settings-accent) !important;
 }
 
 .bg-brand-500:hover,
-.fixed .bg-brand-500:hover {
+.fixed .bg-brand-500:hover,
+.settings-panel button[class*="bg-blue"]:hover,
+.fixed button[class*="bg-blue"]:hover {
+  background: var(--settings-accent) !important;
+  color: var(--settings-bg) !important;
+}
+
+/* 白色文字按钮（主要操作按钮） */
+.settings-panel button[class*="text-white"],
+.fixed button[class*="text-white"] {
+  background: transparent !important;
+  border: 1px solid var(--settings-accent) !important;
+  color: var(--settings-accent) !important;
+}
+
+.settings-panel button[class*="text-white"]:hover,
+.fixed button[class*="text-white"]:hover {
   background: var(--settings-accent) !important;
   color: var(--settings-bg) !important;
 }
