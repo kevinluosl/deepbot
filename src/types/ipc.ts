@@ -198,6 +198,7 @@ export interface SetDefaultSkillDirResponse {
 
 // 模型配置
 export interface ModelConfig {
+  providerType: 'qwen' | 'deepseek' | 'custom'; // 提供商类型（用于 UI 下拉选择）
   providerId: string;
   providerName: string;
   baseUrl: string;

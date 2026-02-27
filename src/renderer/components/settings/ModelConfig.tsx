@@ -1,16 +1,32 @@
 /**
  * 模型配置页面
  * 
- * 简化版：直接配置 API 地址和模型 ID
+ * 支持选择 Qwen、DeepSeek 或自定义提供商
  */
 
 import React, { useState, useEffect } from 'react';
 
-// 默认配置
-const DEFAULT_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-const DEFAULT_MODEL_ID = 'qwen3.5-plus';
+// 提供商预设配置
+const PROVIDER_PRESETS = {
+  qwen: {
+    name: '通义千问',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    defaultModelId: 'qwen-plus',
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    baseUrl: 'https://api.deepseek.com/v1',
+    defaultModelId: 'deepseek-chat',
+  },
+  custom: {
+    name: '自定义',
+    baseUrl: '',
+    defaultModelId: '',
+  },
+} as const;
 
 interface ModelConfig {
+  providerType: 'qwen' | 'deepseek' | 'custom';
   providerId: string;
   providerName: string;
   baseUrl: string;
@@ -25,11 +41,12 @@ interface ModelConfigProps {
 
 export function ModelConfig({ onClose }: ModelConfigProps) {
   const [config, setConfig] = useState<ModelConfig>({
+    providerType: 'qwen',
     providerId: 'qwen',
     providerName: '通义千问',
-    baseUrl: DEFAULT_BASE_URL,
-    modelId: DEFAULT_MODEL_ID,
-    modelName: DEFAULT_MODEL_ID,
+    baseUrl: PROVIDER_PRESETS.qwen.baseUrl,
+    modelId: PROVIDER_PRESETS.qwen.defaultModelId,
+    modelName: PROVIDER_PRESETS.qwen.defaultModelId,
     apiKey: '',
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -51,11 +68,31 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success && actualResult.config) {
-        setConfig(actualResult.config);
+        // 确保 providerType 字段存在（兼容旧数据）
+        const loadedConfig = {
+          ...actualResult.config,
+          providerType: actualResult.config.providerType || 'qwen', // 默认为 qwen
+        };
+        setConfig(loadedConfig);
       }
     } catch (error) {
       console.error('加载模型配置失败:', error);
     }
+  };
+
+  // 处理提供商类型变化
+  const handleProviderTypeChange = (providerType: 'qwen' | 'deepseek' | 'custom') => {
+    const preset = PROVIDER_PRESETS[providerType];
+    
+    setConfig({
+      ...config,
+      providerType,
+      providerId: providerType,
+      providerName: preset.name,
+      baseUrl: preset.baseUrl,
+      modelId: preset.defaultModelId,
+      modelName: preset.defaultModelId,
+    });
   };
 
   const handleSave = async () => {
@@ -133,7 +170,26 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       <div>
         <h3 className="text-base font-semibold text-gray-900 mb-4">模型配置</h3>
         <p className="text-sm text-gray-600 mb-6">
-          配置 AI 模型 API 地址和密钥（默认为通义千问）
+          选择 AI 模型提供商并配置 API 密钥
+        </p>
+      </div>
+
+      {/* 提供商选择 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          提供商
+        </label>
+        <select
+          value={config.providerType}
+          onChange={(e) => handleProviderTypeChange(e.target.value as 'qwen' | 'deepseek' | 'custom')}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="qwen">通义千问 (Qwen)</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="custom">自定义</option>
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          选择预设提供商或自定义配置
         </p>
       </div>
 
@@ -146,11 +202,14 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           type="text"
           value={config.baseUrl}
           onChange={(e) => setConfig({ ...config, baseUrl: e.target.value })}
-          placeholder={DEFAULT_BASE_URL}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="https://api.example.com/v1"
+          disabled={config.providerType !== 'custom'}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
         <p className="mt-1 text-xs text-gray-500">
-          默认为通义千问地址，可修改为其他兼容 OpenAI API 格式的地址
+          {config.providerType === 'custom' 
+            ? '输入兼容 OpenAI API 格式的地址' 
+            : '预设提供商的 API 地址（不可修改）'}
         </p>
       </div>
 
@@ -163,11 +222,19 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           type="text"
           value={config.modelId}
           onChange={(e) => setConfig({ ...config, modelId: e.target.value, modelName: e.target.value })}
-          placeholder={DEFAULT_MODEL_ID}
+          placeholder={
+            config.providerType === 'qwen' 
+              ? 'qwen-plus' 
+              : config.providerType === 'deepseek' 
+                ? 'deepseek-chat' 
+                : 'model-id'
+          }
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          输入模型 ID（如 qwen3.5-plus）
+          {config.providerType === 'qwen' && '默认: qwen-plus（可选: qwen-turbo, qwen-max 等）'}
+          {config.providerType === 'deepseek' && '默认: deepseek-chat（可选: deepseek-coder 等）'}
+          {config.providerType === 'custom' && '输入模型 ID'}
         </p>
       </div>
 

@@ -41,6 +41,7 @@ export interface WorkspaceSettings {
  * 模型配置
  */
 export interface ModelConfig {
+  providerType: 'qwen' | 'deepseek' | 'custom'; // 提供商类型（用于 UI 下拉选择）
   providerId: string;      // 提供商 ID
   providerName: string;    // 提供商名称
   baseUrl: string;         // API 地址
@@ -131,6 +132,7 @@ export class SystemConfigStore {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS model_config (
         id INTEGER PRIMARY KEY CHECK (id = 1),
+        provider_type TEXT NOT NULL DEFAULT 'qwen',
         provider_id TEXT NOT NULL,
         provider_name TEXT NOT NULL,
         base_url TEXT NOT NULL,
@@ -170,6 +172,22 @@ export class SystemConfigStore {
         console.log('[SystemConfigStore] 🔄 迁移数据库：添加 provider 字段到 tool_config_web_search 表');
         this.db.exec(`
           ALTER TABLE tool_config_web_search ADD COLUMN provider TEXT NOT NULL DEFAULT 'qwen'
+        `);
+        console.log('[SystemConfigStore] ✅ 数据库迁移完成');
+      }
+    } catch (error) {
+      console.warn('[SystemConfigStore] ⚠️ 数据库迁移检查失败（表可能不存在）:', error);
+    }
+
+    // 🔥 数据库迁移：检查 model_config 表是否有 provider_type 字段
+    try {
+      const tableInfo = this.db.prepare("PRAGMA table_info(model_config)").all() as any[];
+      const hasProviderTypeColumn = tableInfo.some((col: any) => col.name === 'provider_type');
+      
+      if (!hasProviderTypeColumn) {
+        console.log('[SystemConfigStore] 🔄 迁移数据库：添加 provider_type 字段到 model_config 表');
+        this.db.exec(`
+          ALTER TABLE model_config ADD COLUMN provider_type TEXT NOT NULL DEFAULT 'qwen'
         `);
         console.log('[SystemConfigStore] ✅ 数据库迁移完成');
       }
@@ -481,6 +499,7 @@ export class SystemConfigStore {
       if (!row) return null;
 
       return {
+        providerType: row.provider_type || 'qwen',
         providerId: row.provider_id,
         providerName: row.provider_name,
         baseUrl: row.base_url,
@@ -500,11 +519,12 @@ export class SystemConfigStore {
   saveModelConfig(config: ModelConfig): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO model_config 
-      (id, provider_id, provider_name, base_url, model_id, model_name, api_key)
-      VALUES (1, ?, ?, ?, ?, ?, ?)
+      (id, provider_type, provider_id, provider_name, base_url, model_id, model_name, api_key)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
+      config.providerType,
       config.providerId,
       config.providerName,
       config.baseUrl,
@@ -514,6 +534,7 @@ export class SystemConfigStore {
     );
 
     console.info('[SystemConfigStore] ✅ 模型配置已保存:', {
+      providerType: config.providerType,
       provider: config.providerName,
       model: config.modelName,
     });
