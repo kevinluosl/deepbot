@@ -23,6 +23,7 @@
 
 import type { AgentTool } from '@mariozechner/pi-agent-core';
 import { getShellPathFromLoginShell, applyShellPath } from './shell-env';
+import { isBlockingInteractiveCommand, getBlockingCommandSuggestion } from './exec-blocking-check';
 
 /**
  * 危险命令列表（黑名单）
@@ -202,10 +203,17 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
   });
   
   // 创建基础工具（使用 pi-coding-agent）
-  // 🔥 使用 operations 自定义命令执行，确保 PATH 被正确应用
+  // 🔥 使用 operations 自定义命令执行，添加阻塞命令检查
   const bashTool = createBashTool(workspaceDir, {
     operations: {
       exec: async (command: string, cwd: string, options: any) => {
+        // 🔥 检查是否是阻塞的交互式命令
+        if (isBlockingInteractiveCommand(command)) {
+          const suggestion = getBlockingCommandSuggestion(command);
+          console.error(`[Exec Tool] ❌ ${suggestion}`);
+          throw new Error(suggestion);
+        }
+        
         // 🔥 强制应用合并后的 PATH
         const env = { ...process.env, PATH: shellPath };
         
