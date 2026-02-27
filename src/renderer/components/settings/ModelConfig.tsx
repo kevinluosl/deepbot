@@ -47,8 +47,11 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   const loadConfig = async () => {
     try {
       const result = await window.electron.ipcRenderer.invoke('model-config:get');
-      if (result.success && result.config) {
-        setConfig(result.config);
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
+      
+      if (actualResult.success && actualResult.config) {
+        setConfig(actualResult.config);
       }
     } catch (error) {
       console.error('加载模型配置失败:', error);
@@ -77,8 +80,10 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
 
     try {
       const result = await window.electron.ipcRenderer.invoke('model-config:save', { config });
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
       
-      if (result.success) {
+      if (actualResult.success) {
         setSaveMessage({ 
           type: 'success', 
           text: '✅ 保存成功！正在测试配置...' 
@@ -92,7 +97,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           onClose();
         }
       } else {
-        setSaveMessage({ type: 'error', text: result.error || '保存失败' });
+        setSaveMessage({ type: 'error', text: actualResult.error || '保存失败' });
       }
     } catch (error) {
       console.error('保存模型配置失败:', error);

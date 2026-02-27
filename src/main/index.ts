@@ -702,10 +702,25 @@ function registerIpcHandlers() {
     }
     
     try {
-      const tab = gateway.createTab(title);
+      const tab = await gateway.createTab({ title });
+      
+      // 🔥 只返回可序列化的字段，避免 "An object could not be cloned" 错误
       return {
         success: true,
-        tab,
+        tab: {
+          id: tab.id,
+          title: tab.title,
+          type: tab.type,
+          messages: tab.messages,
+          isLoading: tab.isLoading,
+          createdAt: tab.createdAt,
+          lastActiveAt: tab.lastActiveAt,
+          isLocked: tab.isLocked,
+          taskId: tab.taskId,
+          connectorId: tab.connectorId,
+          conversationId: tab.conversationId,
+          conversationKey: tab.conversationKey,
+        },
       };
     } catch (error) {
       return {

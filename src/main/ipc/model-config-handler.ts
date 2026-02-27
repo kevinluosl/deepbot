@@ -70,10 +70,7 @@ export function registerModelConfigHandlers(): void {
         
         // 🔥 重新加载 Gateway 的模型配置
         if (gatewayInstance) {
-          console.log('[ModelConfigHandler] 通知 Gateway 重新加载配置...');
           await gatewayInstance.reloadModelConfig();
-        } else {
-          console.warn('[ModelConfigHandler] Gateway 实例未设置，无法重新加载配置');
         }
         
         return {

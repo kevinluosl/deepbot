@@ -160,7 +160,10 @@ function App() {
     try {
       const result = await window.electron.ipcRenderer.invoke('model-config:get');
       
-      if (!result.success || !result.config || !result.config.apiKey) {
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
+      
+      if (!actualResult.success || !actualResult.config || !actualResult.config.apiKey) {
         // 没有配置，显示提示并打开系统设置
         setHasModelConfig(false);
         setIsSystemSettingsOpen(true);

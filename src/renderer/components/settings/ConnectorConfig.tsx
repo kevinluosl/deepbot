@@ -76,11 +76,14 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
     try {
       setLoading(true);
       const result = await window.deepbot.connectorGetAll();
-      if (result.success && result.connectors) {
-        setConnectors(result.connectors);
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
+      
+      if (actualResult.success && actualResult.connectors) {
+        setConnectors(actualResult.connectors);
         // 默认选择飞书
-        if (result.connectors.length > 0) {
-          const feishu = result.connectors.find((c: any) => c.id === 'feishu');
+        if (actualResult.connectors.length > 0) {
+          const feishu = actualResult.connectors.find((c: any) => c.id === 'feishu');
           if (feishu) {
             setSelectedConnector('feishu');
             await loadConnectorConfig('feishu');
@@ -97,12 +100,15 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   const loadConnectorConfig = async (connectorId: string) => {
     try {
       const result = await window.deepbot.connectorGetConfig(connectorId);
-      if (result.success && result.config) {
-        setFeishuConfig(result.config);
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
+      
+      if (actualResult.success && actualResult.config) {
+        setFeishuConfig(actualResult.config);
       }
       
       // 如果是 pairing 模式，加载 pairing 记录
-      if (result.config?.dmPolicy === 'pairing') {
+      if (actualResult.config?.dmPolicy === 'pairing') {
         await loadPairingRecords(connectorId);
       }
     } catch (error) {
@@ -114,8 +120,11 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
     try {
       setLoadingPairing(true);
       const result = await window.deepbot.connectorGetPairingRecords(connectorId);
-      if (result.success && result.records) {
-        setPairingRecords(result.records);
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
+      
+      if (actualResult.success && actualResult.records) {
+        setPairingRecords(actualResult.records);
       }
     } catch (error) {
       console.error('加载 Pairing 记录失败:', error);
@@ -127,11 +136,14 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   const handleApprovePairing = async (pairingCode: string) => {
     try {
       const result = await window.deepbot.connectorApprovePairing(pairingCode);
-      if (result.success) {
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
+      
+      if (actualResult.success) {
         showMessage('success', '配对已批准');
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showMessage('error', result.error || '批准失败');
+        showMessage('error', actualResult.error || '批准失败');
       }
     } catch (error) {
       showMessage('error', `批准失败: ${error instanceof Error ? error.message : '未知错误'}`);
@@ -145,11 +157,14 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
     
     try {
       const result = await window.deepbot.connectorDeletePairing(connectorId, userId);
-      if (result.success) {
+      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
+      const actualResult = result.data || result;
+      
+      if (actualResult.success) {
         showMessage('success', '配对记录已删除');
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showMessage('error', result.error || '删除失败');
+        showMessage('error', actualResult.error || '删除失败');
       }
     } catch (error) {
       showMessage('error', `删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
