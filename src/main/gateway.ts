@@ -78,7 +78,7 @@ export class Gateway {
    * 自动启动已启用的连接器
    */
   private async autoStartConnectors(): Promise<void> {
-    console.log('[Gateway] 🔄 检查并启动已启用的连接器...');
+    console.log('[Gateway] 🔄 自动启动已启用的连接器...');
     
     try {
       const { SystemConfigStore } = await import('./database/system-config-store');
@@ -93,11 +93,8 @@ export class Gateway {
           const configData = store.getConnectorConfig(connector.id);
           
           if (configData && configData.enabled) {
-            console.log(`[Gateway] 🚀 自动启动连接器: ${connector.id}`);
+            console.log(`[Gateway] 🚀 启动: ${connector.id}`);
             await this.connectorManager.startConnector(connector.id as any);
-            console.log(`[Gateway] ✅ 连接器已启动: ${connector.id}`);
-          } else {
-            console.log(`[Gateway] ⏭️ 跳过未启用的连接器: ${connector.id}`);
           }
         } catch (error) {
           console.error(`[Gateway] ❌ 启动连接器失败: ${connector.id}`, error);
@@ -105,7 +102,7 @@ export class Gateway {
         }
       }
       
-      console.log('[Gateway] ✅ 连接器自动启动完成');
+      console.log('[Gateway] ✅ 连接器启动完成');
     } catch (error) {
       console.error('[Gateway] ❌ 自动启动连接器过程失败:', error);
     }

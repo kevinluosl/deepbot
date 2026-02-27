@@ -56,9 +56,6 @@ export class AgentInitializer {
     // 获取所有工具
     const tools = await this.loadTools();
     
-    console.log('   工具数量:', tools.length);
-    console.log('   工具列表:', tools.map(t => t.name).join(', '));
-    
     // 创建 Agent 实例
     const agent = new Agent({
       initialState: {
@@ -129,39 +126,8 @@ export class AgentInitializer {
       // 构建系统提示词
       const systemPrompt = await buildSystemPrompt(promptParams);
       
-      // 🔍 调试：打印完整的系统提示词
-      if (process.env.DEBUG_SYSTEM_PROMPT === 'true') {
-        console.log('\n' + '='.repeat(80));
-        console.log('📋 完整系统提示词:');
-        console.log('='.repeat(80));
-        console.log(systemPrompt);
-        console.log('='.repeat(80) + '\n');
-      }
-      
-      // 🔍 调试：打印系统提示词的关键部分（前 500 字符 + 后 500 字符）
-      console.log('\n📋 系统提示词预览:');
-      console.log('   前 500 字符:', systemPrompt.substring(0, 500));
-      console.log('   ...');
-      console.log('   后 500 字符:', systemPrompt.substring(systemPrompt.length - 500));
-      console.log('');
-      
-      // 🔍 检查是否包含关键规则
-      const hasTaskExecution = systemPrompt.includes('任务执行规则');
-      const hasStepByStep = systemPrompt.includes('逐步执行');
-      const hasNoAutoSkill = systemPrompt.includes('只有用户明确要求时才使用 Skill');
-      
-      console.log('📊 关键规则检查:');
-      console.log('   ✅ 包含"任务执行规则":', hasTaskExecution);
-      console.log('   ✅ 包含"逐步执行":', hasStepByStep);
-      console.log('   ✅ 包含"只有用户明确要求时才使用 Skill":', hasNoAutoSkill);
-      console.log('');
-      
       // 更新 Agent 的系统提示词
       agent.setSystemPrompt(systemPrompt);
-      
-      console.log('✅ 系统提示词初始化完成');
-      console.log('   提示词长度:', systemPrompt.length, '字符');
-      console.log('   会话ID:', this.sessionId);
       
       return systemPrompt;
     } catch (error) {

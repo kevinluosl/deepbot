@@ -75,32 +75,13 @@ export async function buildSystemPrompt(params: SystemPromptParams): Promise<str
 
   // 4. 核心记忆（从 memory.md 加载）
   try {
-    console.log('\n' + '='.repeat(80));
-    console.log('🧠 [buildSystemPrompt] 开始加载核心记忆...');
-    console.log('='.repeat(80));
-    
     const memoryContent = await getMemoryContent();
     
     if (memoryContent && memoryContent.trim().length > 0) {
       lines.push('## 核心记忆', '', memoryContent, '');
-      
-      console.log('🧠 [buildSystemPrompt] ✅ 核心记忆加载成功');
-      console.log('   长度:', memoryContent.length, '字符');
-      console.log('   内容:');
-      console.log('   ' + '-'.repeat(76));
-      // 打印完整的记忆内容，每行缩进
-      memoryContent.split('\n').forEach(line => {
-        console.log('   ' + line);
-      });
-      console.log('   ' + '-'.repeat(76));
-      console.log('='.repeat(80) + '\n');
-    } else {
-      console.warn('⚠️ [buildSystemPrompt] 核心记忆为空');
-      console.log('='.repeat(80) + '\n');
     }
   } catch (error) {
-    console.warn('⚠️ [buildSystemPrompt] 加载核心记忆失败:', error);
-    console.log('='.repeat(80) + '\n');
+    console.warn('⚠️ 加载核心记忆失败:', error);
   }
 
   // 5. 额外提示（动态注入点）
@@ -112,11 +93,6 @@ export async function buildSystemPrompt(params: SystemPromptParams): Promise<str
   lines.push(...buildRuntimeSection(params.runtimeInfo));
 
   const prompt = lines.filter(Boolean).join('\n');
-
-  console.log('🧠 系统提示词构建完成');
-  console.log('   总长度:', prompt.length, '字符');
-  console.log('   总行数:', lines.length, '行');
-  console.log('   名字配置:', nameConfig);
 
   return prompt;
 }

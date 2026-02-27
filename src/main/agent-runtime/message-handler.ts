@@ -104,21 +104,15 @@ export class MessageHandler {
       throw new Error('Agent 未初始化');
     }
 
-    console.log('📤 发送消息到 AI:', content.substring(0, 100));
+    console.log('📤 AI 调用:', content.substring(0, 50) + (content.length > 50 ? '...' : ''));
     
-    // 🔍 打印当前模型信息
-    console.log('🤖 当前模型:', this.agent.state.model.id);
-    console.log('📊 当前消息历史数量:', this.agent.state.messages.length);
-
     try {
       // 订阅 Agent 事件，并实现真正的流式输出
       let fullResponse = '';
       let wasCancelled = false;
       let currentToolStepId: string | null = null; // 当前工具调用的步骤 ID
       
-      // 🔍 用于调试：记录所有事件
-      let eventCount = 0;
-      let textDeltaCount = 0;
+      // 用于统计
       let toolCallCount = 0;
       
       // 创建一个 Promise 来等待 Agent 完成
@@ -130,44 +124,29 @@ export class MessageHandler {
       });
       
       const unsubscribe = this.agent.subscribe((event) => {
-        eventCount++;
-        
-        // 🔍 打印所有事件（用于调试）
-        if (eventCount <= 10 || event.type === 'tool_execution_start' || event.type === 'tool_execution_end') {
-          console.log(`[Event ${eventCount}] type=${event.type}`, event.type === 'message_update' ? '(message_update)' : JSON.stringify(event, null, 2).substring(0, 200));
-        }
-        
         // 检查是否已取消或已废弃
         if (this.abortController?.signal.aborted || generationId !== this.currentGenerationId) {
           wasCancelled = true;
           return;
         }
         
-        // 只处理 message_update 事件中的 text_delta（不打印日志）
+        // 只处理 message_update 事件中的 text_delta
         if (event.type === 'message_update' && event.assistantMessageEvent) {
           const assistantEvent = event.assistantMessageEvent;
           if (assistantEvent.type === 'text_delta' && assistantEvent.delta) {
-            textDeltaCount++;
-            
-            // 🔍 打印前几个 text_delta（用于调试）
-            if (textDeltaCount <= 5) {
-              console.log(`[TextDelta ${textDeltaCount}] delta="${assistantEvent.delta}"`);
-            }
-            
             // 过滤掉 <think> 和 </think> 标签
             const filteredDelta = assistantEvent.delta
               .replace(/<think>/g, '')
               .replace(/<\/think>/g, '');
             fullResponse += filteredDelta;
           }
-          return; // 跳过后续日志
+          return;
         }
         
         // 处理工具调用事件 - 收集执行步骤
         if (event.type === 'tool_execution_start') {
           toolCallCount++;
-          console.log(`🔧 [工具调用 ${toolCallCount}] 开始: ${event.toolName}`);
-          console.log(`   工具参数:`, JSON.stringify(event.args, null, 2).substring(0, 300));
+          console.log(`🔧 工具调用 ${toolCallCount}: ${event.toolName}`);
           
           // 创建执行步骤
           const stepId = generateStepId();
@@ -195,8 +174,7 @@ export class MessageHandler {
         }
         
         if (event.type === 'tool_execution_end') {
-          console.log(`✅ [工具调用 ${toolCallCount}] 完成: ${event.toolName}`);
-          console.log(`   工具结果:`, JSON.stringify(event.result, null, 2).substring(0, 300));
+          console.log(`✅ 工具完成 ${toolCallCount}: ${event.toolName}`);
           
           // 更新执行步骤为成功
           if (currentToolStepId) {
@@ -266,8 +244,6 @@ export class MessageHandler {
           console.log(`✅ agent.prompt() 完成，耗时: ${duration}ms`);
           console.log(`📊 Agent 最终状态:`);
           console.log(`   消息总数: ${this.agent?.state.messages.length || 0}`);
-          console.log(`   事件总数: ${eventCount}`);
-          console.log(`   文本增量数: ${textDeltaCount}`);
           console.log(`   工具调用数: ${toolCallCount}`);
           console.log(`   最终响应长度: ${fullResponse.length} 字符`);
           console.log(`   最终响应预览: ${fullResponse.substring(0, 200)}...`);
@@ -396,7 +372,6 @@ export class MessageHandler {
       
       // 1. 触发 AbortController，取消所有工具的执行
       if (this.abortController) {
-        console.log('   📡 触发 AbortController.abort()');
         this.abortController.abort();
         // 🔥 记录用户主动停止
         this.userAborted = true;
@@ -404,7 +379,6 @@ export class MessageHandler {
       
       // 2. 尝试停止 Agent 执行（pi-agent-core 支持 abort）
       if (this.agent && typeof (this.agent as any).abort === 'function') {
-        console.log('   🛑 调用 Agent.abort()');
         try {
           (this.agent as any).abort();
         } catch (error) {

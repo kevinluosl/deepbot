@@ -65,3 +65,4 @@ export function setGlobalLogLevel(level: LogLevel) {
 export function getGlobalLogLevel(): LogLevel {
   return globalLogLevel;
 }
+
