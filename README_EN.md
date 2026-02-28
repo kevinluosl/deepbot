@@ -515,8 +515,9 @@ deepbot/
 │   ├── main/           # Main process code
 │   │   ├── gateway.ts          # Session management
 │   │   ├── agent-runtime/      # Agent runtime
-│   │   ├── tools/              # 10 tools
+│   │   ├── tools/              # Tool system
 │   │   ├── scheduled-tasks/    # Scheduled tasks
+│   │   ├── connectors/         # External connectors
 │   │   └── database/           # Data storage
 │   ├── renderer/       # Renderer process code (React)
 │   ├── shared/         # Shared code

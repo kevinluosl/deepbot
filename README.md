@@ -513,8 +513,9 @@ deepbot/
 │   ├── main/           # 主进程代码
 │   │   ├── gateway.ts          # 会话管理
 │   │   ├── agent-runtime/      # Agent 运行时
-│   │   ├── tools/              # 10 个工具
+│   │   ├── tools/              # 工具系统
 │   │   ├── scheduled-tasks/    # 定时任务
+│   │   ├── connectors/         # 外部连接器
 │   │   └── database/           # 数据存储
 │   ├── renderer/       # 渲染进程代码 (React)
 │   ├── shared/         # 共享代码
