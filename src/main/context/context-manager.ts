@@ -90,7 +90,7 @@ export interface ContextManageResult {
  * 管理上下文
  * 
  * 这是上下文压缩的统一入口，会自动：
- * 1. 估算当前上下文使用情况
+ * 1. 估算当前上下文使用情况（包含系统提示词、工具定义、对话历史）
  * 2. 如果超过 70%，裁剪工具结果
  * 3. 如果超过 85%，裁剪历史消息
  * 
@@ -101,8 +101,10 @@ export function manageContext(params: {
   messages: AgentMessage[];
   modelId?: string;
   settings?: Partial<ContextSettings>;
+  systemPrompt?: string;      // 系统提示词
+  tools?: any[];               // 工具定义
 }): ContextManageResult {
-  const { messages, modelId } = params;
+  const { messages, modelId, systemPrompt, tools } = params;
   const settings: ContextSettings = {
     ...DEFAULT_CONTEXT_SETTINGS,
     ...params.settings,
@@ -116,20 +118,39 @@ export function manageContext(params: {
     },
   };
 
+  // 计算固定开销（系统提示词 + 工具定义）
+  let fixedOverheadTokens = 0;
+  
+  if (systemPrompt) {
+    fixedOverheadTokens += Math.ceil(systemPrompt.length / 3.5);
+  }
+  
+  if (tools && tools.length > 0) {
+    let toolsCharCount = 0;
+    for (const tool of tools) {
+      toolsCharCount += (tool.name || '').length;
+      toolsCharCount += (tool.label || '').length;
+      toolsCharCount += (tool.description || '').length;
+      toolsCharCount += JSON.stringify(tool.parameters || {}).length;
+    }
+    fixedOverheadTokens += Math.ceil(toolsCharCount / 3.5);
+  }
+
   // 如果未启用，直接返回
   if (!settings.enabled) {
     const contextWindow = getContextWindowTokens(modelId);
-    const tokensBefore = estimateMessagesTokens(messages);
+    const messagesTokens = estimateMessagesTokens(messages);
+    const totalTokens = fixedOverheadTokens + messagesTokens;
     
     return {
       messages,
       stats: {
         messagesBefore: messages.length,
-        tokensBefore,
-        usageRatioBefore: tokensBefore / contextWindow,
+        tokensBefore: totalTokens,
+        usageRatioBefore: totalTokens / contextWindow,
         messagesAfter: messages.length,
-        tokensAfter: tokensBefore,
-        usageRatioAfter: tokensBefore / contextWindow,
+        tokensAfter: totalTokens,
+        usageRatioAfter: totalTokens / contextWindow,
         toolResultsPruned: {
           softTrimmed: 0,
           hardCleared: 0,
@@ -146,9 +167,10 @@ export function manageContext(params: {
     };
   }
 
-  // 计算初始状态
+  // 计算初始状态（包含固定开销）
   const contextWindow = getContextWindowTokens(modelId);
-  const tokensBefore = estimateMessagesTokens(messages);
+  const messagesTokens = estimateMessagesTokens(messages);
+  const tokensBefore = fixedOverheadTokens + messagesTokens;
   const usageRatioBefore = tokensBefore / contextWindow;
   const messagesBefore = messages.length;
 
@@ -168,7 +190,10 @@ export function manageContext(params: {
 
   // 步骤 1: 如果使用率 < 70%，不处理
   if (usageRatioBefore < settings.pruning.softTrimRatio) {
-    console.debug(`[Context Manager] 使用率 ${(usageRatioBefore * 100).toFixed(1)}% < 70%，无需压缩`);
+    console.debug(
+      `[Context Manager] 使用率 ${(usageRatioBefore * 100).toFixed(1)}% < 70%，无需压缩 ` +
+      `(固定开销: ${fixedOverheadTokens} tokens, 消息: ${messagesTokens} tokens)`
+    );
     
     return {
       messages: currentMessages,
@@ -188,7 +213,10 @@ export function manageContext(params: {
     };
   }
 
-  console.info(`[Context Manager] 🔄 开始上下文压缩，使用率: ${(usageRatioBefore * 100).toFixed(1)}%`);
+  console.info(
+    `[Context Manager] 🔄 开始上下文压缩，使用率: ${(usageRatioBefore * 100).toFixed(1)}% ` +
+    `(固定开销: ${fixedOverheadTokens} tokens, 消息: ${messagesTokens} tokens)`
+  );
 
   // 步骤 2: 裁剪工具结果（70-85%）
   if (usageRatioBefore >= settings.pruning.softTrimRatio) {
@@ -211,8 +239,9 @@ export function manageContext(params: {
     }
   }
 
-  // 重新计算使用率
-  const tokensAfterPruning = estimateMessagesTokens(currentMessages);
+  // 重新计算使用率（包含固定开销）
+  const messagesTokensAfterPruning = estimateMessagesTokens(currentMessages);
+  const tokensAfterPruning = fixedOverheadTokens + messagesTokensAfterPruning;
   const usageRatioAfterPruning = tokensAfterPruning / contextWindow;
 
   // 步骤 3: 裁剪历史消息（> 85%）
@@ -241,8 +270,9 @@ export function manageContext(params: {
     }
   }
 
-  // 计算最终状态
-  const tokensAfter = estimateMessagesTokens(currentMessages);
+  // 计算最终状态（包含固定开销）
+  const messagesTokensAfter = estimateMessagesTokens(currentMessages);
+  const tokensAfter = fixedOverheadTokens + messagesTokensAfter;
   const usageRatioAfter = tokensAfter / contextWindow;
   const messagesAfter = currentMessages.length;
   const totalTokensSaved = tokensBefore - tokensAfter;

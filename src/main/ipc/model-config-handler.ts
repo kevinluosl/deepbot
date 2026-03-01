@@ -66,7 +66,29 @@ export function registerModelConfigHandlers(): void {
     async (event, request): Promise<SaveModelConfigResponse> => {
       try {
         const store = getConfigStore();
-        store.saveModelConfig(request.config);
+        
+        // 🔥 从模型映射表推断上下文窗口大小
+        const { getContextWindowFromModelId } = await import('../utils/model-info-fetcher');
+        const inferredContextWindow = getContextWindowFromModelId(request.config.modelId);
+        
+        // 如果用户没有手动设置，使用推断值
+        const contextWindow = request.config.contextWindow || inferredContextWindow;
+        
+        console.log('[ModelConfigHandler] 上下文窗口:', {
+          modelId: request.config.modelId,
+          inferred: inferredContextWindow,
+          userProvided: request.config.contextWindow,
+          final: contextWindow,
+        });
+        
+        // 保存配置
+        const configToSave = {
+          ...request.config,
+          contextWindow,
+          lastFetched: Date.now(),
+        };
+        
+        store.saveModelConfig(configToSave);
         
         // 🔥 重新加载 Gateway 的模型配置
         if (gatewayInstance) {

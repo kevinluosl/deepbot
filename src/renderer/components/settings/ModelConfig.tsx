@@ -5,25 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-
-// 提供商预设配置
-const PROVIDER_PRESETS = {
-  qwen: {
-    name: '通义千问',
-    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    defaultModelId: 'qwen-plus',
-  },
-  deepseek: {
-    name: 'DeepSeek',
-    baseUrl: 'https://api.deepseek.com/v1',
-    defaultModelId: 'deepseek-chat',
-  },
-  custom: {
-    name: '自定义',
-    baseUrl: '',
-    defaultModelId: '',
-  },
-} as const;
+import { PROVIDER_PRESETS } from '../../../shared/config/default-configs';
 
 interface ModelConfig {
   providerType: 'qwen' | 'deepseek' | 'custom';
@@ -33,6 +15,8 @@ interface ModelConfig {
   modelId: string;
   modelName: string;
   apiKey: string;
+  contextWindow?: number;  // 上下文窗口大小
+  lastFetched?: number;    // 最后获取时间
 }
 
 interface ModelConfigProps {
@@ -224,7 +208,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           onChange={(e) => setConfig({ ...config, modelId: e.target.value, modelName: e.target.value })}
           placeholder={
             config.providerType === 'qwen' 
-              ? 'qwen-plus' 
+              ? 'qwen-plus3.5' 
               : config.providerType === 'deepseek' 
                 ? 'deepseek-chat' 
                 : 'model-id'
@@ -232,7 +216,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          {config.providerType === 'qwen' && '默认: qwen-plus（可选: qwen-turbo, qwen-max 等）'}
+          {config.providerType === 'qwen' && '默认: qwen-plus3.5（可选: qwen-plus, qwen-turbo, qwen-max 等）'}
           {config.providerType === 'deepseek' && '默认: deepseek-chat（可选: deepseek-coder 等）'}
           {config.providerType === 'custom' && '输入模型 ID'}
         </p>
@@ -252,6 +236,23 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         />
         <p className="mt-1 text-xs text-gray-500">
           API 密钥将加密存储在本地
+        </p>
+      </div>
+
+      {/* 上下文窗口大小（可编辑） */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          上下文窗口
+        </label>
+        <input
+          type="number"
+          value={config.contextWindow || ''}
+          onChange={(e) => setConfig({ ...config, contextWindow: e.target.value ? parseInt(e.target.value) : undefined })}
+          placeholder="自动推断"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          留空则根据模型 ID 自动推断（推荐）。如需精确值，请手动输入
         </p>
       </div>
 

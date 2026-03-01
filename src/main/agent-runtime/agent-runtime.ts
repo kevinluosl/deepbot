@@ -467,6 +467,139 @@ ${lastPart}
 
     console.log('📋 使用系统提示词 (前100字符):', this.systemPrompt.substring(0, 100));
     
+    // 🔥 临时测试：捕获完整 prompt 到文件
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const { expandUserPath } = await import('../../shared/utils/path-utils');
+      const { ensureDirectoryExists } = await import('../../shared/utils/fs-utils');
+      
+      const debugDir = expandUserPath('~/.deepbot/debug');
+      ensureDirectoryExists(debugDir);
+      
+      const outputPath = path.join(debugDir, 'captured-prompt.md');
+      
+      const lines: string[] = [];
+      lines.push('# 捕获的 Prompt\n');
+      lines.push(`捕获时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n`);
+      lines.push('---\n');
+      
+      // 系统提示词
+      lines.push('## 系统提示词 (System Prompt)\n');
+      lines.push('```');
+      lines.push(this.systemPrompt);
+      lines.push('```\n');
+      lines.push('---\n');
+      
+      // 工具定义
+      if (this.tools && this.tools.length > 0) {
+        lines.push(`## 工具定义 (${this.tools.length} 个工具)\n`);
+        
+        for (let i = 0; i < this.tools.length; i++) {
+          const tool = this.tools[i];
+          lines.push(`### ${i + 1}. ${tool.name}\n`);
+          lines.push(`**标签**: ${tool.label || '无'}\n`);
+          lines.push(`**描述**: ${tool.description || '无描述'}\n`);
+          lines.push('**参数 Schema**:\n');
+          lines.push('```json');
+          lines.push(JSON.stringify(tool.parameters, null, 2));
+          lines.push('```\n');
+        }
+        lines.push('---\n');
+      }
+      
+      // 对话历史
+      if (this.instanceManager.agent) {
+        const messages = this.instanceManager.agent.state.messages;
+        lines.push(`## 对话历史 (${messages.length} 条消息)\n`);
+        
+        for (let i = 0; i < messages.length; i++) {
+          const msg = messages[i];
+          lines.push(`### 消息 ${i + 1}: ${msg.role}\n`);
+          
+          if (Array.isArray(msg.content)) {
+            for (const part of msg.content) {
+              if (typeof part === 'string') {
+                lines.push('```');
+                lines.push(part);
+                lines.push('```\n');
+              } else if (typeof part === 'object' && part) {
+                const partObj = part as any;
+                if (partObj.type === 'text') {
+                  lines.push('```');
+                  lines.push(partObj.text || '');
+                  lines.push('```\n');
+                } else {
+                  lines.push('```json');
+                  lines.push(JSON.stringify(part, null, 2));
+                  lines.push('```\n');
+                }
+              }
+            }
+          } else if (typeof msg.content === 'string') {
+            lines.push('```');
+            lines.push(msg.content);
+            lines.push('```\n');
+          }
+        }
+        lines.push('---\n');
+      }
+      
+      // 当前用户消息
+      lines.push('## 当前用户消息\n');
+      lines.push('```');
+      lines.push(content);
+      lines.push('```\n');
+      lines.push('---\n');
+      
+      // 统计
+      const messageCount = this.instanceManager.agent?.state.messages.length || 0;
+      const toolCount = this.tools?.length || 0;
+      
+      // 计算工具定义的字符数
+      let toolsCharCount = 0;
+      if (this.tools && this.tools.length > 0) {
+        for (const tool of this.tools) {
+          toolsCharCount += tool.name.length;
+          toolsCharCount += (tool.label || '').length;
+          toolsCharCount += (tool.description || '').length;
+          toolsCharCount += JSON.stringify(tool.parameters).length;
+        }
+      }
+      
+      let historyCharCount = 0;
+      if (this.instanceManager.agent) {
+        for (const msg of this.instanceManager.agent.state.messages) {
+          if (Array.isArray(msg.content)) {
+            for (const part of msg.content) {
+              if (typeof part === 'string') {
+                historyCharCount += (part as string).length;
+              } else if (typeof part === 'object' && part) {
+                historyCharCount += JSON.stringify(part).length;
+              }
+            }
+          } else if (typeof msg.content === 'string') {
+            historyCharCount += (msg.content as string).length;
+          }
+        }
+      }
+      
+      const totalChars = this.systemPrompt.length + toolsCharCount + historyCharCount + content.length;
+      
+      lines.push('## 统计信息\n');
+      lines.push(`- 系统提示词: ${this.systemPrompt.length.toLocaleString()} 字符`);
+      lines.push(`- 工具定义: ${toolCount} 个工具，约 ${toolsCharCount.toLocaleString()} 字符`);
+      lines.push(`- 对话历史: ${messageCount} 条消息，约 ${historyCharCount.toLocaleString()} 字符`);
+      lines.push(`- 当前用户消息: ${content.length} 字符`);
+      lines.push(`- **总计: 约 ${totalChars.toLocaleString()} 字符**`);
+      lines.push(`- 预估 Token 数: 约 ${Math.ceil(totalChars / 3.5).toLocaleString()} tokens (按 1 token ≈ 3.5 字符估算)\n`);
+      
+      fs.writeFileSync(outputPath, lines.join('\n'), 'utf-8');
+      console.log(`✅ [Prompt Capture] 已保存到: ${outputPath}`);
+    } catch (error) {
+      console.error('❌ [Prompt Capture] 保存失败:', error);
+    }
+    
     // ✅ 新增：上下文管理（在发送消息前）
     if (this.instanceManager.agent) {
       const { manageContext } = await import('../context/context-manager');
@@ -475,6 +608,8 @@ ${lastPart}
       const result = manageContext({
         messages: currentMessages,
         modelId: this.runtimeConfig.model.id,
+        systemPrompt: this.systemPrompt,
+        tools: this.tools,
       });
       
       if (result.compressed) {

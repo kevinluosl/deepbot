@@ -5,29 +5,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-
-// Qwen 模型列表（支持 Web Search）
-const QWEN_MODELS = [
-  { id: 'qwen-plus', name: 'Qwen Plus' },
-  { id: 'qwen-max', name: 'Qwen Max' },
-  { id: 'qwen-turbo', name: 'Qwen Turbo' },
-];
-
-// Gemini 模型列表（支持 Grounding with Google Search）
-const GEMINI_MODELS = [
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (推荐)' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
-  { id: 'gemini-2.5-flash-8b', name: 'Gemini 2.5 Flash 8B' },
-];
-
-// 提供商列表
-const PROVIDERS = [
-  { id: 'qwen', name: '通义千问 (Qwen)', defaultUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
-  { id: 'gemini', name: 'Google Gemini', defaultUrl: 'https://www.im-director.com/api/gemini-proxy' },
-];
+import { 
+  WEB_SEARCH_PROVIDER_PRESETS 
+} from '../../../shared/config/default-configs';
 
 interface WebSearchToolConfig {
-  provider: string;      // 提供商 ID
+  provider: 'qwen' | 'gemini' | 'custom';  // 提供商类型
   model: string;
   apiUrl: string;
   apiKey: string;
@@ -40,8 +23,8 @@ interface WebSearchToolConfigProps {
 export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   const [config, setConfig] = useState<WebSearchToolConfig>({
     provider: 'qwen',
-    model: 'qwen-plus',
-    apiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    model: WEB_SEARCH_PROVIDER_PRESETS.qwen.defaultModelId,
+    apiUrl: WEB_SEARCH_PROVIDER_PRESETS.qwen.baseUrl,
     apiKey: '',
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -68,25 +51,15 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   };
 
   // 当提供商改变时，更新默认 API 地址和模型
-  const handleProviderChange = (newProvider: string) => {
-    const provider = PROVIDERS.find(p => p.id === newProvider);
-    if (!provider) return;
-
-    // 获取该提供商的模型列表
-    const models = newProvider === 'qwen' ? QWEN_MODELS : GEMINI_MODELS;
-    const defaultModel = models[0]?.id || '';
+  const handleProviderChange = (newProvider: 'qwen' | 'gemini' | 'custom') => {
+    const preset = WEB_SEARCH_PROVIDER_PRESETS[newProvider];
 
     setConfig({
       ...config,
       provider: newProvider,
-      apiUrl: provider.defaultUrl,
-      model: defaultModel,
+      apiUrl: preset.baseUrl,
+      model: preset.defaultModelId,
     });
-  };
-
-  // 获取当前提供商的模型列表
-  const getCurrentModels = () => {
-    return config.provider === 'qwen' ? QWEN_MODELS : GEMINI_MODELS;
   };
 
   const handleSave = async () => {
@@ -97,7 +70,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
     }
 
     if (!config.model) {
-      setSaveMessage({ type: 'error', text: '请选择模型' });
+      setSaveMessage({ type: 'error', text: '请输入模型 ID' });
       return;
     }
 
@@ -175,17 +148,15 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
         </label>
         <select
           value={config.provider}
-          onChange={(e) => handleProviderChange(e.target.value)}
+          onChange={(e) => handleProviderChange(e.target.value as 'qwen' | 'gemini' | 'custom')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {PROVIDERS.map((provider) => (
-            <option key={provider.id} value={provider.id}>
-              {provider.name}
-            </option>
-          ))}
+          <option value="qwen">通义千问 (Qwen)</option>
+          <option value="gemini">Google Gemini</option>
+          <option value="custom">自定义</option>
         </select>
         <p className="mt-1 text-xs text-gray-500">
-          选择 Web Search 提供商
+          选择预设提供商或自定义配置
         </p>
       </div>
 
@@ -198,36 +169,39 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
           type="text"
           value={config.apiUrl}
           onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
-          placeholder={config.provider === 'qwen' 
-            ? 'https://dashscope.aliyuncs.com/compatible-mode/v1'
-            : 'https://generativelanguage.googleapis.com/v1beta'}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="https://api.example.com/v1"
+          disabled={config.provider !== 'custom'}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
         <p className="mt-1 text-xs text-gray-500">
-          {config.provider === 'qwen' ? '通义千问 API 地址' : 'Google Gemini API 地址'}
+          {config.provider === 'custom' 
+            ? '输入兼容 OpenAI API 格式的地址' 
+            : '预设提供商的 API 地址（不可修改）'}
         </p>
       </div>
 
-      {/* 模型选择 */}
+      {/* 模型 ID */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          模型
+          模型 ID
         </label>
-        <select
+        <input
+          type="text"
           value={config.model}
           onChange={(e) => setConfig({ ...config, model: e.target.value })}
+          placeholder={
+            config.provider === 'qwen' 
+              ? 'qwen3.5-plus' 
+              : config.provider === 'gemini' 
+                ? 'gemini-3-flash-preview' 
+                : 'model-id'
+          }
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {getCurrentModels().map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.name}
-            </option>
-          ))}
-        </select>
+        />
         <p className="mt-1 text-xs text-gray-500">
-          {config.provider === 'qwen' 
-            ? '选择支持 Web Search 的 Qwen 模型'
-            : '选择支持 Grounding with Google Search 的 Gemini 模型'}
+          {config.provider === 'qwen' && '默认: qwen3.5-plus（可选: qwen-plus, qwen-turbo, qwen-max 等）'}
+          {config.provider === 'gemini' && '默认: gemini-3-flash-preview（可选: gemini-2.5-flash, gemini-2.5-pro 等）'}
+          {config.provider === 'custom' && '输入模型 ID'}
         </p>
       </div>
 

@@ -93,35 +93,3 @@ export function hasConfig(): boolean {
   
   return !!(apiKey && baseUrl && modelId);
 }
-
-/**
- * 预设配置（仅用于参考，不包含 API Key）
- */
-export const PRESET_CONFIGS = {
-  // 通义千问 Plus（推荐）
-  qwenPlus: {
-    apiKey: '',
-    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    modelId: 'qwen-plus',
-    modelName: '通义千问 Plus',
-    providerName: 'dashscope',
-  },
-  
-  // 通义千问 Max
-  qwenMax: {
-    apiKey: '',
-    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    modelId: 'qwen-max',
-    modelName: '通义千问 Max',
-    providerName: 'dashscope',
-  },
-  
-  // Kimi (Moonshot AI)
-  kimi: {
-    apiKey: '',
-    baseUrl: 'https://api.moonshot.cn/v1',
-    modelId: 'moonshot-v1-8k',
-    modelName: 'Kimi',
-    providerName: 'moonshot',
-  },
-};

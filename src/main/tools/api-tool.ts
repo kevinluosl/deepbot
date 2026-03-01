@@ -21,7 +21,7 @@ import {
   DEFAULT_MODEL_CONFIG, 
   DEFAULT_IMAGE_GENERATION_CONFIG, 
   DEFAULT_WEB_SEARCH_CONFIG 
-} from '../config/default-configs';
+} from '../../shared/config/default-configs';
 
 /**
  * API 工具参数 Schema - 获取配置
@@ -101,6 +101,12 @@ const SetModelConfigSchema = Type.Object({
   
   apiKey: Type.Optional(Type.String({
     description: 'API Key',
+  })),
+  
+  contextWindow: Type.Optional(Type.Number({
+    description: '上下文窗口大小（tokens），范围：1000 - 2000000',
+    minimum: 1000,
+    maximum: 2000000,
   })),
 });
 
@@ -228,7 +234,8 @@ export const apiToolPlugin: ToolPlugin = {
               resultMessage += `  • 提供商: ${result.model.providerName}\n`;
               resultMessage += `  • 模型: ${result.model.modelName}\n`;
               resultMessage += `  • API 地址: ${result.model.baseUrl}\n`;
-              resultMessage += `  • API Key: ${result.model.apiKey ? '已配置' : '未配置'}\n\n`;
+              resultMessage += `  • API Key: ${result.model.apiKey ? '已配置' : '未配置'}\n`;
+              resultMessage += `  • 上下文窗口: ${result.model.contextWindow ? result.model.contextWindow.toLocaleString() + ' tokens' : '未设置'}\n\n`;
             }
             
             if (result.imageGeneration) {
@@ -398,6 +405,7 @@ export const apiToolPlugin: ToolPlugin = {
               modelId: string;
               modelName: string;
               apiKey: string;
+              contextWindow: number;
             }>;
             
             console.log('[API Tool] 💾 设置模型配置:', params);
@@ -425,6 +433,8 @@ export const apiToolPlugin: ToolPlugin = {
               modelId: params.modelId || currentConfig?.modelId || DEFAULT_MODEL_CONFIG.modelId,
               modelName: params.modelName || currentConfig?.modelName || DEFAULT_MODEL_CONFIG.modelName,
               apiKey: params.apiKey || currentConfig?.apiKey || DEFAULT_MODEL_CONFIG.apiKey,
+              contextWindow: params.contextWindow || currentConfig?.contextWindow,
+              lastFetched: params.contextWindow ? Date.now() : currentConfig?.lastFetched,
             };
             
             // 保存配置
@@ -447,6 +457,9 @@ export const apiToolPlugin: ToolPlugin = {
             }
             if (params.apiKey) {
               resultMessage += `  • API Key: 已更新\n`;
+            }
+            if (params.contextWindow) {
+              resultMessage += `  • 上下文窗口: ${params.contextWindow.toLocaleString()} tokens\n`;
             }
             
             resultMessage += `\n⚠️ 注意：配置已更新，下次创建新会话时生效`;

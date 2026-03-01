@@ -48,6 +48,8 @@ export interface ModelConfig {
   modelId: string;         // 模型 ID
   modelName: string;       // 模型名称
   apiKey: string;          // API Key（加密存储）
+  contextWindow?: number;  // 上下文窗口大小（tokens）
+  lastFetched?: number;    // 最后获取时间（时间戳）
 }
 
 /**
@@ -138,7 +140,9 @@ export class SystemConfigStore {
         base_url TEXT NOT NULL,
         model_id TEXT NOT NULL,
         model_name TEXT NOT NULL,
-        api_key TEXT NOT NULL
+        api_key TEXT NOT NULL,
+        context_window INTEGER,
+        last_fetched INTEGER
       )
     `);
 
@@ -189,6 +193,28 @@ export class SystemConfigStore {
         this.db.exec(`
           ALTER TABLE model_config ADD COLUMN provider_type TEXT NOT NULL DEFAULT 'qwen'
         `);
+        console.log('[SystemConfigStore] ✅ 数据库迁移完成');
+      }
+      
+      // 🔥 数据库迁移：添加 context_window 和 last_fetched 字段
+      const hasContextWindowColumn = tableInfo.some((col: any) => col.name === 'context_window');
+      const hasLastFetchedColumn = tableInfo.some((col: any) => col.name === 'last_fetched');
+      
+      if (!hasContextWindowColumn) {
+        console.log('[SystemConfigStore] 🔄 迁移数据库：添加 context_window 字段到 model_config 表');
+        this.db.exec(`
+          ALTER TABLE model_config ADD COLUMN context_window INTEGER
+        `);
+      }
+      
+      if (!hasLastFetchedColumn) {
+        console.log('[SystemConfigStore] 🔄 迁移数据库：添加 last_fetched 字段到 model_config 表');
+        this.db.exec(`
+          ALTER TABLE model_config ADD COLUMN last_fetched INTEGER
+        `);
+      }
+      
+      if (!hasContextWindowColumn || !hasLastFetchedColumn) {
         console.log('[SystemConfigStore] ✅ 数据库迁移完成');
       }
     } catch (error) {
@@ -506,6 +532,8 @@ export class SystemConfigStore {
         modelId: row.model_id,
         modelName: row.model_name,
         apiKey: row.api_key,
+        contextWindow: row.context_window,
+        lastFetched: row.last_fetched,
       };
     } catch (error) {
       console.error('[SystemConfigStore] 获取模型配置失败:', error);
@@ -519,8 +547,8 @@ export class SystemConfigStore {
   saveModelConfig(config: ModelConfig): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO model_config 
-      (id, provider_type, provider_id, provider_name, base_url, model_id, model_name, api_key)
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+      (id, provider_type, provider_id, provider_name, base_url, model_id, model_name, api_key, context_window, last_fetched)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -530,7 +558,9 @@ export class SystemConfigStore {
       config.baseUrl,
       config.modelId,
       config.modelName,
-      config.apiKey
+      config.apiKey,
+      config.contextWindow || null,
+      config.lastFetched || null
     );
     
     // 🔥 强制同步到磁盘（WAL 模式下确保立即写入）
@@ -540,7 +570,23 @@ export class SystemConfigStore {
       providerType: config.providerType,
       provider: config.providerName,
       model: config.modelName,
+      contextWindow: config.contextWindow,
     });
+  }
+
+  /**
+   * 更新模型的上下文窗口大小
+   */
+  updateModelContextWindow(contextWindow: number): void {
+    const stmt = this.db.prepare(`
+      UPDATE model_config SET context_window = ?, last_fetched = ? WHERE id = 1
+    `);
+    stmt.run(contextWindow, Date.now());
+    
+    // 强制同步到磁盘
+    this.db.pragma('wal_checkpoint(PASSIVE)');
+    
+    console.info('[SystemConfigStore] ✅ 模型上下文窗口已更新:', contextWindow);
   }
 
   /**

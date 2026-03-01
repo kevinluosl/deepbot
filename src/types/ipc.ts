@@ -208,6 +208,8 @@ export interface ModelConfig {
   modelId: string;
   modelName: string;
   apiKey: string;
+  contextWindow?: number;  // 上下文窗口大小（tokens）
+  lastFetched?: number;    // 最后获取时间（时间戳）
 }
 
 export interface GetModelConfigResponse {

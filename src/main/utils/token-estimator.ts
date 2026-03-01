@@ -5,47 +5,14 @@
  */
 
 import type { AgentMessage } from '@mariozechner/pi-agent-core';
+import { getContextWindowFromModelId } from './model-info-fetcher';
 
 /**
  * Token 估算常量
  */
 const CHARS_PER_TOKEN = 4;           // 平均 4 个字符 = 1 token
 const IMAGE_TOKEN_ESTIMATE = 2000;   // 图片约 2000 tokens
-const DEFAULT_CONTEXT_WINDOW = 128000; // 默认上下文窗口（128K）
-
-/**
- * 模型上下文窗口配置
- */
-const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
-  // Claude 系列
-  'claude-3-5-sonnet-20241022': 200000,
-  'claude-3-5-sonnet-latest': 200000,
-  'claude-3-5-haiku-20241022': 200000,
-  'claude-3-opus-20240229': 200000,
-  'claude-3-sonnet-20240229': 200000,
-  'claude-3-haiku-20240307': 200000,
-  
-  // GPT 系列
-  'gpt-4o': 128000,
-  'gpt-4o-mini': 128000,
-  'gpt-4-turbo': 128000,
-  'gpt-4': 8192,
-  'gpt-3.5-turbo': 16385,
-  
-  // DeepSeek 系列
-  'deepseek-chat': 64000,
-  'deepseek-coder': 64000,
-  
-  // Qwen 系列
-  'qwen-max': 32000,
-  'qwen-plus': 32000,
-  'qwen-turbo': 8000,
-  'qwen2.5-72b-instruct': 32000,
-  'qwen2.5-32b-instruct': 32000,
-  'qwen2.5-14b-instruct': 32000,
-  'qwen2.5-7b-instruct': 32000,
-  'qwen-long': 1000000,  // Qwen-Long 支持 100 万 tokens
-};
+const DEFAULT_CONTEXT_WINDOW = 32000; // 默认上下文窗口（32K）
 
 /**
  * 估算单条消息的 token 数量
@@ -142,53 +109,34 @@ export function estimateMessagesTokens(messages: AgentMessage[]): number {
 /**
  * 获取模型的上下文窗口大小
  * 
+ * 优先级：
+ * 1. 数据库中保存的值（用户配置的模型）
+ * 2. 写死的配置表
+ * 3. 模糊匹配
+ * 4. 默认值
+ * 
  * @param modelId - 模型 ID
  * @returns 上下文窗口大小（token 数量）
  */
 export function getContextWindowTokens(modelId?: string): number {
   if (!modelId) return DEFAULT_CONTEXT_WINDOW;
   
-  // 精确匹配
-  if (MODEL_CONTEXT_WINDOWS[modelId]) {
-    return MODEL_CONTEXT_WINDOWS[modelId];
+  // 1. 优先从数据库读取（用户配置的模型）
+  try {
+    const { SystemConfigStore } = require('../database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    const modelConfig = store.getModelConfig();
+    
+    if (modelConfig && modelConfig.modelId === modelId && modelConfig.contextWindow) {
+      console.debug(`[Token Estimator] 使用数据库中的上下文窗口: ${modelConfig.contextWindow}`);
+      return modelConfig.contextWindow;
+    }
+  } catch (error) {
+    console.warn('[Token Estimator] 从数据库读取上下文窗口失败:', error);
   }
   
-  // 模糊匹配（处理带版本号的模型）
-  const lowerModelId = modelId.toLowerCase();
-  
-  if (lowerModelId.includes('claude-3-5') || lowerModelId.includes('claude-3-opus')) {
-    return 200000;
-  }
-  if (lowerModelId.includes('claude-3')) {
-    return 200000;
-  }
-  if (lowerModelId.includes('gpt-4o')) {
-    return 128000;
-  }
-  if (lowerModelId.includes('gpt-4-turbo')) {
-    return 128000;
-  }
-  if (lowerModelId.includes('gpt-4')) {
-    return 8192;
-  }
-  if (lowerModelId.includes('gpt-3.5')) {
-    return 16385;
-  }
-  if (lowerModelId.includes('deepseek')) {
-    return 64000;
-  }
-  if (lowerModelId.includes('qwen-long')) {
-    return 1000000;  // Qwen-Long 特殊处理
-  }
-  if (lowerModelId.includes('qwen-max') || lowerModelId.includes('qwen-plus')) {
-    return 32000;
-  }
-  if (lowerModelId.includes('qwen2.5') || lowerModelId.includes('qwen')) {
-    return 32000;  // Qwen 系列默认 32K
-  }
-  
-  // 默认值
-  return DEFAULT_CONTEXT_WINDOW;
+  // 2. 使用模糊匹配推断
+  return getContextWindowFromModelId(modelId);
 }
 
 /**
