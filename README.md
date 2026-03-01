@@ -551,7 +551,7 @@ DeepBot 的开发受到以下项目的启发：
 
 ## 📧 联系方式
 
-- **作者**: K罗@格灵深瞳 (Kevin Luo @ Deepglint)
+- **作者**: K罗@格灵深瞳
 - **问题反馈**: [GitHub Issues](https://github.com/yourusername/deepbot/issues)
 
 ---

@@ -553,7 +553,7 @@ DeepBot's development was inspired by the following projects:
 
 ## 📧 Contact
 
-- **Author**: K罗@格灵深瞳 (Kevin Luo @ Deepglint)
+- **Author**: Kevin Luo @ Deepglint
 - **Issue Reporting**: [GitHub Issues](https://github.com/kevinluosl/deepbot/issues)
 
 ---
