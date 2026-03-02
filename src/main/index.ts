@@ -181,6 +181,10 @@ function createWindow() {
   gateway = new Gateway();
   gateway.setMainWindow(mainWindow);
   
+  // 设置全局 Gateway 实例
+  const { setGlobalGatewayInstance } = require('./gateway');
+  setGlobalGatewayInstance(gateway);
+  
   // 🔥 设置 Gateway 实例供 connector-handler 使用
   const { setGatewayForConnectorHandler } = require('./ipc/connector-handler');
   setGatewayForConnectorHandler(gateway);

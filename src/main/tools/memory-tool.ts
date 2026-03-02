@@ -70,25 +70,25 @@ function getGatewayInstance(): Gateway | null {
  */
 const MEMORY_TEMPLATE = `# DeepBot 核心记忆
 
-## 姓名和性格
-- 我的名字是 DeepBot
-- 用户名字：（待了解）
-- 我的性格：专业、友好、高效
+## 角色
+（暂无记录）
+
+**说明**：智能体的特定专业角色（如法律专家、数据挖掘专家、前端开发专家等）。
 
 ## 用户习惯
 （暂无记录）
 
-**说明**：用户的偏好、使用习惯、工作流程等。请在回答时考虑这些习惯。
+**说明**：用户的偏好、使用习惯、工作流程、常用的 skill 或 tool 及其使用方式、用户需要的交互方式等。
 
 ## 错误总结
 （暂无记录）
 
-**说明**：之前遇到的错误和解决方案。请避免重复相同的错误。
+**说明**：之前遇到的错误和解决方案、Agent 出错并纠正后的经验教训。请避免重复相同的错误。
 
-## 其他重要信息
+## 备忘事项
 （暂无记录）
 
-**说明**：其他需要长期记住的信息。
+**说明**：用户希望记住的其他任何事物（不属于上述分类）。
 `;
 
 /**
@@ -190,38 +190,40 @@ ${context ? `执行结果：\n"""\n${context}\n"""\n` : ''}
 1. 分析用户的意图，判断需要记住什么
 2. 将新信息提炼为简洁的记忆点（不超过 50 字）
 3. **检查冲突**：仔细检查新信息是否与现有记忆冲突
-   - 如果冲突：用新信息替换旧信息（例如：性格从"温柔"改为"坚毅"）
-   - 如果补充：合并信息（例如：性格是"坚毅的，同时保有温柔的底色"）
+   - 如果冲突：用新信息替换旧信息
+   - 如果补充：合并信息
    - 如果重复：不要重复添加
 4. 将记忆点添加到合适的分类下：
-   - 姓名和性格：智能体的名字、性格特征、角色定位、说话风格，以及用户的名字
-   - 用户习惯：用户的个人偏好、使用习惯、常用操作、工作流程
-   - 错误总结：之前遇到的错误和解决方案
-   - 其他重要信息：其他需要长期记住的信息
+   - 角色：智能体的特定专业角色（如法律专家、数据挖掘专家、前端开发专家）
+   - 用户习惯：用户的个人偏好、使用习惯、常用操作、工作流程、常用的 skill 或 tool 及其使用方式
+   - 错误总结：之前遇到的错误和解决方案、Agent 出错并纠正后的经验教训
+   - 备忘事项：用户希望记住的其他任何事物（不属于上述分类）
 
 5. 保持记忆文件的结构和格式
 6. 确保总长度不超过 5000 字符
-7. 特别注意分类规则：
-   - 智能体的名字（如"你叫xxx"、"叫你xxx"）→ "姓名和性格"部分，格式："我的名字是 xxx"
-   - 用户的名字（如"我叫xxx"、"叫我xxx"、"称呼我xxx"）→ "姓名和性格"部分，格式："用户名字：xxx"
-   - 智能体的性格（如"你是温柔的"、"你要幽默一点"）→ "姓名和性格"部分
-   - 用户的偏好（如"我喜欢用VS Code"、"我通常早上工作"）→ "用户习惯"部分
+7. **严格禁止记录任何名字相关信息**：
+   - ❌ 禁止记录智能体的名字（如"我叫xxx"、"我的名字是xxx"）
+   - ❌ 禁止记录用户的名字（如"用户叫xxx"、"用户名字：xxx"）
+   - ⚠️ 名字由 api_set_name 工具管理，不在 memory 中记录
 
-8. **冲突处理示例**：
-   - 旧记忆："我的性格是温柔的"
-   - 新信息："你的性格是坚毅的"
-   - 正确处理：替换为"我的性格是坚毅的"（或根据上下文合并为"我的性格是坚毅的，同时保有温柔的底色"）
+8. **分类示例**：
+   - "你是法律专家" → "角色"部分
+   - "你是数据挖掘专家" → "角色"部分
+   - "我喜欢用 VS Code" → "用户习惯"部分
+   - "我通常用 weather skill 查天气" → "用户习惯"部分
+   - "记住这个错误：不要用 rm -rf" → "错误总结"部分
+   - "项目截止日期是下周五" → "备忘事项"部分
+
+9. **冲突处理示例**：
+   - 旧记忆："角色是法律专家"
+   - 新信息："你是数据挖掘专家"
+   - 正确处理：替换为"角色是数据挖掘专家"（或根据上下文合并）
    - 错误处理：同时保留两条冲突的信息
 
-9. **全局去重检查**（在输出前必须执行）：
+10. **全局去重检查**（在输出前必须执行）：
    - 检查整个记忆文件中是否有语义相同或重复的条目
    - 如果发现重复：只保留一条（选择表达更清晰的）
    - 如果发现冲突：根据最新信息决定保留哪一条，或合并
-   - 去重示例：
-     * "回答问题时不称呼用户名字" 和 "回答问题时不要称呼用户名字" → 只保留一条
-     * "我喜欢用 Python 3.11" 和 "我一般用 Python 3.11" → 只保留一条
-   - 冲突示例：
-     * "不称呼用户名字" 和 "称呼其为'先生'" → 冲突，保留最新的或根据上下文合并
 
 直接输出更新后的完整记忆文件内容，不要解释。`;
 
@@ -249,80 +251,9 @@ ${context ? `执行结果：\n"""\n${context}\n"""\n` : ''}
 }
 
 /**
- * 从记忆内容中提取用户名字
- * 
- * @param memoryContent - 记忆内容
- * @returns 用户名字，如果没有找到返回 null
- */
-function extractUserNameFromMemory(memoryContent: string): string | null {
-  // 匹配多种格式：
-  // - "用户姓名：xxx"
-  // - "用户名字：xxx"
-  // - "用户叫 xxx"
-  // - "用户是 xxx"
-  
-  // 尝试匹配 "用户姓名：xxx" 或 "用户名字：xxx"
-  let nameMatch = memoryContent.match(/用户(?:姓名|名字)[：:]\s*([^\n，。,.\s、]+)/);
-  if (nameMatch && nameMatch[1]) {
-    const name = nameMatch[1].trim();
-    console.log('[Memory Tool] 提取到用户名字（格式1）:', name);
-    return name;
-  }
-  
-  // 尝试匹配 "用户叫 xxx" 或 "用户是 xxx"
-  nameMatch = memoryContent.match(/用户(?:叫|是)\s*([^\n，。,.\s、]+)/);
-  if (nameMatch && nameMatch[1]) {
-    const name = nameMatch[1].trim();
-    console.log('[Memory Tool] 提取到用户名字（格式2）:', name);
-    return name;
-  }
-  
-  console.log('[Memory Tool] 未能提取到用户名字');
-  return null;
-}
-
-/**
- * 从记忆内容中提取智能体名字
- * 
- * @param memoryContent - 记忆内容
- * @returns 智能体名字，如果没有找到返回 null
- */
-function extractAgentNameFromMemory(memoryContent: string): string | null {
-  // 匹配多种格式：
-  // - "我的名字是 xxx"
-  // - "我叫 xxx"
-  // - "我是 xxx，一个智能助手"
-  // - "我是 xxx"
-  
-  // 先尝试匹配 "我的名字是 xxx" 或 "我叫 xxx"
-  let nameMatch = memoryContent.match(/(?:我的名字是|我叫)\s*([^\n，。,.\s、]+)/);
-  if (nameMatch && nameMatch[1]) {
-    const name = nameMatch[1].trim();
-    console.log('[Memory Tool] 提取到名字（格式1）:', name);
-    return name;
-  }
-  
-  // 尝试匹配 "我是 xxx，一个智能助手" 或 "我是 xxx"
-  nameMatch = memoryContent.match(/我是\s*([^\n，。,.\s、]+)(?:，|,|\s|$)/);
-  if (nameMatch && nameMatch[1]) {
-    const name = nameMatch[1].trim();
-    // 排除一些通用词
-    if (name !== 'DeepBot' && name !== '智能助手' && name !== 'AI' && name !== 'assistant') {
-      console.log('[Memory Tool] 提取到名字（格式2）:', name);
-      return name;
-    }
-  }
-  
-  console.log('[Memory Tool] 未能提取到名字');
-  return null;
-}
-
-/**
  * 创建 Memory Tool
  */
 export function createMemoryTool(): AgentTool {
-  const configStore = SystemConfigStore.getInstance();
-  
   return {
     name: TOOL_NAMES.MEMORY,
     label: '记忆管理',
@@ -333,21 +264,22 @@ export function createMemoryTool(): AgentTool {
 - update: 更新记忆（自动提炼用户消息和执行结果）
 
 记忆分类：
-- 姓名和性格：智能体的名字、性格特征、角色定位、说话风格，以及用户的名字（名字会自动同步到数据库）
-- 用户习惯：用户的个人偏好、使用习惯、常用操作、工作流程
-- 错误总结：之前遇到的错误和解决方案
-- 其他重要信息：其他需要长期记住的信息
+- 角色：智能体的特定专业角色（如法律专家、数据挖掘专家、前端开发专家）
+- 用户习惯：用户的个人偏好、使用习惯、工作流程、常用的 skill 或 tool 及其使用方式
+- 错误总结：之前遇到的错误和解决方案、Agent 出错并纠正后的经验教训
+- 备忘事项：用户希望记住的其他任何事物（不属于上述分类）
 
 分类示例：
-- "你是温柔的助手" → 姓名和性格
+- "你是法律专家" → 角色
 - "我喜欢用 VS Code" → 用户习惯
-- "我通常早上 9 点工作" → 用户习惯
+- "我通常用 weather skill 查天气" → 用户习惯
+- "记住这个错误：不要用 rm -rf" → 错误总结
 
 注意：
 - 记忆文件最大 5000 字符
 - 更新时会自动提炼和分类
 - 避免重复记录相似信息
-- 名字变化会自动同步到数据库`,
+- ⚠️ 严格禁止记录任何名字相关信息（名字由 api_set_name 工具管理）`,
     
     parameters: MemoryToolSchema,
     
@@ -417,57 +349,6 @@ export function createMemoryTool(): AgentTool {
           const { memoryFile } = getMemoryFilePath();
           console.log('[Memory Tool] ✅ 记忆文件已写入:', memoryFile);
           
-          // 检查是否更新了智能体名字和用户名字
-          const newAgentName = extractAgentNameFromMemory(updatedMemory);
-          const newUserName = extractUserNameFromMemory(updatedMemory);
-          const currentConfig = configStore.getNameConfig();
-          
-          let nameChanged = false;
-          
-          // 更新智能体名字
-          if (newAgentName && newAgentName !== currentConfig.agentName) {
-            console.log(`[Memory Tool] 🔄 检测到智能体名字变更: ${currentConfig.agentName} -> ${newAgentName}`);
-            try {
-              configStore.saveAgentName(newAgentName);
-              console.log('[Memory Tool] ✅ 已同步智能体名字到数据库');
-              nameChanged = true;
-            } catch (error) {
-              const errorMsg = getErrorMessage(error);
-              console.error('[Memory Tool] ❌ 保存智能体名字失败:', errorMsg);
-              // 继续执行，不中断流程
-            }
-          } else if (newAgentName) {
-            console.log(`[Memory Tool] ℹ️  智能体名字未变更，保持为: ${newAgentName}`);
-          }
-          
-          // 更新用户名字
-          if (newUserName && newUserName !== currentConfig.userName) {
-            console.log(`[Memory Tool] 🔄 检测到用户名字变更: ${currentConfig.userName} -> ${newUserName}`);
-            try {
-              configStore.saveUserName(newUserName);
-              console.log('[Memory Tool] ✅ 已同步用户名字到数据库');
-              nameChanged = true;
-            } catch (error) {
-              const errorMsg = getErrorMessage(error);
-              console.error('[Memory Tool] ❌ 保存用户名字失败:', errorMsg);
-              // 继续执行，不中断流程
-            }
-          } else if (newUserName) {
-            console.log(`[Memory Tool] ℹ️  用户名字未变更，保持为: ${newUserName}`);
-          }
-          
-          // 🔥 如果名字有变化，发送事件到前端
-          if (nameChanged) {
-            const { BrowserWindow } = require('electron');
-            const mainWindow = BrowserWindow.getAllWindows()[0];
-            if (mainWindow) {
-              const { sendToWindow } = await import('../../shared/utils/webcontents-utils');
-              const updatedConfig = configStore.getNameConfig();
-              sendToWindow(mainWindow, 'name-config:updated', updatedConfig);
-              console.log('[Memory Tool] 📤 已发送名字配置更新事件到前端:', updatedConfig);
-            }
-          }
-          
           // 🔥 重新加载系统提示词（确保下一次对话使用新记忆）
           const gateway = getGatewayInstance();
           if (gateway) {
@@ -482,32 +363,17 @@ export function createMemoryTool(): AgentTool {
             console.warn('[Memory Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
           }
           
-          // 构建返回消息
-          let resultMessage = '记忆已更新。';
-          if (newAgentName || newUserName) {
-            resultMessage += '\n\n';
-            if (newAgentName) {
-              resultMessage += `✅ 智能体名字已更新为: ${newAgentName}\n`;
-            }
-            if (newUserName) {
-              resultMessage += `✅ 用户名字已更新为: ${newUserName}`;
-            }
-          }
-          
           return {
             content: [
               {
                 type: 'text' as const,
-                text: resultMessage,
+                text: '记忆已更新。',
               },
             ],
             details: {
               success: true,
               oldLength: currentMemory.length,
               newLength: updatedMemory.length,
-              nameUpdated: nameChanged,
-              newAgentName,
-              newUserName,
             },
           };
         }

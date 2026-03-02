@@ -48,6 +48,8 @@ export const TOOL_NAMES = {
   API_SET_MODEL_CONFIG: 'api_set_model_config',
   API_SET_IMAGE_GENERATION_CONFIG: 'api_set_image_generation_config',
   API_SET_WEB_SEARCH_CONFIG: 'api_set_web_search_config',
+  API_GET_NAME: 'api_get_name',
+  API_SET_NAME: 'api_set_name',
   
   // 连接器工具
   CONNECTOR_SEND_IMAGE: 'connector_send_image',

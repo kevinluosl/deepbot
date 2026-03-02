@@ -917,3 +917,26 @@ export class Gateway {
     return this.connectorManager;
   }
 }
+
+// ==================== Gateway 实例管理 ====================
+
+let gatewayInstance: Gateway | null = null;
+
+/**
+ * 设置 Gateway 实例（由 index.ts 调用）
+ * 
+ * @param gateway - Gateway 实例
+ */
+export function setGlobalGatewayInstance(gateway: Gateway): void {
+  gatewayInstance = gateway;
+  console.info('[Gateway] 全局 Gateway 实例已设置');
+}
+
+/**
+ * 获取 Gateway 实例
+ * 
+ * @returns Gateway 实例，如果未设置则返回 null
+ */
+export function getGatewayInstance(): Gateway | null {
+  return gatewayInstance;
+}

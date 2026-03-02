@@ -145,6 +145,21 @@ const SetWebSearchConfigSchema = Type.Object({
   })),
 });
 
+/**
+ * API 工具参数 Schema - 设置名字配置
+ */
+const SetNameConfigSchema = Type.Object({
+  agentName: Type.Optional(Type.String({
+    description: '智能体名字（最多 10 个字符）',
+    maxLength: 10,
+  })),
+  
+  userName: Type.Optional(Type.String({
+    description: '用户称呼（最多 10 个字符）',
+    maxLength: 10,
+  })),
+});
+
 
 
 /**
@@ -659,6 +674,178 @@ export const apiToolPlugin: ToolPlugin = {
                 {
                   type: 'text',
                   text: `❌ 设置 Web 搜索工具配置失败: ${getErrorMessage(error)}`,
+                },
+              ],
+              details: {
+                success: false,
+                error: getErrorMessage(error),
+              },
+              isError: true,
+            };
+          }
+        },
+      },
+      
+      // 获取名字配置
+      {
+        name: TOOL_NAMES.API_GET_NAME,
+        label: '获取名字配置',
+        description: '查询智能体名字和用户称呼',
+        parameters: Type.Object({}),
+        
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          try {
+            console.log('[API Tool] 📋 获取名字配置');
+            
+            // 检查是否被取消
+            if (signal?.aborted) {
+              const err = new Error('获取配置操作被取消');
+              err.name = 'AbortError';
+              throw err;
+            }
+            
+            // 加载 SystemConfigStore
+            const { SystemConfigStore } = await import('../database/system-config-store');
+            const store = SystemConfigStore.getInstance();
+            
+            const nameConfig = store.getNameConfig();
+            
+            const resultMessage = `✅ 名字配置查询成功\n\n` +
+              `👤 智能体名字: ${nameConfig.agentName}\n` +
+              `👥 用户称呼: ${nameConfig.userName}`;
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: resultMessage,
+                },
+              ],
+              details: {
+                success: true,
+                nameConfig,
+              },
+            };
+          } catch (error) {
+            console.error('[API Tool] ❌ 获取名字配置失败:', error);
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `❌ 获取名字配置失败: ${getErrorMessage(error)}`,
+                },
+              ],
+              details: {
+                success: false,
+                error: getErrorMessage(error),
+              },
+              isError: true,
+            };
+          }
+        },
+      },
+      
+      // 设置名字配置
+      {
+        name: TOOL_NAMES.API_SET_NAME,
+        label: '设置名字配置',
+        description: '更新智能体名字和用户称呼。名字最多 10 个字符。修改后会立即生效并重新加载系统提示词',
+        parameters: SetNameConfigSchema,
+        
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          try {
+            const params = args as Partial<{
+              agentName: string;
+              userName: string;
+            }>;
+            
+            console.log('[API Tool] 💾 设置名字配置:', params);
+            
+            // 检查是否被取消
+            if (signal?.aborted) {
+              const err = new Error('设置配置操作被取消');
+              err.name = 'AbortError';
+              throw err;
+            }
+            
+            // 至少需要提供一个参数
+            if (!params.agentName && !params.userName) {
+              throw new Error('至少需要提供 agentName 或 userName 参数');
+            }
+            
+            // 加载 SystemConfigStore
+            const { SystemConfigStore } = await import('../database/system-config-store');
+            const store = SystemConfigStore.getInstance();
+            
+            // 获取当前配置
+            const currentConfig = store.getNameConfig();
+            
+            // 更新配置
+            if (params.agentName) {
+              store.saveAgentName(params.agentName);
+            }
+            
+            if (params.userName) {
+              store.saveUserName(params.userName);
+            }
+            
+            // 获取更新后的配置
+            const updatedConfig = store.getNameConfig();
+            
+            // 🔥 发送事件到前端
+            const { BrowserWindow } = require('electron');
+            const mainWindow = BrowserWindow.getAllWindows()[0];
+            if (mainWindow) {
+              const { sendToWindow } = await import('../../shared/utils/webcontents-utils');
+              sendToWindow(mainWindow, 'name-config:updated', updatedConfig);
+              console.log('[API Tool] 📤 已发送名字配置更新事件到前端:', updatedConfig);
+            }
+            
+            // 🔥 重新加载系统提示词（确保下一次对话使用新名字）
+            const { getGatewayInstance } = await import('../gateway');
+            const gateway = getGatewayInstance();
+            if (gateway) {
+              console.log('[API Tool] 🔄 触发系统提示词重新加载...');
+              await gateway.reloadSystemPrompts();
+              console.log('[API Tool] ✅ 系统提示词已重新加载');
+            } else {
+              console.warn('[API Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
+            }
+            
+            // 构建结果消息
+            let resultMessage = `✅ 名字配置已更新\n\n`;
+            
+            if (params.agentName) {
+              resultMessage += `  • 智能体名字: ${currentConfig.agentName} → ${params.agentName}\n`;
+            }
+            if (params.userName) {
+              resultMessage += `  • 用户称呼: ${currentConfig.userName} → ${params.userName}\n`;
+            }
+            
+            resultMessage += `\n✨ 配置已立即生效`;
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: resultMessage,
+                },
+              ],
+              details: {
+                success: true,
+                oldConfig: currentConfig,
+                newConfig: updatedConfig,
+              },
+            };
+          } catch (error) {
+            console.error('[API Tool] ❌ 设置名字配置失败:', error);
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `❌ 设置名字配置失败: ${getErrorMessage(error)}`,
                 },
               ],
               details: {
