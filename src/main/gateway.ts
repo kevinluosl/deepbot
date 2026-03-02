@@ -68,6 +68,11 @@ export class Gateway {
     // 创建默认 Tab
     this.createDefaultTab();
     
+    // 🔥 异步加载持久化的 Tab（不阻塞初始化）
+    this.loadPersistentTabs().catch(error => {
+      console.error('[Gateway] ❌ 加载持久化 Tab 失败:', error);
+    });
+    
     // 🔥 异步启动已启用的连接器（不阻塞初始化）
     this.autoStartConnectors().catch(error => {
       console.error('[Gateway] ❌ 自动启动连接器失败:', error);
@@ -77,6 +82,66 @@ export class Gateway {
     this.warmupAIConnection().catch(error => {
       console.error('[Gateway] ❌ AI 连接预热失败:', error);
     });
+  }
+  
+  /**
+   * 加载持久化的 Tab
+   */
+  private async loadPersistentTabs(): Promise<void> {
+    try {
+      console.log('[Gateway] 🔄 加载持久化的 Tab...');
+      
+      // 延迟 500ms 后加载（避免阻塞启动）
+      await sleep(500);
+      
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const { getAllPersistentTabs } = await import('./database/tab-config');
+      const store = SystemConfigStore.getInstance();
+      
+      // 获取所有持久化的 Tab
+      const persistentTabs = getAllPersistentTabs(store['db']);
+      
+      if (persistentTabs.length === 0) {
+        console.log('[Gateway] ℹ️ 没有持久化的 Tab');
+        return;
+      }
+      
+      console.log(`[Gateway] 📋 找到 ${persistentTabs.length} 个持久化的 Tab`);
+      
+      // 恢复每个 Tab
+      for (const tabConfig of persistentTabs) {
+        try {
+          // 生成 Tab ID（使用保存的 ID）
+          const tabId = tabConfig.id;
+          
+          // 创建 Tab（不持久化，因为已经在数据库中）
+          const tab: AgentTab = {
+            id: tabId,
+            title: tabConfig.title,
+            type: 'normal',
+            messages: [],
+            isLoading: false,
+            createdAt: tabConfig.createdAt,
+            lastActiveAt: tabConfig.lastActiveAt,
+            memoryFile: tabConfig.memoryFile,
+            agentName: tabConfig.agentName,
+            isPersistent: true,
+          };
+          
+          this.tabs.set(tabId, tab);
+          console.log(`[Gateway] ✅ 已恢复 Tab: ${tabId} (${tabConfig.title})`);
+          
+          // 通知前端 Tab 已创建
+          this.notifyTabCreated(tab);
+        } catch (error) {
+          console.error(`[Gateway] ❌ 恢复 Tab 失败: ${tabConfig.id}`, error);
+        }
+      }
+      
+      console.log('[Gateway] ✅ 持久化 Tab 加载完成');
+    } catch (error) {
+      console.error('[Gateway] ❌ 加载持久化 Tab 失败:', error);
+    }
   }
   
   /**
@@ -216,6 +281,29 @@ export class Gateway {
     console.log('[Gateway] ✅ 所有会话的系统提示词已重新加载');
     console.log('='.repeat(80) + '\n');
   }
+  /**
+   * 重新加载单个会话的系统提示词
+   * @param sessionId 会话 ID
+   */
+  async reloadSessionSystemPrompt(sessionId: string): Promise<void> {
+    console.log('\n' + '='.repeat(80));
+    console.log(`[Gateway] 🔄 重新加载会话 ${sessionId} 的系统提示词...`);
+    console.log('='.repeat(80));
+
+    const runtime = this.agentRuntimes.get(sessionId);
+
+    if (!runtime) {
+      console.warn(`[Gateway] ⚠️ 会话 ${sessionId} 不存在，无法重新加载系统提示词`);
+      return;
+    }
+
+    await runtime.reloadSystemPrompt();
+
+    console.log('='.repeat(80));
+    console.log(`[Gateway] ✅ 会话 ${sessionId} 的系统提示词已重新加载`);
+    console.log('='.repeat(80) + '\n');
+  }
+
 
   /**
    * 设置主窗口
@@ -649,6 +737,9 @@ export class Gateway {
     connectorId?: string;
     conversationId?: string;
     taskId?: string;
+    memoryFile?: string | null;      // 🔥 新增：独立的 memory 文件
+    agentName?: string | null;       // 🔥 新增：独立的 Agent 名字
+    isPersistent?: boolean;          // 🔥 新增：是否持久化
   }): Promise<AgentTab> {
     // 检查 Tab 数量限制
     if (this.tabs.size >= this.MAX_TABS) {
@@ -663,6 +754,24 @@ export class Gateway {
     const tabTitle = options.title || `Agent ${this.tabCounter + 1}`;
     this.tabCounter++;
     
+    // 🔥 确定 Tab 类型（用于数据库）
+    let tabType: 'manual' | 'task' | 'connector' = 'manual';
+    if (options.type === 'scheduled_task') {
+      tabType = 'task';
+    } else if (options.type === 'connector') {
+      tabType = 'connector';
+    }
+    
+    // 🔥 确定是否持久化（默认：手动创建的 Tab 持久化）
+    const isPersistent = options.isPersistent !== undefined 
+      ? options.isPersistent 
+      : tabType === 'manual';
+    
+    // 🔥 生成独立的 memory 文件名（如果未指定）
+    const memoryFile = options.memoryFile !== undefined
+      ? options.memoryFile
+      : `memory-${tabId}.md`;
+    
     // 创建 Tab
     const tab: AgentTab = {
       id: tabId,
@@ -676,10 +785,50 @@ export class Gateway {
       connectorId: options.connectorId,
       conversationId: options.conversationId,
       taskId: options.taskId,
+      memoryFile,                      // 🔥 新增
+      agentName: options.agentName,    // 🔥 新增
+      isPersistent,                    // 🔥 新增
     };
     
     this.tabs.set(tabId, tab);
-    console.log('[Gateway] 创建新 Tab:', tabId, tabTitle, options.type);
+    console.log('[Gateway] 创建新 Tab:', tabId, tabTitle, options.type, isPersistent ? '(持久化)' : '(临时)');
+    
+    // 🔥 如果是持久化 Tab，保存到数据库
+    if (isPersistent) {
+      try {
+        const { SystemConfigStore } = await import('./database/system-config-store');
+        const { saveTabConfig } = await import('./database/tab-config');
+        const store = SystemConfigStore.getInstance();
+        
+        saveTabConfig(store['db'], {
+          id: tabId,
+          title: tabTitle,
+          type: tabType,
+          memoryFile,
+          agentName: options.agentName || null,
+          isPersistent: true,
+          createdAt: tab.createdAt,
+          lastActiveAt: tab.lastActiveAt,
+          taskId: options.taskId,
+          connectorId: options.connectorId,
+          conversationId: options.conversationId,
+        });
+        
+        console.log('[Gateway] 💾 Tab 配置已持久化:', tabId);
+        
+        // 🔥 创建 Tab 的 memory 文件（继承主 memory 内容）
+        if (memoryFile && tabType === 'manual') {
+          try {
+            const { createTabMemoryFile } = await import('./tools/memory-tool');
+            await createTabMemoryFile(tabId, memoryFile);
+          } catch (error) {
+            console.error('[Gateway] ❌ 创建 Tab memory 文件失败:', error);
+          }
+        }
+      } catch (error) {
+        console.error('[Gateway] ❌ 保存 Tab 配置失败:', error);
+      }
+    }
     
     // 通知前端 Tab 已创建
     this.notifyTabCreated(tab);
@@ -794,6 +943,20 @@ export class Gateway {
     if (runtime) {
       await runtime.destroy();
       this.agentRuntimes.delete(tabId);
+    }
+    
+    // 🔥 如果是持久化 Tab，从数据库删除配置
+    if (tab.isPersistent) {
+      try {
+        const { SystemConfigStore } = await import('./database/system-config-store');
+        const { deleteTabConfig } = await import('./database/tab-config');
+        const store = SystemConfigStore.getInstance();
+        
+        deleteTabConfig(store['db'], tabId);
+        console.log('[Gateway] 🗑️ 已删除 Tab 持久化配置:', tabId);
+      } catch (error) {
+        console.error('[Gateway] ❌ 删除 Tab 配置失败:', error);
+      }
     }
     
     // 删除 Tab

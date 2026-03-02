@@ -96,25 +96,70 @@ function getGatewayInstance(): Gateway | null {
   return gatewayInstance;
 }
 
+/**
+ * 为新 Tab 创建 memory 文件（继承主 memory 内容）
+ * @param tabId - Tab ID
+ * @param memoryFileName - memory 文件名（如 memory-tab-1.md）
+ */
+export async function createTabMemoryFile(tabId: string, memoryFileName: string): Promise<void> {
+  try {
+    console.log(`[Memory Tool] 🔄 为 Tab ${tabId} 创建 memory 文件: ${memoryFileName}`);
+    
+    // 读取主 memory 内容
+    const mainMemoryContent = await readMemory();
+    
+    // 获取新 Tab 的 memory 文件路径
+    const configStore = SystemConfigStore.getInstance();
+    const settings = configStore.getWorkspaceSettings();
+    const memoryDir = settings.memoryDir;
+    const newMemoryFile = path.join(memoryDir, memoryFileName);
+    
+    // 确保目录存在
+    await fs.mkdir(memoryDir, { recursive: true });
+    
+    // 写入继承的内容
+    await fs.writeFile(newMemoryFile, mainMemoryContent, 'utf-8');
+    
+    console.log(`[Memory Tool] ✅ Tab ${tabId} 的 memory 文件已创建并继承主 memory 内容`);
+  } catch (error) {
+    console.error(`[Memory Tool] ❌ 创建 Tab ${tabId} 的 memory 文件失败:`, error);
+    throw error;
+  }
+}
+
 // ==================== 辅助函数 ====================
 
 /**
  * 获取记忆文件路径（从数据库读取配置）
+ * @param tabId - Tab ID（可选），如果提供则返回 Tab 独立的 memory 文件
  */
-function getMemoryFilePath(): { memoryDir: string; memoryFile: string } {
+function getMemoryFilePath(tabId?: string): { memoryDir: string; memoryFile: string } {
   const configStore = SystemConfigStore.getInstance();
   const settings = configStore.getWorkspaceSettings();
   const memoryDir = settings.memoryDir;
+  
+  // 如果提供了 tabId，检查是否有独立的 memory 文件配置
+  if (tabId) {
+    const tabConfig = configStore.getTabConfig(tabId);
+    if (tabConfig?.memoryFile) {
+      // 使用 Tab 独立的 memory 文件
+      const memoryFile = path.join(memoryDir, tabConfig.memoryFile);
+      return { memoryDir, memoryFile };
+    }
+  }
+  
+  // 默认使用全局 memory.md
   const memoryFile = path.join(memoryDir, 'memory.md');
   return { memoryDir, memoryFile };
 }
 
 /**
  * 确保记忆目录和文件存在
+ * @param tabId - Tab ID（可选）
  */
-async function ensureMemoryFile(): Promise<void> {
+async function ensureMemoryFile(tabId?: string): Promise<void> {
   try {
-    const { memoryDir, memoryFile } = getMemoryFilePath();
+    const { memoryDir, memoryFile } = getMemoryFilePath(tabId);
     await fs.mkdir(memoryDir, { recursive: true });
     
     try {
@@ -132,12 +177,13 @@ async function ensureMemoryFile(): Promise<void> {
 
 /**
  * 读取记忆文件
+ * @param tabId - Tab ID（可选）
  */
-async function readMemory(): Promise<string> {
-  await ensureMemoryFile();
+async function readMemory(tabId?: string): Promise<string> {
+  await ensureMemoryFile(tabId);
   
   try {
-    const { memoryFile } = getMemoryFilePath();
+    const { memoryFile } = getMemoryFilePath(tabId);
     const content = await fs.readFile(memoryFile, 'utf-8');
     return content;
   } catch (error) {
@@ -148,9 +194,11 @@ async function readMemory(): Promise<string> {
 
 /**
  * 写入记忆文件
+ * @param content - 记忆内容
+ * @param tabId - Tab ID（可选）
  */
-async function writeMemory(content: string): Promise<void> {
-  await ensureMemoryFile();
+async function writeMemory(content: string, tabId?: string): Promise<void> {
+  await ensureMemoryFile(tabId);
   
   // 限制长度
   let finalContent = content;
@@ -160,7 +208,7 @@ async function writeMemory(content: string): Promise<void> {
   }
   
   try {
-    const { memoryFile } = getMemoryFilePath();
+    const { memoryFile } = getMemoryFilePath(tabId);
     await fs.writeFile(memoryFile, finalContent, 'utf-8');
     console.log('[Memory Tool] 记忆文件已更新');
   } catch (error) {
@@ -254,6 +302,7 @@ ${context ? `执行结果：\n"""\n${context}\n"""\n` : ''}
       temperature: 0.3,
       maxTokens: 2000,
       signal,
+      useFastModel: true, // 🔥 使用快速模型（记忆提炼是轻量级任务）
     });
     
     return response.content.trim();
@@ -280,7 +329,25 @@ export const memoryToolPlugin: ToolPlugin = {
     requiresConfig: false,
   },
   
-  create: (_options: ToolCreateOptions) => {
+  create: (options: ToolCreateOptions) => {
+    // 🔥 从 options 中获取 sessionId
+    const sessionId = options.sessionId || 'default';
+    
+    // 🔥 根据 sessionId 决定使用哪个 memory 文件
+    // - default：使用 memory.md
+    // - 其他 Tab：检查是否有独立配置，有则使用 memory-{tabId}.md
+    let tabId: string | undefined = undefined;
+    
+    if (sessionId !== 'default') {
+      const configStore = SystemConfigStore.getInstance();
+      const tabConfig = configStore.getTabConfig(sessionId);
+      
+      if (tabConfig?.memoryFile) {
+        // 有独立配置，使用 tabId
+        tabId = sessionId;
+      }
+    }
+    
     return [
       {
         name: TOOL_NAMES.MEMORY,
@@ -328,11 +395,11 @@ export const memoryToolPlugin: ToolPlugin = {
 
             const { action, userMessage, context } = params;
             
-            console.log(`[Memory Tool] 执行操作: ${action}`);
+            console.log(`[Memory Tool] 执行操作: ${action}, Tab ID: ${tabId || 'default'}`);
             
             if (action === 'read') {
-              // 读取记忆
-              const memory = await readMemory();
+              // 读取记忆（使用当前 Tab 的 memory 文件）
+              const memory = await readMemory(tabId);
               
               return {
                 content: [
@@ -344,6 +411,7 @@ export const memoryToolPlugin: ToolPlugin = {
                 details: {
                   memory,
                   length: memory.length,
+                  tabId: tabId || 'default',
                 },
               };
             }
@@ -361,10 +429,10 @@ export const memoryToolPlugin: ToolPlugin = {
                 throw err;
               }
               
-              const currentMemory = await readMemory();
+              const currentMemory = await readMemory(tabId);
               
               console.log('\n' + '='.repeat(80));
-              console.log('[Memory Tool] 📝 开始更新记忆');
+              console.log(`[Memory Tool] 📝 开始更新记忆 (Tab: ${tabId || 'default'})`);
               console.log('='.repeat(80));
               console.log('[Memory Tool] 📥 当前记忆内容:');
               console.log(currentMemory);
@@ -378,19 +446,19 @@ export const memoryToolPlugin: ToolPlugin = {
               console.log(updatedMemory);
               console.log('='.repeat(80) + '\n');
               
-              await writeMemory(updatedMemory);
-              const { memoryFile } = getMemoryFilePath();
+              await writeMemory(updatedMemory, tabId);
+              const { memoryFile } = getMemoryFilePath(tabId);
               console.log('[Memory Tool] ✅ 记忆文件已写入:', memoryFile);
               
-              // 🔥 重新加载系统提示词（确保下一次对话使用新记忆）
+              // 🔥 只重新加载当前 Tab 的系统提示词（确保下一次对话使用新记忆）
               const gateway = getGatewayInstance();
               if (gateway) {
                 console.log('\n' + '='.repeat(80));
-                console.log('[Memory Tool] 🔄 触发系统提示词重新加载...');
+                console.log(`[Memory Tool] 🔄 触发当前 Tab (${sessionId}) 系统提示词重新加载...`);
                 console.log('='.repeat(80));
-                await gateway.reloadSystemPrompts();
+                await gateway.reloadSessionSystemPrompt(sessionId);
                 console.log('='.repeat(80));
-                console.log('[Memory Tool] ✅ 系统提示词已重新加载');
+                console.log(`[Memory Tool] ✅ Tab ${sessionId} 系统提示词已重新加载`);
                 console.log('='.repeat(80) + '\n');
               } else {
                 console.warn('[Memory Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
@@ -407,6 +475,7 @@ export const memoryToolPlugin: ToolPlugin = {
                   success: true,
                   oldLength: currentMemory.length,
                   newLength: updatedMemory.length,
+                  tabId: tabId || 'default',
                 },
               };
             }
@@ -439,10 +508,28 @@ export const memoryToolPlugin: ToolPlugin = {
 
 /**
  * 导出读取记忆的辅助函数（用于系统提示词）
+ * @param sessionId - 会话 ID（可选），用于加载对应 Tab 的 memory
  */
-export async function getMemoryContent(): Promise<string> {
+export async function getMemoryContent(sessionId?: string): Promise<string> {
   try {
-    return await readMemory();
+    // 🔥 根据 sessionId 决定使用哪个 memory 文件
+    // - default 或未提供：使用 memory.md
+    // - 其他 Tab：使用 memory-{tabId}.md（如果配置了独立 memory）
+    let tabId: string | undefined = undefined;
+    
+    if (sessionId && sessionId !== 'default') {
+      // 检查是否有 Tab 独立的 memory 配置
+      const configStore = SystemConfigStore.getInstance();
+      const tabConfig = configStore.getTabConfig(sessionId);
+      
+      if (tabConfig?.memoryFile) {
+        // 有独立配置，使用 tabId
+        tabId = sessionId;
+      }
+      // 否则使用默认的 memory.md（tabId 保持 undefined）
+    }
+    
+    return await readMemory(tabId);
   } catch (error) {
     console.error('[Memory Tool] 读取记忆失败:', error);
     return MEMORY_TEMPLATE;

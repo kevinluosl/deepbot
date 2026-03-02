@@ -176,6 +176,10 @@ export class SystemConfigStore {
         UNIQUE(connector_id, user_id)
       )
     `);
+    
+    // Agent Tab 配置表
+    const { initTabConfigTable } = require('./tab-config');
+    initTabConfigTable(this.db);
 
     // 创建索引
     this.db.exec(`
@@ -396,6 +400,38 @@ export class SystemConfigStore {
 
   deleteConnectorConfig(connectorId: string): void {
     return ConnectorConfigModule.deleteConnectorConfig(this.db, connectorId);
+  }
+
+  // ========== Tab 配置 ==========
+
+  saveTabConfig(tabId: string, config: { memoryFile?: string; agentName?: string; isPersistent?: boolean }): void {
+    const TabConfigModule = require('./tab-config');
+    return TabConfigModule.saveTabConfig(this.db, tabId, config);
+  }
+
+  getTabConfig(tabId: string): { memoryFile?: string; agentName?: string; isPersistent?: boolean } | null {
+    const TabConfigModule = require('./tab-config');
+    return TabConfigModule.getTabConfig(this.db, tabId);
+  }
+
+  updateTabAgentName(tabId: string, agentName: string | null): void {
+    const TabConfigModule = require('./tab-config');
+    return TabConfigModule.updateTabAgentName(this.db, tabId, agentName);
+  }
+
+  deleteTabConfig(tabId: string): void {
+    const TabConfigModule = require('./tab-config');
+    return TabConfigModule.deleteTabConfig(this.db, tabId);
+  }
+
+  deleteNonPersistentTabs(): void {
+    const TabConfigModule = require('./tab-config');
+    return TabConfigModule.deleteNonPersistentTabs(this.db);
+  }
+
+  getAllPersistentTabs(): Array<{ id: string; memoryFile?: string; agentName?: string }> {
+    const TabConfigModule = require('./tab-config');
+    return TabConfigModule.getAllPersistentTabs(this.db);
   }
 
   // ========== Pairing 记录管理 ==========

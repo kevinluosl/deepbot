@@ -25,14 +25,6 @@ export function buildContextSection(contextFiles: ContextFile[]): string[] {
     return fileName === 'agent.md';
   });
 
-  if (hasAgentFile) {
-    lines.push(
-      '',
-      '如果存在 AGENT.md，请体现其中定义的个性和语气。',
-      '避免僵硬、通用的回复；遵循其指导，除非有更高优先级的指令覆盖它。',
-    );
-  }
-
   lines.push('');
 
   // 添加每个文件的内容

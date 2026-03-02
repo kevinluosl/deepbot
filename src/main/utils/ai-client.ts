@@ -335,30 +335,6 @@ export async function callAI(
   }
 }
 
-/**
- * 简化的单次对话调用
- * 
- * @param prompt - 用户提示词
- * @param options - 调用选项
- * @returns AI 响应内容
- * 
- * @example
- * ```typescript
- * const answer = await askAI('What is 2+2?');
- * console.log(answer); // "4"
- * ```
- */
-export async function askAI(
-  prompt: string,
-  options: AICallOptions = {}
-): Promise<string> {
-  const response = await callAI([
-    { role: 'user', content: prompt }
-  ], options);
-  
-  return response.content;
-}
-
 // ==================== 连接预热 ====================
 
 /**
@@ -379,12 +355,13 @@ export async function warmupAIConnection(): Promise<boolean> {
     
     const startTime = Date.now();
     
-    // 发送一个极简请求来建立连接
+    // 发送一个极简请求来建立连接（🔥 使用快速模型）
     await callAI([
       { role: 'user', content: 'ping' }
     ], {
       temperature: 0,
       maxTokens: 1,
+      useFastModel: true, // 🔥 使用快速模型（预热更快）
     });
     
     const duration = Date.now() - startTime;

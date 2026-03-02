@@ -29,6 +29,7 @@ interface DeepBotAPI {
   saveBrowserToolConfig: (config: { mode: 'headless' | 'cdp'; cdpPort: number }) => Promise<void>;
   launchChromeWithDebug: (port: number) => Promise<{ success: boolean; message?: string }>;
   getNameConfig: () => Promise<{ success: boolean; config?: { agentName: string; userName: string }; error?: string }>;
+  getTabAgentName: (tabId: string) => Promise<{ success: boolean; agentName: string; userName: string; error?: string }>;
   saveAgentName: (agentName: string) => Promise<{ success: boolean; error?: string }>;
   saveUserName: (userName: string) => Promise<{ success: boolean; error?: string }>;
   onNameConfigUpdate: (callback: (config: { agentName: string; userName: string }) => void) => () => void;

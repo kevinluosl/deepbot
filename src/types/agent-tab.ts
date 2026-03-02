@@ -20,6 +20,11 @@ export interface AgentTab {
   connectorId?: string;          // 连接器 ID（如果是连接器 Tab）
   conversationId?: string;       // 外部会话 ID（如果是连接器 Tab）
   conversationKey?: string;      // 会话唯一标识（用于查找 Tab）
+  
+  // 🔥 新增：Tab 独立配置
+  memoryFile?: string | null;    // Memory 文件路径（NULL 表示使用默认）
+  agentName?: string | null;     // Agent 名字（NULL 表示继承主 Agent）
+  isPersistent?: boolean;        // 是否持久化（手动创建的 Tab 为 true）
 }
 
 /**

@@ -17,9 +17,10 @@ import { getMemoryContent } from '../tools/memory-tool';
  * 构建系统提示词
  * 
  * @param params 提示词参数
+ * @param sessionId 会话 ID（用于加载对应的 memory）
  * @returns 完整的系统提示词
  */
-export async function buildSystemPrompt(params: SystemPromptParams): Promise<string> {
+export async function buildSystemPrompt(params: SystemPromptParams, sessionId?: string): Promise<string> {
   const lines: string[] = [];
 
   // 1. 名字配置（最优先）
@@ -27,8 +28,17 @@ export async function buildSystemPrompt(params: SystemPromptParams): Promise<str
   const configStore = SystemConfigStore.getInstance();
   const nameConfig = configStore.getNameConfig();
   
+  // 🔥 检查是否有 Tab 独立的 Agent 名字
+  let agentName = nameConfig.agentName;
+  if (sessionId && sessionId !== 'default') {
+    const tabConfig = configStore.getTabConfig(sessionId);
+    if (tabConfig?.agentName) {
+      agentName = tabConfig.agentName;
+    }
+  }
+  
   lines.push('## 身份信息', '');
-  lines.push(`你的名字: ${nameConfig.agentName}`);
+  lines.push(`你的名字: ${agentName}`);
   lines.push(`用户称呼: ${nameConfig.userName}`);
   lines.push('');
   // lines.push('注意：如果用户要求修改你的名字或用户称呼，使用 memory 工具更新记忆，系统会自动同步到数据库和提示符。');
@@ -49,9 +59,9 @@ export async function buildSystemPrompt(params: SystemPromptParams): Promise<str
     lines.push(...buildContextSection(params.contextFiles));
   }
 
-  // 4. 核心记忆（从 memory.md 加载）
+  // 4. 核心记忆（从 memory.md 或 memory-{tabId}.md 加载）
   try {
-    const memoryContent = await getMemoryContent();
+    const memoryContent = await getMemoryContent(sessionId);
     
     if (memoryContent && memoryContent.trim().length > 0) {
       lines.push(

@@ -61,8 +61,11 @@ export const IPC_CHANNELS = {
   
   // 名字配置
   GET_NAME_CONFIG: 'name-config:get',
+  GET_TAB_AGENT_NAME: 'name-config:get-tab-agent-name',
   SAVE_AGENT_NAME: 'name-config:save-agent-name',
   SAVE_USER_NAME: 'name-config:save-user-name',
+  NAME_CONFIG_UPDATED: 'name-config:updated', // 🔥 名字配置更新通知
+  MODEL_CONFIG_UPDATED: 'model-config:updated', // 🔥 模型配置更新通知
   
   // Agent Tab 管理
   CREATE_TAB: 'tab:create',

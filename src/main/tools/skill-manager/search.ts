@@ -6,7 +6,7 @@ import type { SkillSearchResult } from './types';
 import { getErrorMessage } from '../../../shared/utils/error-handler';
 import { GITHUB_API_BASE, SKILL_TOPIC, AWESOME_SKILLS_README_URL } from './constants';
 import { extractSkillName } from './utils';
-import { askAI } from '../../utils/ai-client';
+import { callAI } from '../../utils/ai-client';
 
 /**
  * 搜索 GitHub 上的 Skill 仓库
@@ -186,8 +186,14 @@ ${skillList}
     
     console.info('[Skill Manager] 调用 AI 进行匹配...');
     
-    // 使用公共 AI 客户端
-    const responseText = await askAI(prompt, { temperature: 0.1 });
+    // 使用公共 AI 客户端（🔥 使用快速模型）
+    const response = await callAI([
+      { role: 'user', content: prompt }
+    ], { 
+      temperature: 0.1,
+      useFastModel: true, // 🔥 使用快速模型（语义搜索是轻量级任务）
+    });
+    const responseText = response.content;
     console.info(`[Skill Manager] AI 响应: ${responseText}`);
     
     // 解析 AI 返回的索引

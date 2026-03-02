@@ -38,6 +38,7 @@ const IPC_CHANNELS = {
   SAVE_WEB_SEARCH_TOOL_CONFIG: 'tool-config:web-search:save',
   LAUNCH_CHROME_WITH_DEBUG: 'browser:launch-chrome-with-debug',
   GET_NAME_CONFIG: 'name-config:get',
+  GET_TAB_AGENT_NAME: 'name-config:get-tab-agent-name',
   SAVE_AGENT_NAME: 'name-config:save-agent-name',
   SAVE_USER_NAME: 'name-config:save-user-name',
   NAME_CONFIG_UPDATED: 'name-config:updated', // 🔥 名字配置更新通知
@@ -150,6 +151,10 @@ contextBridge.exposeInMainWorld('deepbot', {
   // 名字配置
   getNameConfig: () => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_NAME_CONFIG);
+  },
+  
+  getTabAgentName: (tabId: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.GET_TAB_AGENT_NAME, { tabId });
   },
   
   saveAgentName: (agentName: string) => {

@@ -35,6 +35,9 @@ export const apiToolPlugin: ToolPlugin = {
   },
   
   create: (options: ToolCreateOptions) => {
+    // 🔥 从 options 中获取 sessionId
+    const sessionId = options.sessionId || 'default';
+    
     return [
       // 获取配置
       {
@@ -106,10 +109,10 @@ export const apiToolPlugin: ToolPlugin = {
       {
         name: TOOL_NAMES.API_SET_NAME,
         label: '设置名字配置',
-        description: '更新智能体名字和用户称呼。名字最多 10 个字符。修改后会立即生效并重新加载系统提示词',
+        description: '更新智能体名字和用户称呼。名字最多 10 个字符。如果在主 Tab 中调用，会修改全局默认名字（影响所有未单独设置名字的 Tab）；如果在非主 Tab 中调用，只修改当前 Tab 的名字',
         parameters: schemas.SetNameConfigSchema,
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
-          return handlers.handleSetNameConfig(args, signal);
+          return handlers.handleSetNameConfig(sessionId, args, signal);
         },
       },
     ];

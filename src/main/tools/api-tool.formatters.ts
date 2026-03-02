@@ -171,11 +171,17 @@ export function formatGetNameConfigResult(nameConfig: any): string {
 /**
  * 格式化设置名字配置的结果消息
  */
-export function formatSetNameConfigResult(params: any, currentConfig: any): string {
+export function formatSetNameConfigResult(params: any, currentConfig: any, isGlobal: boolean): string {
   let message = `✅ 名字配置已更新\n\n`;
   
   if (params.agentName) {
-    message += `  • 智能体名字: ${currentConfig.agentName} → ${params.agentName}\n`;
+    if (isGlobal) {
+      message += `  • 智能体名字（全局）: ${currentConfig.agentName} → ${params.agentName}\n`;
+      message += `  • 影响范围: 所有未单独设置名字的 Tab\n`;
+    } else {
+      message += `  • 智能体名字（当前 Tab）: ${params.agentName}\n`;
+      message += `  • 影响范围: 仅当前 Tab\n`;
+    }
   }
   if (params.userName) {
     message += `  • 用户称呼: ${currentConfig.userName} → ${params.userName}\n`;

@@ -457,8 +457,15 @@ export async function handleGetNameConfig(
 
 /**
  * 设置名字配置
+ * 
+ * 根据 sessionId 判断：
+ * - 主 Tab (default)：设置全局名字，影响所有未单独设置名字的 Tab
+ * - 非主 Tab：只设置当前 Tab 的名字
+ * 
+ * 注意：用户称呼只能在主 Tab 设置
  */
 export async function handleSetNameConfig(
+  sessionId: string,
   params: Partial<{
     agentName: string;
     userName: string;
@@ -466,7 +473,7 @@ export async function handleSetNameConfig(
   signal?: AbortSignal
 ): Promise<ToolResult> {
   try {
-    console.log('[API Tool] 💾 设置名字配置:', params);
+    console.log('[API Tool] 💾 设置名字配置:', { sessionId, params });
     
     // 检查是否被取消
     if (signal?.aborted) {
@@ -480,6 +487,9 @@ export async function handleSetNameConfig(
       throw new Error('至少需要提供 agentName 或 userName 参数');
     }
     
+    // 判断是否是主 Tab
+    const isMainTab = sessionId === 'default';
+    
     // 加载 SystemConfigStore
     const { SystemConfigStore } = await import('../database/system-config-store');
     const store = SystemConfigStore.getInstance();
@@ -487,51 +497,109 @@ export async function handleSetNameConfig(
     // 获取当前配置
     const currentConfig = store.getNameConfig();
     
-    // 更新配置
-    if (params.agentName) {
-      store.saveAgentName(params.agentName);
-    }
-    
-    if (params.userName) {
-      store.saveUserName(params.userName);
-    }
-    
-    // 获取更新后的配置
-    const updatedConfig = store.getNameConfig();
-    
-    // 🔥 发送事件到前端
-    const { BrowserWindow } = require('electron');
-    const mainWindow = BrowserWindow.getAllWindows()[0];
-    if (mainWindow) {
-      const { sendToWindow } = await import('../../shared/utils/webcontents-utils');
-      sendToWindow(mainWindow, 'name-config:updated', updatedConfig);
-      console.log('[API Tool] 📤 已发送名字配置更新事件到前端:', updatedConfig);
-    }
-    
-    // 🔥 重新加载系统提示词（确保下一次对话使用新名字）
-    const { getGatewayInstance } = await import('../gateway');
-    const gateway = getGatewayInstance();
-    if (gateway) {
-      console.log('[API Tool] 🔄 触发系统提示词重新加载...');
-      await gateway.reloadSystemPrompts();
-      console.log('[API Tool] ✅ 系统提示词已重新加载');
-    } else {
-      console.warn('[API Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
-    }
-    
-    return {
-      content: [
-        {
-          type: 'text',
-          text: formatters.formatSetNameConfigResult(params, currentConfig),
+    // 🔥 根据 Tab 类型处理名字设置
+    if (isMainTab) {
+      // 主 Tab：设置全局名字
+      if (params.agentName) {
+        store.saveAgentName(params.agentName);
+      }
+      
+      if (params.userName) {
+        store.saveUserName(params.userName);
+      }
+      
+      // 获取更新后的配置
+      const updatedConfig = store.getNameConfig();
+      
+      // 发送事件到前端
+      const { BrowserWindow } = require('electron');
+      const mainWindow = BrowserWindow.getAllWindows()[0];
+      if (mainWindow) {
+        const { sendToWindow } = await import('../../shared/utils/webcontents-utils');
+        sendToWindow(mainWindow, 'name-config:updated', updatedConfig);
+        console.log('[API Tool] 📤 已发送名字配置更新事件到前端:', updatedConfig);
+      }
+      
+      // 重新加载系统提示词（确保下一次对话使用新名字）
+      const { getGatewayInstance } = await import('../gateway');
+      const gateway = getGatewayInstance();
+      if (gateway) {
+        console.log('[API Tool] 🔄 触发系统提示词重新加载...');
+        await gateway.reloadSystemPrompts();
+        console.log('[API Tool] ✅ 系统提示词已重新加载');
+      } else {
+        console.warn('[API Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
+      }
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: formatters.formatSetNameConfigResult(params, currentConfig, true),
+          },
+        ],
+        details: {
+          success: true,
+          isGlobal: true,
+          oldConfig: currentConfig,
+          newConfig: updatedConfig,
         },
-      ],
-      details: {
-        success: true,
-        oldConfig: currentConfig,
-        newConfig: updatedConfig,
-      },
-    };
+      };
+    } else {
+      // 非主 Tab：只设置当前 Tab 的名字
+      
+      // 用户称呼只能在主 Tab 设置
+      if (params.userName) {
+        throw new Error('用户称呼只能在主 Tab 设置');
+      }
+      
+      if (params.agentName) {
+        // 保存 Tab 独立的 Agent 名字
+        store.updateTabAgentName(sessionId, params.agentName);
+        
+        // 🔥 发送事件到前端（触发前端刷新显示）
+        const { BrowserWindow } = require('electron');
+        const mainWindow = BrowserWindow.getAllWindows()[0];
+        if (mainWindow) {
+          const { sendToWindow } = await import('../../shared/utils/webcontents-utils');
+          // 发送 Tab 名字更新事件（前端会根据当前 activeTabId 重新获取名字）
+          sendToWindow(mainWindow, 'name-config:updated', { 
+            tabId: sessionId,
+            agentName: params.agentName 
+          });
+          console.log('[API Tool] 📤 已发送 Tab 名字更新事件到前端:', { sessionId, agentName: params.agentName });
+        }
+        
+        // 只重新加载当前 Tab 的系统提示词
+        const { getGatewayInstance } = await import('../gateway');
+        const gateway = getGatewayInstance();
+        if (gateway) {
+          console.log('[API Tool] 🔄 触发当前 Tab 系统提示词重新加载...');
+          await gateway.reloadSessionSystemPrompt(sessionId);
+          console.log('[API Tool] ✅ 当前 Tab 系统提示词已重新加载');
+        } else {
+          console.warn('[API Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
+        }
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: formatters.formatSetNameConfigResult(params, currentConfig, false),
+            },
+          ],
+          details: {
+            success: true,
+            isGlobal: false,
+            tabId: sessionId,
+            agentName: params.agentName,
+          },
+        };
+      }
+    }
+    
+    // 不应该到达这里
+    throw new Error('未知错误');
   } catch (error) {
     console.error('[API Tool] ❌ 设置名字配置失败:', error);
     

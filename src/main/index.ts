@@ -788,6 +788,31 @@ function registerIpcHandlers() {
     }
   });
   
+  // 获取 Tab 的 Agent 名字（考虑继承）
+  ipcMain.handle(IPC_CHANNELS.GET_TAB_AGENT_NAME, async (_event, { tabId }) => {
+    try {
+      console.log('[IPC] 获取 Tab Agent 名字:', tabId);
+      const configStore = SystemConfigStore.getInstance();
+      
+      // 获取全局名字配置
+      const nameConfig = configStore.getNameConfig();
+      let agentName = nameConfig.agentName;
+      
+      // 如果不是主 Tab，检查是否有独立配置
+      if (tabId && tabId !== 'default') {
+        const tabConfig = configStore.getTabConfig(tabId);
+        if (tabConfig?.agentName) {
+          agentName = tabConfig.agentName;
+        }
+      }
+      
+      return { success: true, agentName, userName: nameConfig.userName };
+    } catch (error) {
+      console.error('[IPC] 获取 Tab Agent 名字失败:', error);
+      throw error;
+    }
+  });
+  
   // 保存智能体名字
   ipcMain.handle(IPC_CHANNELS.SAVE_AGENT_NAME, async (_event, { agentName }) => {
     try {
@@ -808,6 +833,7 @@ function registerIpcHandlers() {
       const configStore = SystemConfigStore.getInstance();
       configStore.saveUserName(userName);
       return { success: true };
+
     } catch (error) {
       console.error('[IPC] 保存用户称呼失败:', error);
       throw error;
@@ -959,7 +985,18 @@ app.on('window-all-closed', () => {
 /**
  * 应用退出前清理
  */
-app.on('before-quit', () => {
+app.on('before-quit', async () => {
   console.log('DeepBot 正在退出...');
+  
+  // 清理非持久化的 Tab 配置
+  try {
+    const { SystemConfigStore } = await import('./database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    store.deleteNonPersistentTabs();
+    console.log('[Main] ✅ 已清理非持久化 Tab 配置');
+  } catch (error) {
+    console.error('[Main] ❌ 清理非持久化 Tab 配置失败:', error);
+  }
+  
   gateway = null;
 });

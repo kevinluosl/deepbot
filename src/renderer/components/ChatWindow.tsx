@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Message } from '../../types/message';
 import { MessageBubble } from './MessageBubble';
-import { MessageInput } from './MessageInput';
+import { MessageInput, MessageInputRef } from './MessageInput'; // 🔥 导入 MessageInputRef
 import type { AgentTab } from '../../types/agent-tab';
 
 interface ChatWindowProps {
@@ -41,31 +41,35 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   onTabCreate,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<MessageInputRef>(null); // 🔥 添加输入框引用
   const [agentName, setAgentName] = useState('matrix');
   const [userName, setUserName] = useState('user');
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // 加载名字配置
+  // 🔥 加载 Tab 的 Agent 名字（考虑继承）
   useEffect(() => {
-    const loadNameConfig = async () => {
+    const loadTabAgentName = async () => {
       try {
-        const result = await window.deepbot.getNameConfig();
-        if (result.success && result.config) {
-          setAgentName(result.config.agentName);
-          setUserName(result.config.userName);
+        const result = await window.deepbot.getTabAgentName(activeTabId || 'default');
+        if (result.success) {
+          setAgentName(result.agentName);
+          setUserName(result.userName);
         }
       } catch (error) {
-        console.error('加载名字配置失败:', error);
+        console.error('加载 Tab Agent 名字失败:', error);
       }
     };
     
-    loadNameConfig();
+    loadTabAgentName();
     
-    // 🔥 监听名字配置变化事件（事件驱动，不使用轮询）
-    const handleNameConfigUpdate = (config: { agentName: string; userName: string }) => {
-      console.log('[ChatWindow] 收到名字配置更新事件:', config);
-      setAgentName(config.agentName);
-      setUserName(config.userName);
+    // 🔥 切换 Tab 后聚焦到输入框
+    if (messageInputRef.current) {
+      messageInputRef.current.focus();
+    }
+    
+    // 🔥 监听名字配置变化事件（全局更新时也需要刷新）
+    const handleNameConfigUpdate = () => {
+      loadTabAgentName();
     };
     
     window.deepbot.onNameConfigUpdate(handleNameConfigUpdate);
@@ -75,7 +79,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       // Electron IPC 监听器清理（如果有提供 removeListener 方法）
       // 注意：需要在 preload.ts 中实现 removeListener
     };
-  }, []);
+  }, [activeTabId]); // 🔥 当 activeTabId 变化时重新加载
 
   // 监听消息变化，收到第一条消息时关闭初始化状态
   useEffect(() => {
@@ -223,6 +227,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       {/* 输入框 - 连接器 Tab 不显示输入框 */}
       {tabs && activeTabId && tabs.find(t => t.id === activeTabId)?.type === 'connector' ? null : (
         <MessageInput 
+          ref={messageInputRef}
           onSend={onSendMessage} 
           onStop={onStopGeneration} 
           disabled={isLoading || isLocked || isInitializing} 

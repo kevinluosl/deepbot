@@ -117,7 +117,7 @@ export class AgentInitializer {
       };
       
       // 构建系统提示词
-      const systemPrompt = await buildSystemPrompt(promptParams);
+      const systemPrompt = await buildSystemPrompt(promptParams, this.sessionId);
       
       // 更新 Agent 的系统提示词
       agent.setSystemPrompt(systemPrompt);

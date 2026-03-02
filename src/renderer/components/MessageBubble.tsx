@@ -118,6 +118,14 @@ const arePropsEqual = (
   const prev = prevProps.message;
   const next = nextProps.message;
   
+  // 🔥 比较 agentName 和 userName（切换 Tab 时需要重新渲染）
+  if (
+    prevProps.agentName !== nextProps.agentName ||
+    prevProps.userName !== nextProps.userName
+  ) {
+    return false;
+  }
+  
   // 基本属性比较
   if (
     prev.id !== next.id ||

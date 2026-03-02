@@ -2,7 +2,7 @@
  * 终端风格消息输入组件
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { ImageUploader } from './ImageUploader';
 import type { UploadedImage } from '../../types/message';
 
@@ -15,17 +15,31 @@ interface MessageInputProps {
   disableStop?: boolean; // 是否禁用 Stop 按钮（独立控制）
 }
 
-export const MessageInput: React.FC<MessageInputProps> = ({
+// 🔥 暴露给父组件的方法
+export interface MessageInputRef {
+  focus: () => void;
+}
+
+export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   onSend,
   onStop,
   disabled = false,
   isGenerating = false,
   userName = 'user',
   disableStop = false,
-}) => {
+}, ref) => {
   const [content, setContent] = useState('');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 🔥 暴露 focus 方法给父组件
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      if (textareaRef.current && !disabled) {
+        textareaRef.current.focus();
+      }
+    }
+  }));
 
   // 自动聚焦到输入框
   useEffect(() => {
@@ -39,11 +53,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     if (textareaRef.current) {
       // 重置高度以获取正确的 scrollHeight
       textareaRef.current.style.height = 'auto';
-      
+
       // 计算新高度（最小 32px，最大 120px）
       const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, 32), 120);
       textareaRef.current.style.height = `${newHeight}px`;
-      
+
       // 只有在内容超过最大高度时才显示滚动条
       if (textareaRef.current.scrollHeight > 120) {
         textareaRef.current.style.overflowY = 'auto';
@@ -59,7 +73,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       onSend(trimmedContent, uploadedImages.length > 0 ? uploadedImages : undefined);
       setContent('');
       setUploadedImages([]); // 清空已上传的图片
-      
+
       // 重置文本框高度和滚动条
       if (textareaRef.current) {
         textareaRef.current.style.height = '32px';
@@ -153,4 +167,4 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       </div>
     </div>
   );
-};
+});
