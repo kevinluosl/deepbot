@@ -372,11 +372,14 @@ function registerIpcHandlers() {
       const store = SystemConfigStore.getInstance();
       store.saveWorkspaceSettings(settings);
       
-      // 🔥 重新加载 Gateway 配置（销毁所有 AgentRuntime，下次使用时会用新配置重新创建）
+      // 🔥 重新加载 Gateway 配置
       if (gateway) {
         console.log('[IPC] 工作目录配置已更新，重新加载 Gateway...');
-        await gateway.reloadModelConfig();
-        console.log('[IPC] ✅ Gateway 已重新加载');
+        
+        // 🔥 重新加载所有工作目录配置（包括 SessionManager 和 AgentRuntime）
+        await gateway.reloadWorkspaceConfig();
+        
+        console.log('[IPC] ✅ Gateway 工作目录配置已重新加载');
       }
       
       return {

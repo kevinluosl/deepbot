@@ -106,6 +106,7 @@ export async function handleSetWorkspaceConfig(
     defaultSkillDir: string;
     imageDir: string;
     memoryDir: string;
+    sessionDir: string;
   }>,
   signal?: AbortSignal
 ): Promise<ToolResult> {
@@ -134,11 +135,24 @@ export async function handleSetWorkspaceConfig(
       defaultSkillDir: params.defaultSkillDir || currentSettings.defaultSkillDir,
       imageDir: params.imageDir || currentSettings.imageDir,
       memoryDir: params.memoryDir || currentSettings.memoryDir,
-      sessionDir: currentSettings.sessionDir, // 🔥 保持现有的 sessionDir
+      sessionDir: params.sessionDir || currentSettings.sessionDir, // 🔥 支持设置 sessionDir
     };
     
     // 保存配置
     store.saveWorkspaceSettings(newSettings);
+    
+    // 🔥 触发 Gateway 重新加载（与设置界面保持一致）
+    const { getGatewayInstance } = await import('../gateway');
+    const gateway = getGatewayInstance();
+    
+    if (gateway) {
+      console.log('[API Tool] 🔄 工作目录配置已更新，重新加载 Gateway...');
+      
+      // 🔥 重新加载所有工作目录配置（包括 SessionManager 和 AgentRuntime）
+      await gateway.reloadWorkspaceConfig();
+      
+      console.log('[API Tool] ✅ Gateway 工作目录配置已重新加载');
+    }
     
     return {
       content: [

@@ -327,6 +327,48 @@ export class Gateway {
   }
 
   /**
+   * 重新加载工作目录配置
+   * 
+   * 当用户修改工作目录配置时调用，重新初始化 SessionManager 和 AgentRuntime
+   */
+  async reloadWorkspaceConfig(): Promise<void> {
+    console.log('[Gateway] 🔄 重新加载工作目录配置...');
+    
+    // 🔥 重新加载 SessionManager
+    await this.reloadSessionManager();
+    
+    // 🔥 销毁所有现有的 AgentRuntime（但不清空前端聊天记录）
+    for (const [sessionId, runtime] of this.agentRuntimes.entries()) {
+      console.log(`[Gateway] 销毁会话 Runtime: ${sessionId}`);
+      await runtime.destroy();
+    }
+    
+    // 清空所有 Runtime（下次使用时会用新配置重新创建）
+    this.agentRuntimes.clear();
+    
+    console.log('[Gateway] ✅ 工作目录配置已重新加载，AgentRuntime 已重置');
+  }
+
+  /**
+   * 重新加载 SessionManager
+   * 
+   * 当用户修改会话目录配置时调用，重新初始化 SessionManager
+   */
+  async reloadSessionManager(): Promise<void> {
+    console.log('[Gateway] 🔄 重新加载 SessionManager...');
+    
+    try {
+      // 重新初始化 SessionManager
+      await this.initializeSessionManager();
+      
+      console.log('[Gateway] ✅ SessionManager 已重新加载');
+    } catch (error) {
+      console.error('[Gateway] ❌ 重新加载 SessionManager 失败:', getErrorMessage(error));
+      throw error;
+    }
+  }
+
+  /**
    * 重新加载系统提示词
    * 
    * 当记忆更新后调用，重新加载所有活跃会话的系统提示词

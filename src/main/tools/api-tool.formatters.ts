@@ -17,7 +17,8 @@ export function formatGetConfigResult(result: any): string {
     message += `  • Skill 目录: ${result.workspace.skillDirs.join(', ')}\n`;
     message += `  • 默认 Skill 目录: ${result.workspace.defaultSkillDir}\n`;
     message += `  • 图片目录: ${result.workspace.imageDir}\n`;
-    message += `  • 记忆目录: ${result.workspace.memoryDir}\n\n`;
+    message += `  • 记忆目录: ${result.workspace.memoryDir}\n`;
+    message += `  • 会话目录: ${result.workspace.sessionDir}\n\n`;
   }
   
   if (result.model) {
@@ -74,6 +75,9 @@ export function formatSetWorkspaceConfigResult(params: any): string {
   }
   if (params.memoryDir) {
     message += `  • 记忆目录: ${params.memoryDir}\n`;
+  }
+  if (params.sessionDir) {
+    message += `  • 会话目录: ${params.sessionDir}\n`;
   }
   
   message += `\n⚠️ 注意：配置已更新，下次创建新会话时生效`;

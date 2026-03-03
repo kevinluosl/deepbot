@@ -46,6 +46,10 @@ export const SetWorkspaceConfigSchema = Type.Object({
   memoryDir: Type.Optional(Type.String({
     description: '记忆管理目录',
   })),
+  
+  sessionDir: Type.Optional(Type.String({
+    description: '会话历史目录',
+  })),
 });
 
 /**
