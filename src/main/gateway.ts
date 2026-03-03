@@ -114,11 +114,24 @@ export class Gateway {
           // 生成 Tab ID（使用保存的 ID）
           const tabId = tabConfig.id;
           
+          // 🔥 根据 Tab 类型确定 type 字段
+          let tabType: 'normal' | 'connector' | 'scheduled_task' = 'normal';
+          if (tabConfig.type === 'connector') {
+            tabType = 'connector';
+          } else if (tabConfig.type === 'task') {
+            tabType = 'scheduled_task';
+          }
+          
+          // 🔥 生成 conversationKey（用于连接器 Tab）
+          const conversationKey = tabConfig.connectorId && tabConfig.conversationId
+            ? `${tabConfig.connectorId}_${tabConfig.conversationId}`
+            : undefined;
+          
           // 创建 Tab（不持久化，因为已经在数据库中）
           const tab: AgentTab = {
             id: tabId,
             title: tabConfig.title,
-            type: 'normal',
+            type: tabType,
             messages: [],
             isLoading: false,
             createdAt: tabConfig.createdAt,
@@ -126,10 +139,14 @@ export class Gateway {
             memoryFile: tabConfig.memoryFile,
             agentName: tabConfig.agentName,
             isPersistent: true,
+            conversationKey,                    // 🔥 恢复 conversationKey
+            connectorId: tabConfig.connectorId, // 🔥 恢复 connectorId
+            conversationId: tabConfig.conversationId, // 🔥 恢复 conversationId
+            taskId: tabConfig.taskId,           // 🔥 恢复 taskId
           };
           
           this.tabs.set(tabId, tab);
-          console.log(`[Gateway] ✅ 已恢复 Tab: ${tabId} (${tabConfig.title})`);
+          console.log(`[Gateway] ✅ 已恢复 Tab: ${tabId} (${tabConfig.title}, type: ${tabType})`);
           
           // 通知前端 Tab 已创建
           this.notifyTabCreated(tab);
@@ -788,10 +805,10 @@ export class Gateway {
     
     this.tabCounter++;
     
-    // 🔥 确定是否持久化（默认：手动创建的 Tab 持久化）
+    // 🔥 确定是否持久化（默认：手动创建和连接器 Tab 持久化，定时任务 Tab 不持久化）
     const isPersistent = options.isPersistent !== undefined 
       ? options.isPersistent 
-      : tabType === 'manual';
+      : (tabType === 'manual' || tabType === 'connector');
     
     // 🔥 生成独立的 memory 文件名（如果未指定）
     const memoryFile = options.memoryFile !== undefined
@@ -843,7 +860,8 @@ export class Gateway {
         console.log('[Gateway] 💾 Tab 配置已持久化:', tabId);
         
         // 🔥 创建 Tab 的 memory 文件（继承主 memory 内容）
-        if (memoryFile && tabType === 'manual') {
+        // 所有持久化的 Tab（包括手动创建和外部连接器）都创建独立的 memory 文件
+        if (memoryFile) {
           try {
             const { createTabMemoryFile } = await import('./tools/memory-tool');
             await createTabMemoryFile(tabId, memoryFile);
