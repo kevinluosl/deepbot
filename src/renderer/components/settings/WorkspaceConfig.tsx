@@ -19,6 +19,7 @@ interface WorkspaceSettings {
   defaultSkillDir: string;
   imageDir: string;
   memoryDir: string;
+  sessionDir: string; // 🔥 新增
 }
 
 export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
@@ -29,6 +30,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
     defaultSkillDir: '',
     imageDir: '',
     memoryDir: '',
+    sessionDir: '', // 🔥 新增
   });
   const [defaultSettings, setDefaultSettings] = useState<WorkspaceSettings>({
     workspaceDir: '',
@@ -37,6 +39,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
     defaultSkillDir: '',
     imageDir: '',
     memoryDir: '',
+    sessionDir: '', // 🔥 新增
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -290,6 +293,40 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
     }
   };
 
+  const handleSaveSessionDir = async () => {
+    try {
+      setSaving(true);
+      const result = await window.deepbot.saveWorkspaceSettings(settings);
+      
+      if (result.success) {
+        showMessage('success', '对话历史目录已保存');
+      } else {
+        showMessage('error', result.error || '保存失败');
+      }
+    } catch (error) {
+      console.error('保存对话历史目录失败:', error);
+      showMessage('error', '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetSessionDir = async () => {
+    try {
+      // 从后端获取真正的默认路径（绝对路径）
+      const result = await window.deepbot.getDefaultWorkspaceSettings();
+      if (result.success && result.settings) {
+        setSettings({
+          ...settings,
+          sessionDir: result.settings.sessionDir,
+        });
+      }
+    } catch (error) {
+      console.error('获取默认对话历史目录失败:', error);
+      showMessage('error', '获取默认路径失败');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -456,6 +493,41 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         </div>
         <p className="text-xs text-gray-400">
           默认：{defaultSettings.memoryDir || '~/.deepbot/memory'}
+        </p>
+      </div>
+
+      {/* Session 目录 */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          对话历史目录
+        </label>
+        <p className="text-xs text-gray-500 mb-2">
+          每个 Tab 的对话历史将保存到此目录
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={settings.sessionDir}
+            onChange={(e) => setSettings({ ...settings, sessionDir: e.target.value })}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="~/.deepbot/sessions"
+          />
+          <button
+            onClick={handleResetSessionDir}
+            className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            重置
+          </button>
+          <button
+            onClick={handleSaveSessionDir}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
+          >
+            {saving ? '保存中...' : '保存'}
+          </button>
+        </div>
+        <p className="text-xs text-gray-400">
+          默认：{defaultSettings.sessionDir || '~/.deepbot/sessions'}
         </p>
       </div>
 

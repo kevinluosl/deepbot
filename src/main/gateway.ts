@@ -20,6 +20,7 @@ import { setGatewayInstance } from './tools/scheduled-task-tool';
 import type { GatewayMessage } from '../types/connector';
 import { ConnectorManager } from './connectors/connector-manager';
 import { FeishuConnector } from './connectors/feishu/feishu-connector';
+import { SessionManager } from './session/session-manager';
 
 export class Gateway {
   private mainWindow: BrowserWindow | null = null;
@@ -40,9 +41,17 @@ export class Gateway {
   
   // 连接器管理
   private connectorManager: ConnectorManager;
+  
+  // Session 管理
+  private sessionManager: SessionManager | null = null;
 
   constructor() {
     console.log('Gateway 初始化');
+    
+    // 🔥 初始化 SessionManager（异步）
+    this.initializeSessionManager().catch(error => {
+      console.error('[Gateway] ❌ 初始化 SessionManager 失败:', error);
+    });
     
     // 初始化 ConnectorManager
     this.connectorManager = new ConnectorManager(this);
@@ -82,6 +91,62 @@ export class Gateway {
     this.warmupAIConnection().catch(error => {
       console.error('[Gateway] ❌ AI 连接预热失败:', error);
     });
+  }
+  
+  /**
+   * 加载 Tab 历史消息
+   * 
+   * @param tabId - Tab ID
+   */
+  private async loadTabHistory(tabId: string): Promise<void> {
+    if (!this.sessionManager) {
+      console.warn('[Gateway] SessionManager 未初始化，跳过加载历史消息');
+      return;
+    }
+    
+    try {
+      // 加载 UI 显示消息（最近 100 轮）
+      const messages = await this.sessionManager.loadUIMessages(tabId);
+      
+      if (messages.length === 0) {
+        console.log(`[Gateway] Tab ${tabId} 没有历史消息`);
+        return;
+      }
+      
+      console.log(`[Gateway] 📖 已加载 ${messages.length} 条历史消息: ${tabId}`);
+      
+      // 更新 Tab 的消息列表
+      const tab = this.tabs.get(tabId);
+      if (tab) {
+        tab.messages = messages;
+      }
+      
+      // 通知前端加载历史消息
+      sendToWindow(this.mainWindow, 'tab:history-loaded', {
+        tabId,
+        messages,
+      });
+    } catch (error) {
+      console.error(`[Gateway] ❌ 加载 Tab 历史消息失败: ${tabId}`, getErrorMessage(error));
+    }
+  }
+  
+  /**
+   * 初始化 SessionManager
+   */
+  private async initializeSessionManager(): Promise<void> {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const settings = store.getWorkspaceSettings();
+      
+      this.sessionManager = new SessionManager(settings.sessionDir);
+      await this.sessionManager.initialize();
+      
+      console.log('[Gateway] ✅ SessionManager 已初始化');
+    } catch (error) {
+      console.error('[Gateway] ❌ 初始化 SessionManager 失败:', getErrorMessage(error));
+    }
   }
   
   /**
@@ -147,6 +212,13 @@ export class Gateway {
           
           this.tabs.set(tabId, tab);
           console.log(`[Gateway] ✅ 已恢复 Tab: ${tabId} (${tabConfig.title}, type: ${tabType})`);
+          
+          // 🔥 加载历史消息（异步，不阻塞）
+          if (this.sessionManager) {
+            this.loadTabHistory(tabId).catch(error => {
+              console.error(`[Gateway] ❌ 加载 Tab 历史消息失败: ${tabId}`, error);
+            });
+          }
           
           // 通知前端 Tab 已创建
           this.notifyTabCreated(tab);
@@ -243,29 +315,9 @@ export class Gateway {
     sendToWindow(this.mainWindow, 'message:clear-all');
     console.log('[Gateway] 📤 已发送清空聊天记录事件到前端');
     
-    // 🔥 发送欢迎消息到默认会话
-    const { SystemConfigStore } = await import('./database/system-config-store');
-    const configStore = SystemConfigStore.getInstance();
-    const nameConfig = configStore.getNameConfig();
-    
-    const isDefaultUserName = nameConfig.userName === 'user';
-    const greeting = isDefaultUserName 
-      ? `你好！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`
-      : `你好，${nameConfig.userName}！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`;
-    
-    const welcomeMessage = `请按照以下方式欢迎用户：
-
-1. 说"${greeting}"
-2. ${isDefaultUserName ? '告诉用户可以随时给你改名字，也可以告诉你希望怎么称呼用户，你会永久记住' : `告诉${nameConfig.userName}可以随时给你改名字，你会永久记住`}
-3. 简单介绍你的能力：处理文件、浏览网页、执行命令、管理任务、创建后台任务等
-4. 使用 environment_check 工具检查运行环境
-5. 如果环境未配置，提醒${isDefaultUserName ? '用户' : nameConfig.userName}你可以帮助安装
-
-不要显示计划步骤，直接执行。`;
-    
-    // 异步发送，不阻塞
-    this.handleSendMessage(welcomeMessage, 'default').catch(error => {
-      console.error('[Gateway] 发送欢迎消息失败:', error);
+    // 🔥 重新加载默认 Tab 历史消息（会自动判断是否发送欢迎消息）
+    this.loadDefaultTabHistory().catch(error => {
+      console.error('[Gateway] ❌ 重新加载默认 Tab 历史消息失败:', error);
     });
     
     // 🔥 重新预热 AI 连接
@@ -379,7 +431,7 @@ export class Gateway {
    * @param displayContent - 显示内容（可选，用于前端显示）
    * @param clearHistory - 是否清空历史消息（可选，用于定时任务）
    */
-  async handleSendMessage(content: string, sessionId?: string, displayContent?: string, clearHistory?: boolean): Promise<void> {
+  async handleSendMessage(content: string, sessionId?: string, displayContent?: string, clearHistory?: boolean, skipHistory?: boolean): Promise<void> {
     console.log('收到消息:', content);
 
     // 如果没有 sessionId，使用默认会话
@@ -406,6 +458,12 @@ export class Gateway {
     if (clearHistory) {
       console.log('[Gateway] 🗑️ 清空历史消息（定时任务模式）');
       await runtime.clearMessageHistory();
+    }
+    
+    // 🔥 如果需要跳过历史记录（欢迎消息场景）
+    if (skipHistory) {
+      console.log('[Gateway] 📝 跳过历史记录（欢迎消息模式）');
+      runtime.setSkipHistory(true);
     }
 
     // 🔥 检查是否正在生成
@@ -501,6 +559,12 @@ export class Gateway {
       
       // 即使出错，也要处理队列
       await this.processMessageQueue(currentSessionId);
+    } finally {
+      // 🔥 恢复历史记录模式
+      if (skipHistory) {
+        runtime.setSkipHistory(false);
+        console.log('[Gateway] ✅ 恢复历史记录模式');
+      }
     }
   }
   
@@ -589,6 +653,18 @@ export class Gateway {
     let fullResponse = ''; // 收集完整响应
 
     try {
+      // 🔥 保存用户消息到 session（除非跳过历史记录或定时任务 Tab）
+      const skipHistory = runtime.getSkipHistory();
+      const isTaskTab = sessionId.startsWith('task-tab-');
+      
+      if (this.sessionManager && !skipHistory && !isTaskTab) {
+        await this.sessionManager.saveUserMessage(sessionId, userMessage);
+      } else if (skipHistory) {
+        console.log('[Gateway] 🚫 跳过保存用户消息到历史记录（欢迎消息模式）');
+      } else if (isTaskTab) {
+        console.log('[Gateway] 🚫 跳过保存用户消息到历史记录（定时任务 Tab）');
+      }
+      
       // 设置执行步骤更新回调
       runtime.setExecutionStepCallback((steps) => {
         // 发送执行步骤更新到前端
@@ -611,6 +687,17 @@ export class Gateway {
       // 发送完成信号（包含最终的执行步骤）
       const finalSteps = runtime.getExecutionSteps();
       this.sendStreamChunk(messageId, '', true, false, undefined, finalSteps, sessionId);
+      
+      // 🔥 保存 AI 响应到 session（除非跳过历史记录或定时任务 Tab）
+      if (this.sessionManager && fullResponse.trim() && !skipHistory && !isTaskTab) {
+        // 保存响应内容和执行步骤
+        await this.sessionManager.saveAssistantMessage(sessionId, fullResponse, finalSteps);
+        console.log(`[Gateway] 💾 已保存 AI 响应和 ${finalSteps.length} 个执行步骤`);
+      } else if (skipHistory && fullResponse.trim()) {
+        console.log('[Gateway] 🚫 跳过保存 AI 响应到历史记录（欢迎消息模式）');
+      } else if (isTaskTab && fullResponse.trim()) {
+        console.log('[Gateway] 🚫 跳过保存 AI 响应到历史记录（定时任务 Tab）');
+      }
       
       // 🔥 如果是连接器 Tab，发送响应到连接器
       const tab = this.tabs.get(sessionId);
@@ -725,6 +812,41 @@ export class Gateway {
   // ==================== Tab 管理方法 ====================
   
   /**
+   * 发送欢迎消息
+   * 
+   * 🔥 统一的欢迎消息发送逻辑
+   */
+  private async sendWelcomeMessage(): Promise<void> {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const configStore = SystemConfigStore.getInstance();
+      const nameConfig = configStore.getNameConfig();
+      
+      const isDefaultUserName = nameConfig.userName === 'user';
+      const greeting = isDefaultUserName 
+        ? `你好！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`
+        : `你好，${nameConfig.userName}！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`;
+      
+      const welcomeMessage = `请按照以下方式欢迎用户：
+
+1. 说"${greeting}"
+2. ${isDefaultUserName ? '告诉用户可以随时给你改名字，也可以告诉你希望怎么称呼用户，你会永久记住' : `告诉${nameConfig.userName}可以随时给你改名字，你会永久记住`}
+3. 简单介绍你的能力：处理文件、浏览网页、执行命令、管理任务、创建后台任务等
+4. 使用 environment_check 工具检查运行环境
+5. 如果环境未配置，提醒${isDefaultUserName ? '用户' : nameConfig.userName}你可以帮助安装
+
+不要显示计划步骤，直接执行。`;
+      
+      console.log('[Gateway] 📤 发送欢迎消息到默认会话');
+      
+      // 🔥 发送欢迎消息，不跳过历史记录（让欢迎消息也被保存）
+      await this.handleSendMessage(welcomeMessage, 'default', undefined, false, false);
+    } catch (error) {
+      console.error('[Gateway] ❌ 发送欢迎消息失败:', getErrorMessage(error));
+    }
+  }
+
+  /**
    * 创建默认 Tab
    */
   private createDefaultTab(): void {
@@ -744,6 +866,56 @@ export class Gateway {
     
     this.tabs.set('default', defaultTab);
     console.log('[Gateway] 创建默认 Tab:', defaultTab.id, defaultTab.title);
+    
+    // 🔥 异步加载默认 Tab 的历史消息（在欢迎消息之后）
+    this.loadDefaultTabHistory().catch(error => {
+      console.error('[Gateway] ❌ 加载默认 Tab 历史消息失败:', error);
+    });
+  }
+  
+  /**
+   * 加载默认 Tab 的历史消息
+   * 
+   * 🔥 如果没有历史记录，发送欢迎消息；如果有历史记录，直接加载
+   */
+  private async loadDefaultTabHistory(): Promise<void> {
+    // 等待 SessionManager 初始化完成
+    await sleep(500);
+    
+    if (!this.sessionManager) {
+      console.warn('[Gateway] SessionManager 未初始化，发送欢迎消息');
+      await this.sendWelcomeMessage();
+      return;
+    }
+    
+    try {
+      console.log('[Gateway] 🔄 检查默认 Tab 是否有历史消息...');
+      
+      // 加载 UI 显示消息（最近 100 轮）
+      const messages = await this.sessionManager.loadUIMessages('default');
+      
+      if (messages.length === 0) {
+        console.log('[Gateway] 📝 没有历史消息，发送欢迎消息');
+        await this.sendWelcomeMessage();
+      } else {
+        console.log(`[Gateway] 📖 找到 ${messages.length} 条历史消息，跳过欢迎消息`);
+        
+        // 更新 Tab 的消息列表
+        const tab = this.tabs.get('default');
+        if (tab) {
+          tab.messages = messages;
+        }
+        
+        // 通知前端加载历史消息
+        sendToWindow(this.mainWindow, 'tab:history-loaded', {
+          tabId: 'default',
+          messages,
+        });
+      }
+    } catch (error) {
+      console.error('[Gateway] ❌ 检查历史消息失败，发送欢迎消息:', getErrorMessage(error));
+      await this.sendWelcomeMessage();
+    }
   }
   
   /**
@@ -1000,6 +1172,17 @@ export class Gateway {
       }
     }
     
+    // 🔥 删除 Tab 的 session 文件
+    if (this.sessionManager) {
+      try {
+        await this.sessionManager.deleteSession(tabId);
+        console.log('[Gateway] 🗑️ 已删除 Tab session 文件:', tabId);
+      } catch (error) {
+        console.error('[Gateway] ❌ 删除 Tab session 文件失败:', error);
+        // 继续关闭 Tab，即使删除失败
+      }
+    }
+    
     // 🔥 如果是持久化 Tab，从数据库删除配置
     if (tab.isPersistent) {
       try {
@@ -1164,6 +1347,15 @@ export class Gateway {
    */
   getConnectorManager(): ConnectorManager {
     return this.connectorManager;
+  }
+  
+  /**
+   * 获取 SessionManager 实例
+   * 
+   * @returns SessionManager 或 null
+   */
+  getSessionManager(): SessionManager | null {
+    return this.sessionManager;
   }
 }
 

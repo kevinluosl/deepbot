@@ -192,47 +192,13 @@ function createWindow() {
   // 🔥 将 Gateway 实例传递给 model-config-handler
   setGatewayForModelConfig(gateway);
   
-  // 窗口加载完成后，检查配置并发送欢迎消息
+  // 窗口加载完成后，Gateway 会自动处理历史消息加载和欢迎消息
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('[Main] 窗口加载完成，检查模型配置...');
+    console.log('[Main] 窗口加载完成');
     
     // 延迟 500ms，确保前端已准备好
     setTimeout(() => {
-      if (gateway) {
-        // 检查是否有模型配置
-        if (hasConfig()) {
-          console.log('[Main] 模型已配置，发送欢迎消息...');
-          
-          // 从数据库读取名字配置
-          const { SystemConfigStore } = require('./database/system-config-store');
-          const configStore = SystemConfigStore.getInstance();
-          const nameConfig = configStore.getNameConfig();
-          
-          console.log('[Main] 读取到的名字配置:', nameConfig);
-          
-          // 构建动态欢迎消息
-          const isDefaultUserName = nameConfig.userName === 'user';
-          const greeting = isDefaultUserName 
-            ? `你好！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`
-            : `你好，${nameConfig.userName}！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`;
-          
-          const welcomeMessage = `请按照以下方式欢迎用户：
-
-1. 说"${greeting}"
-2. ${isDefaultUserName ? '告诉用户可以随时给你改名字，也可以告诉你希望怎么称呼用户，你会永久记住' : `告诉${nameConfig.userName}可以随时给你改名字，你会永久记住`}
-3. 简单介绍你的能力：处理文件、浏览网页、执行命令、管理任务、创建后台任务等
-4. 使用 environment_check 工具检查运行环境
-5. 如果环境未配置，提醒${isDefaultUserName ? '用户' : nameConfig.userName}你可以帮助安装
-
-不要显示计划步骤，直接执行。`;
-          
-          gateway.handleSendMessage(welcomeMessage, 'default').catch(error => {
-            console.error('[Main] 发送欢迎消息失败:', error);
-          });
-        } else {
-          console.log('[Main] 模型未配置，跳过欢迎消息');
-        }
-      }
+      console.log('[Main] 前端已准备就绪，Gateway 将自动处理历史消息和欢迎消息');
     }, 500);
   });
 }

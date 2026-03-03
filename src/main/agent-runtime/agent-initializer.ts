@@ -4,7 +4,7 @@
  * 职责：初始化 Agent、加载工具、构建系统提示词
  */
 
-import type { Agent } from '@mariozechner/pi-agent-core';
+import type { Agent, AgentMessage } from '@mariozechner/pi-agent-core';
 import type { Model } from '@mariozechner/pi-ai';
 import { ToolLoader } from '../tools/registry/tool-loader';
 import { buildSystemPrompt, loadContextFiles, buildRuntimeParams } from '../prompts';
@@ -50,7 +50,7 @@ export class AgentInitializer {
     // 获取所有工具
     const tools = await this.loadTools();
     
-    // 创建 Agent 实例
+    // 创建 Agent 实例（历史消息由 AgentRuntime 加载）
     const agent = new Agent({
       initialState: {
         systemPrompt: '', // 稍后异步设置

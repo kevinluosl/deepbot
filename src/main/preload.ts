@@ -48,6 +48,7 @@ const IPC_CHANNELS = {
   GET_TABS: 'tab:get-all',
   SWITCH_TAB: 'tab:switch',
   TAB_CREATED: 'tab:created', // Tab 创建通知
+  TAB_HISTORY_LOADED: 'tab:history-loaded', // 🔥 Tab 历史消息加载通知
   CONNECTOR_GET_ALL: 'connector:get-all',
   CONNECTOR_GET_CONFIG: 'connector:get-config',
   CONNECTOR_SAVE_CONFIG: 'connector:save-config',
@@ -209,6 +210,16 @@ contextBridge.exposeInMainWorld('deepbot', {
     
     return () => {
       ipcRenderer.removeListener(IPC_CHANNELS.TAB_CREATED, listener);
+    };
+  },
+  
+  // 🔥 监听 Tab 历史消息加载
+  onTabHistoryLoaded: (callback: (data: { tabId: string; messages: any[] }) => void) => {
+    const listener = (_event: any, data: any) => callback(data);
+    ipcRenderer.on(IPC_CHANNELS.TAB_HISTORY_LOADED, listener);
+    
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.TAB_HISTORY_LOADED, listener);
     };
   },
   

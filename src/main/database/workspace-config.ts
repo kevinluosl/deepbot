@@ -20,6 +20,7 @@ export function getDefaultWorkspaceSettings(): WorkspaceSettings {
     defaultSkillDir: join(homedir(), '.deepbot', 'skills'),
     imageDir: join(homedir(), '.deepbot', 'generated-images'),
     memoryDir: join(homedir(), '.deepbot', 'memory'),
+    sessionDir: join(homedir(), '.deepbot', 'sessions'), // 🔥 新增：session 目录
   };
 }
 
@@ -36,7 +37,8 @@ export function getWorkspaceSettings(db: Database.Database): WorkspaceSettings {
       'skillDirs',
       'defaultSkillDir',
       'imageDir',
-      'memoryDir'
+      'memoryDir',
+      'sessionDir' // 🔥 新增
     ]);
 
     // 解析 skillDirs（JSON 数组）
@@ -51,6 +53,7 @@ export function getWorkspaceSettings(db: Database.Database): WorkspaceSettings {
       defaultSkillDir: values.defaultSkillDir || defaultSettings.defaultSkillDir,
       imageDir: values.imageDir || defaultSettings.imageDir,
       memoryDir: values.memoryDir || defaultSettings.memoryDir,
+      sessionDir: values.sessionDir || defaultSettings.sessionDir, // 🔥 新增
     };
   } catch (error) {
     console.error('获取工作目录配置失败:', error);
@@ -68,6 +71,7 @@ export function saveWorkspaceSettings(db: Database.Database, settings: Workspace
   saveDefaultSkillDir(db, settings.defaultSkillDir);
   saveImageDir(db, settings.imageDir);
   saveMemoryDir(db, settings.memoryDir);
+  saveSessionDir(db, settings.sessionDir); // 🔥 新增
 }
 
 /**
@@ -116,6 +120,14 @@ export function saveImageDir(db: Database.Database, imageDir: string): void {
 export function saveMemoryDir(db: Database.Database, memoryDir: string): void {
   setKeyValue(db, 'workspace_settings', 'memoryDir', memoryDir);
   console.info('[SystemConfigStore] ✅ 记忆管理目录已保存:', memoryDir);
+}
+
+/**
+ * 保存 session 目录配置
+ */
+export function saveSessionDir(db: Database.Database, sessionDir: string): void {
+  setKeyValue(db, 'workspace_settings', 'sessionDir', sessionDir);
+  console.info('[SystemConfigStore] ✅ Session 目录已保存:', sessionDir);
 }
 
 /**

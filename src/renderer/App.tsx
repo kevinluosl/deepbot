@@ -29,7 +29,6 @@ function App() {
   useEffect(() => {
     loadTabs();
     
-    // 监听 Tab 创建事件（定时任务等后台创建的 Tab）
     const unsubscribeTabCreated = window.deepbot.onTabCreated((data) => {
       console.log('[App] 收到 Tab 创建通知:', data.tab);
       setTabs(prev => {
@@ -98,6 +97,28 @@ function App() {
       setIsLoading(currentTab.isLoading);
     }
   }, [activeTabId, tabs]);
+  
+  // 🔥 监听历史消息加载事件
+  useEffect(() => {
+    const cleanup = window.deepbot.onTabHistoryLoaded((data: { tabId: string; messages: Message[] }) => {
+      console.log(`[App] 📖 收到历史消息: Tab ${data.tabId}, ${data.messages.length} 条`);
+      
+      // 更新对应 Tab 的消息列表
+      setTabs(prev => prev.map(tab => 
+        tab.id === data.tabId 
+          ? { ...tab, messages: data.messages }
+          : tab
+      ));
+      
+      // 如果是当前 Tab，同步更新 messages 状态
+      if (data.tabId === activeTabId) {
+        setMessages(data.messages);
+        console.log(`[App] ✅ 已加载 ${data.messages.length} 条历史消息到当前 Tab`);
+      }
+    });
+    
+    return cleanup;
+  }, [activeTabId]);
   
   // 获取当前 Tab
   const currentTab = tabs.find(t => t.id === activeTabId);

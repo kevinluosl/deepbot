@@ -48,6 +48,9 @@ export class AgentRuntime {
   
   // 操作追踪器
   private operationTracker = new OperationTracker();
+  
+  // 跳过历史记录标志（用于欢迎消息等不需要记录的场景）
+  private skipHistory: boolean = false;
 
   /**
    * 创建 AgentRuntime 实例
@@ -126,6 +129,9 @@ export class AgentRuntime {
       // 更新 MessageHandler 的 Agent 引用
       this.messageHandler.setAgent(agent);
       
+      // 🔥 加载历史消息到 Agent 上下文（最近 10 轮）
+      await this.loadHistoryToContext();
+      
       // 异步初始化系统提示词（不阻塞）
       void this.initializeSystemPrompt();
       
@@ -133,6 +139,114 @@ export class AgentRuntime {
     } catch (error) {
       console.error('❌ AgentRuntime 初始化失败:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 从 Session 加载历史消息到 Agent 上下文
+   * 
+   * 加载最近 10 轮对话，如果超出上下文限制，使用现有的压缩规则压缩
+   */
+  private async loadHistoryToContext(): Promise<void> {
+    try {
+      // 从 Gateway 获取 SessionManager
+      const { getGatewayInstance } = await import('../gateway');
+      const gateway = getGatewayInstance();
+      
+      if (!gateway) {
+        console.warn('[AgentRuntime] Gateway 未初始化，跳过历史消息加载');
+        return;
+      }
+      
+      const sessionManager = gateway.getSessionManager();
+      
+      if (!sessionManager) {
+        console.warn('[AgentRuntime] SessionManager 未初始化，跳过历史消息加载');
+        return;
+      }
+      
+      // 检查 session 是否存在
+      const exists = await sessionManager.sessionExists(this.runtimeConfig.sessionId);
+      if (!exists) {
+        console.log('[AgentRuntime] Session 不存在，跳过历史消息加载');
+        return;
+      }
+      
+      // 加载最近 10 轮对话
+      const contextMessages = await sessionManager.loadContextMessages(this.runtimeConfig.sessionId);
+      
+      if (contextMessages.length === 0) {
+        console.log('[AgentRuntime] 没有历史消息，跳过加载');
+        return;
+      }
+      
+      console.log(`[AgentRuntime] 📚 加载历史消息: ${contextMessages.length} 条`);
+      
+      // 转换为 Agent 消息格式
+      const agentMessages = contextMessages.map((msg: any) => {
+        if (msg.role === 'user') {
+          return {
+            role: 'user',
+            content: msg.content,
+          };
+        } else {
+          // assistant 消息需要更完整的结构，content 必须是数组
+          return {
+            role: 'assistant',
+            content: [{ type: 'text', text: msg.content }],
+            api: 'openai-completions',
+            provider: 'openai',
+            model: this.runtimeConfig.model.id,
+            usage: { 
+              input: 0, 
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 0,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+                total: 0,
+              },
+            },
+            finishReason: 'stop',
+            stopReason: 'stop',
+            timestamp: msg.timestamp,
+          };
+        }
+      });
+      
+      // 添加到 Agent 的消息列表
+      if (this.instanceManager.agent) {
+        this.instanceManager.agent.state.messages.push(...agentMessages as any);
+        
+        // 🔥 使用现有的上下文压缩功能
+        const { manageContext } = await import('../context/context-manager');
+        const result = manageContext({
+          messages: this.instanceManager.agent.state.messages,
+          modelId: this.runtimeConfig.model.id,
+          systemPrompt: this.systemPrompt,
+          tools: this.tools,
+        });
+        
+        if (result.compressed) {
+          console.info(
+            `[AgentRuntime] 📊 历史消息压缩: ` +
+            `${result.stats.messagesBefore} → ${result.stats.messagesAfter} 条消息, ` +
+            `${result.stats.tokensBefore} → ${result.stats.tokensAfter} tokens`
+          );
+          
+          // 更新 Agent 的消息列表
+          this.instanceManager.agent.state.messages = result.messages;
+        }
+        
+        console.log(`[AgentRuntime] ✅ 历史消息已加载到上下文: ${this.instanceManager.agent.state.messages.length} 条`);
+      }
+    } catch (error) {
+      console.error('[AgentRuntime] ❌ 加载历史消息失败:', getErrorMessage(error));
+      // 不抛出错误，允许继续初始化
     }
   }
 
@@ -429,6 +543,23 @@ ${lastPart}
   }
 
   /**
+   * 设置是否跳过历史记录
+   *
+   * @param skip - 是否跳过历史记录
+   */
+  setSkipHistory(skip: boolean): void {
+    this.skipHistory = skip;
+    console.log(`[AgentRuntime] ${skip ? '🚫' : '✅'} ${skip ? '跳过' : '恢复'}历史记录模式`);
+  }
+
+  /**
+   * 获取是否跳过历史记录
+   */
+  getSkipHistory(): boolean {
+    return this.skipHistory;
+  }
+
+  /**
    * 发送消息并获取流式响应
    * 
    * @param content - 消息内容
@@ -605,6 +736,7 @@ ${lastPart}
     
     // ✅ 新增：上下文管理（在发送消息前）
     if (this.instanceManager.agent) {
+      // 🔥 步骤 1：在 10 轮对话基础上，进行 token 压缩（裁剪工具结果等）
       const { manageContext } = await import('../context/context-manager');
       const currentMessages = this.instanceManager.agent.state.messages;
       
@@ -753,6 +885,14 @@ ${lastPart}
       }
     } else {
       console.log('⏭️ 跳过未完成意图检测（autoContinue=false 或 maxContinuations=0）');
+    }
+    
+    // 🔥 响应完成后：限制上下文为最近 10 轮对话（20 条消息）
+    if (this.instanceManager.agent && this.instanceManager.agent.state.messages.length > 20) {
+      const maxMessages = 20;
+      const droppedCount = this.instanceManager.agent.state.messages.length - maxMessages;
+      this.instanceManager.agent.state.messages = this.instanceManager.agent.state.messages.slice(-maxMessages);
+      console.log(`[AgentRuntime] 🗑️ 响应完成后清理：保留最近 10 轮对话，丢弃 ${droppedCount} 条旧消息`);
     }
   }
 

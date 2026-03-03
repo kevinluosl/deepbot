@@ -134,6 +134,7 @@ export async function handleSetWorkspaceConfig(
       defaultSkillDir: params.defaultSkillDir || currentSettings.defaultSkillDir,
       imageDir: params.imageDir || currentSettings.imageDir,
       memoryDir: params.memoryDir || currentSettings.memoryDir,
+      sessionDir: currentSettings.sessionDir, // 🔥 保持现有的 sessionDir
     };
     
     // 保存配置

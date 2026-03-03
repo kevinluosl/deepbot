@@ -179,39 +179,45 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   const isSystem = message.role === 'system';
   const isSubAgentResult = message.isSubAgentResult === true;
 
-  // 格式化时间戳
-  const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    
-    if (isToday) {
-      // 今天：只显示时间
-      return date.toLocaleTimeString('zh-CN', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit'
-      });
-    } else {
-      // 其他日期：显示日期和时间
-      return date.toLocaleString('zh-CN', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-  };
+  // 格式化时间戳 - 已禁用
+  // const formatTimestamp = (timestamp: number): string => {
+  //   const date = new Date(timestamp);
+  //   const now = new Date();
+  //   const isToday = date.toDateString() === now.toDateString();
+  //   
+  //   if (isToday) {
+  //     // 今天：只显示时间
+  //     return date.toLocaleTimeString('zh-CN', { 
+  //       hour: '2-digit', 
+  //       minute: '2-digit',
+  //       second: '2-digit'
+  //     });
+  //   } else {
+  //     // 其他日期：显示日期和时间
+  //     return date.toLocaleString('zh-CN', {
+  //       month: '2-digit',
+  //       day: '2-digit',
+  //       hour: '2-digit',
+  //       minute: '2-digit'
+  //     });
+  //   }
+  // };
 
-  // 复制消息内容（不包含执行步骤）
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(message.content);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('复制失败:', err);
-    }
+  // 复制消息内容 - 已禁用
+  // const handleCopy = async () => {
+  //   try {
+  //     await navigator.clipboard.writeText(message.content);
+  //     setCopySuccess(true);
+  //     setTimeout(() => setCopySuccess(false), 2000);
+  //   } catch (err) {
+  //     console.error('复制失败:', err);
+  //   }
+  // };
+
+  // 过滤系统提示信息
+  const filterSystemPrompts = (content: string): string => {
+    // 移除 [系统提示: ...] 格式的内容
+    return content.replace(/\n*\[系统提示:.*?\]/g, '').trim();
   };
 
   // 确定提示符
@@ -261,7 +267,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* 提示符和消息内容在同一行 */}
-      <div>
+      <div className="terminal-message-line">
         <span className={`terminal-prompt ${promptClass}`}>{prompt}</span>
         <span className={`terminal-message ${isSystem ? 'error' : ''}`}>
           {/* 如果有上传的图片，先显示图片 */}
@@ -344,8 +350,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               em: ({ children }) => <em>{children}</em>,
             }}
           >
-            {message.content}
+            {filterSystemPrompts(message.content)}
           </ReactMarkdown>
+          
+          {/* 时间戳和复制按钮 - 已隐藏 */}
+          {/* {isHovered && (
+            <span className="terminal-message-actions">
+              <span className="terminal-message-timestamp">
+                {formatTimestamp(message.timestamp)}
+              </span>
+              <button
+                className="terminal-message-copy"
+                onClick={handleCopy}
+                title="复制消息内容"
+              >
+                {copySuccess ? '[✓]' : '[copy]'}
+              </button>
+            </span>
+          )} */}
         </span>
       </div>
 
@@ -427,22 +449,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               </div>
             );
           })}
-        </div>
-      )}
-      
-      {/* 时间戳和复制按钮 - 悬停时显示在底部 */}
-      {isHovered && (
-        <div className="terminal-message-footer">
-          <span className="terminal-message-timestamp">
-            {formatTimestamp(message.timestamp)}
-          </span>
-          <button
-            className="terminal-message-copy"
-            onClick={handleCopy}
-            title="复制消息内容"
-          >
-            {copySuccess ? '[✓]' : '[copy]'}
-          </button>
         </div>
       )}
     </div>

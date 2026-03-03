@@ -25,6 +25,7 @@ export interface WorkspaceSettings {
   defaultSkillDir: string; // 默认 Skill 目录
   imageDir: string;        // 图片生成目录（单一路径）
   memoryDir: string;       // 记忆管理目录（单一路径）
+  sessionDir: string;      // Session 目录（单一路径）
 }
 
 /**

@@ -93,6 +93,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       // 注意：需要在 preload.ts 中实现 removeListener
     };
   }, [activeTabId]); // 🔥 当 activeTabId 变化时重新加载
+  
+  // 🔥 监听历史消息加载事件（在 App.tsx 中处理）
+  useEffect(() => {
+    const handleHistoryLoaded = (data: { tabId: string; messages: Message[] }) => {
+      // 只处理当前 Tab 的历史消息
+      if (data.tabId === (activeTabId || 'default')) {
+        console.log(`[ChatWindow] 📖 收到历史消息: ${data.messages.length} 条`);
+        // 历史消息在 App.tsx 中处理，这里只记录日志
+      }
+    };
+    
+    const cleanup = window.deepbot.onTabHistoryLoaded(handleHistoryLoaded);
+    
+    // 清理监听器
+    return cleanup;
+  }, [activeTabId]);
 
   // 监听消息变化，收到第一条消息时关闭初始化状态
   useEffect(() => {
