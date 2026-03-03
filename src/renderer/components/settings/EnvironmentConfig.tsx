@@ -22,12 +22,6 @@ interface EnvironmentStatus {
     path?: string;
     error?: string;
   } | null;
-  nodejs: {
-    isInstalled: boolean;
-    version?: string;
-    path?: string;
-    error?: string;
-  } | null;
   allInstalled: boolean;
   needsCheck: boolean;
 }
@@ -147,7 +141,7 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
       <div>
         <h3 className="text-base font-semibold text-gray-900">环境配置</h3>
         <p className="text-sm text-gray-600 mt-1">
-          DeepBot 需要 Python 和 Node.js 环境才能正常运行。推荐使用 Conda 管理 Python 环境。
+          DeepBot 需要 Python 环境才能正常运行。推荐使用 Conda 管理 Python 环境。
         </p>
       </div>
 
@@ -171,7 +165,6 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
         <div className="space-y-3">
           {renderEnvironmentItem('python', 'Python', status.python)}
           {renderEnvironmentItem('conda', 'Conda（推荐）', status.conda)}
-          {renderEnvironmentItem('nodejs', 'Node.js', status.nodejs)}
         </div>
       )}
 
@@ -255,14 +248,6 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
                 <p className="font-medium">安装 Python:</p>
                 <code className="block bg-blue-100 px-2 py-1 rounded mt-1 text-xs">
                   brew install python3
-                </code>
-              </div>
-            )}
-            {!status.nodejs?.isInstalled && (
-              <div>
-                <p className="font-medium">安装 Node.js:</p>
-                <code className="block bg-blue-100 px-2 py-1 rounded mt-1 text-xs">
-                  brew install node
                 </code>
               </div>
             )}

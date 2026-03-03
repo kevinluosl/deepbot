@@ -44,8 +44,10 @@ DeepBot Terminal is a system-level AI assistant that acts like an intelligent br
 
 ### Requirements
 
-- **Node.js**: 20.0.0 or higher
-- **pnpm**: 10.23.0 or higher
+- **Python**: 3.11 or higher (recommended to use Conda for management)
+- **Conda**: Recommended to install Miniconda or Anaconda
+- **Node.js**: 20.0.0 or higher (optional, for running JS scripts)
+- **pnpm**: 10.23.0 or higher (optional, for running JS scripts)
 - **OS**: macOS, Windows, Linux
 
 ### Installation

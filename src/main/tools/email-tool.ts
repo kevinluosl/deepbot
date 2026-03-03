@@ -6,10 +6,6 @@
  * 配置文件位置：
  * - 用户级别: ~/.deepbot/tools/email-tool/config.json
  * - 项目级别: <workspace>/.deepbot/tools/email-tool/config.json
- * 
- * 依赖安装：
- * - 首次使用时会自动检查并提示安装 nodemailer
- * - 手动安装：cd ~/.deepbot/tools/email-tool && pnpm install
  */
 
 import { Type } from '@sinclair/typebox';
@@ -22,9 +18,8 @@ import { safeJsonParse } from '../../shared/utils/json-utils';
 import { expandUserPath } from '../../shared/utils/path-utils';
 import { TIMEOUTS } from '../config/timeouts';
 import { TOOL_NAMES } from './tool-names';
-
-// 动态导入类型（避免编译时依赖）
-type Transporter = any;
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 /**
  * 邮件工具参数 Schema
@@ -134,48 +129,9 @@ function loadEmailConfig(workspaceDir: string): EmailConfig {
 }
 
 /**
- * 获取邮件工具目录
- */
-function getEmailToolDir(): string {
-  // 优先使用用户级别目录
-  return join(homedir(), '.deepbot', 'tools', 'email-tool');
-}
-
-/**
- * 检查并加载 nodemailer
- */
-async function loadNodemailer(): Promise<any> {
-  const toolDir = getEmailToolDir();
-  
-  try {
-    // 尝试从工具目录加载
-    const nodemailerPath = join(toolDir, 'node_modules', 'nodemailer');
-    if (existsSync(nodemailerPath)) {
-      return require(nodemailerPath);
-    }
-    
-    // 尝试从全局加载
-    return require('nodemailer');
-  } catch (error) {
-    // nodemailer 未安装
-    throw new Error(
-      '❌ nodemailer 未安装\n\n' +
-      '请运行以下命令安装依赖：\n\n' +
-      `  mkdir -p ${toolDir}\n` +
-      `  cd ${toolDir}\n` +
-      `  pnpm init -y\n` +
-      `  pnpm add nodemailer\n\n` +
-      '或者使用 npm：\n\n' +
-      `  npm install nodemailer --prefix ${toolDir}\n\n` +
-      '安装完成后重试。'
-    );
-  }
-}
-
-/**
  * 创建 SMTP 传输器
  */
-function createTransporter(nodemailer: any, config: EmailConfig): Transporter {
+function createTransporter(config: EmailConfig): Transporter {
   return nodemailer.createTransport({
     host: config.smtpServer,
     port: config.smtpPort,
@@ -248,26 +204,6 @@ export const emailToolPlugin: ToolPlugin = {
               throw new Error('参数冲突: body 和 bodyFile 不能同时提供');
             }
             
-            // 加载 nodemailer
-            let nodemailer: any;
-            try {
-              nodemailer = await loadNodemailer();
-            } catch (error) {
-              return {
-                content: [
-                  {
-                    type: 'text',
-                    text: getErrorMessage(error),
-                  },
-                ],
-                details: {
-                  success: false,
-                  error: 'nodemailer_not_installed',
-                },
-                isError: true,
-              };
-            }
-            
             // 加载配置
             const config = loadEmailConfig(workspaceDir);
             
@@ -306,7 +242,7 @@ export const emailToolPlugin: ToolPlugin = {
             }
             
             // 创建传输器
-            const transporter = createTransporter(nodemailer, config);
+            const transporter = createTransporter(config);
             
             // 构建邮件选项
             const mailOptions: any = {

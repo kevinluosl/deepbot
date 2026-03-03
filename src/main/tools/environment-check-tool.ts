@@ -123,7 +123,7 @@ export function createEnvironmentCheckTool(): AgentTool {
   return {
     name: TOOL_NAMES.ENVIRONMENT_CHECK,
     label: '环境检查',
-    description: '检查系统环境依赖（Python、Conda、Node.js）并将结果保存到数据库',
+    description: '检查系统环境依赖（Python、Conda）并将结果保存到数据库',
     parameters: Type.Object({
       action: Type.Union([
         Type.Literal('check', { description: '检查环境依赖' }),
@@ -213,43 +213,6 @@ export function createEnvironmentCheckTool(): AgentTool {
           } else {
             console.warn('[EnvironmentCheck] ⚠️  Python 未安装或路径为空，跳过保险机制');
           }
-
-          // 检查 Node.js
-          console.info('[EnvironmentCheck] 🔍 检查 Node.js 环境...');
-          const nodeResult = checkCommand('node');
-          store.saveEnvironmentConfig({
-            id: 'nodejs',
-            name: 'nodejs',
-            isInstalled: nodeResult.installed,
-            version: nodeResult.version,
-            path: nodeResult.path,
-            lastChecked: Date.now(),
-            error: nodeResult.error,
-          });
-          
-          // 🔥 保险机制：将 Node.js 路径添加到环境变量
-          if (nodeResult.installed && nodeResult.path) {
-            const path = require('path');
-            const nodeDir = path.dirname(nodeResult.path);
-            const pathSeparator = process.platform === 'win32' ? ';' : ':';
-            
-            console.info('[EnvironmentCheck] 🔒 保险机制：检查 Node.js 路径');
-            console.info(`  Node.js 完整路径: ${nodeResult.path}`);
-            console.info(`  Node.js 目录: ${nodeDir}`);
-            console.info(`  当前 PATH 长度: ${process.env.PATH?.length || 0} 字符`);
-            
-            if (!process.env.PATH?.includes(nodeDir)) {
-              const oldPath = process.env.PATH;
-              process.env.PATH = `${nodeDir}${pathSeparator}${process.env.PATH}`;
-              console.info('[EnvironmentCheck] ✅ 已将 Node.js 路径添加到环境变量');
-              console.info(`  新 PATH 长度: ${process.env.PATH.length} 字符`);
-              console.info(`  增加: ${process.env.PATH.length - (oldPath?.length || 0)} 字符`);
-            } else {
-              console.info('[EnvironmentCheck] ℹ️  Node.js 路径已存在于 PATH 中，跳过添加');
-            }
-          } else {
-            console.warn('[EnvironmentCheck] ⚠️  Node.js 未安装或路径为空，跳过保险机制');
-          }
           
           // 🔥 输出最终 PATH 状态
           console.info('[EnvironmentCheck] 📊 最终环境变量状态:');
@@ -279,16 +242,10 @@ export function createEnvironmentCheckTool(): AgentTool {
             results.push(`⚠️  Conda 未安装（推荐安装）\n   说明: Conda 可以更好地管理 Python 环境和依赖`);
           }
 
-          if (nodeResult.installed) {
-            results.push(`✅ Node.js 已安装\n   版本: ${nodeResult.version}\n   路径: ${nodeResult.path}`);
-          } else {
-            results.push(`❌ Node.js 未安装\n   错误: ${nodeResult.error}`);
-          }
-
-          const allInstalled = pythonResult.installed && nodeResult.installed;
+          const allInstalled = pythonResult.installed;
           const summary = allInstalled 
-            ? (condaResult.installed ? '🎉 所有依赖已安装，环境配置完成！' : '✅ 核心依赖已安装，建议安装 Conda 以更好地管理 Python 环境')
-            : '⚠️ 部分依赖未安装，请安装缺失的依赖';
+            ? (condaResult.installed ? '🎉 所有依赖已安装，环境配置完成！' : '✅ Python 已安装，建议安装 Conda 以更好地管理 Python 环境')
+            : '⚠️ Python 未安装，请先安装 Python';
 
           const message = `${summary}\n\n${results.join('\n\n')}`;
 
@@ -304,7 +261,6 @@ export function createEnvironmentCheckTool(): AgentTool {
               data: {
                 python: pythonResult,
                 conda: condaResult,
-                nodejs: nodeResult,
                 allInstalled,
               },
               message,
@@ -328,7 +284,6 @@ export function createEnvironmentCheckTool(): AgentTool {
                 data: {
                   python: null,
                   conda: null,
-                  nodejs: null,
                   allInstalled: false,
                   needsCheck: true,
                 },
@@ -339,11 +294,10 @@ export function createEnvironmentCheckTool(): AgentTool {
 
           const pythonConfig = configs.find(c => c.name === 'python');
           const condaConfig = configs.find(c => c.name === 'conda');
-          const nodejsConfig = configs.find(c => c.name === 'nodejs');
-          const allInstalled = pythonConfig?.isInstalled && nodejsConfig?.isInstalled;
+          const allInstalled = pythonConfig?.isInstalled;
           const message = allInstalled 
-            ? (condaConfig?.isInstalled ? '✅ 环境配置完美' : '✅ 环境配置正常，建议安装 Conda')
-            : '⚠️ 部分依赖未安装';
+            ? (condaConfig?.isInstalled ? '✅ 环境配置完美' : '✅ Python 已安装，建议安装 Conda')
+            : '⚠️ Python 未安装';
 
           return {
             content: [
@@ -357,7 +311,6 @@ export function createEnvironmentCheckTool(): AgentTool {
               data: {
                 python: pythonConfig,
                 conda: condaConfig,
-                nodejs: nodejsConfig,
                 allInstalled,
                 needsCheck: false,
               },
