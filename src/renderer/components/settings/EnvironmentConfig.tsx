@@ -16,6 +16,12 @@ interface EnvironmentStatus {
     path?: string;
     error?: string;
   } | null;
+  conda: {
+    isInstalled: boolean;
+    version?: string;
+    path?: string;
+    error?: string;
+  } | null;
   nodejs: {
     isInstalled: boolean;
     version?: string;
@@ -141,7 +147,7 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
       <div>
         <h3 className="text-base font-semibold text-gray-900">环境配置</h3>
         <p className="text-sm text-gray-600 mt-1">
-          DeepBot 需要 Python 和 Node.js 环境才能正常运行。点击下方按钮检查环境配置。
+          DeepBot 需要 Python 和 Node.js 环境才能正常运行。推荐使用 Conda 管理 Python 环境。
         </p>
       </div>
 
@@ -164,6 +170,7 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
       {status && !status.needsCheck && (
         <div className="space-y-3">
           {renderEnvironmentItem('python', 'Python', status.python)}
+          {renderEnvironmentItem('conda', 'Conda（推荐）', status.conda)}
           {renderEnvironmentItem('nodejs', 'Node.js', status.nodejs)}
         </div>
       )}

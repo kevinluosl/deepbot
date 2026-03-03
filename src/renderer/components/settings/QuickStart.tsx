@@ -79,10 +79,117 @@ export function QuickStart(_props: QuickStartProps) {
           环境要求
         </h4>
         <div style={{ display: 'grid', gap: '8px', fontSize: '13px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', color: 'var(--settings-text)' }}>
-            <span style={{ marginRight: '8px' }}>🐍</span>
-            <span style={{ fontWeight: '600', marginRight: '6px' }}>Python（可选）：</span>
-            <span style={{ color: 'var(--settings-text-dim)' }}>用于执行 Python 脚本和 Skill，建议 3.8+</span>
+          <div style={{ color: 'var(--settings-text)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ marginRight: '8px' }}>🐍</span>
+              <span style={{ fontWeight: '600', marginRight: '6px' }}>Python + Conda（推荐）：</span>
+              <span style={{ color: 'var(--settings-text-dim)' }}>用于执行 Python 脚本和 Skill</span>
+            </div>
+            <div style={{ 
+              marginLeft: '28px', 
+              padding: '10px 12px',
+              background: 'var(--settings-input-bg)',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: 'var(--settings-text-dim)',
+              lineHeight: '1.5'
+            }}>
+              <div style={{ marginBottom: '8px', color: 'var(--settings-text)', fontWeight: '600' }}>
+                💡 为什么推荐 Conda？
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                • 隔离环境：避免不同项目的依赖冲突<br/>
+                • 版本管理：轻松切换 Python 版本<br/>
+                • 包管理：简化依赖安装和管理
+              </div>
+              <div style={{ marginBottom: '6px', color: 'var(--settings-text)', fontWeight: '600' }}>
+                ⚡ 快速安装
+              </div>
+              <div style={{ marginBottom: '8px', color: 'var(--settings-accent)', fontWeight: '600' }}>
+                💬 只需告诉 DeepBot："帮我安装 conda"，即可自动完成安装！
+              </div>
+              <div style={{ marginBottom: '6px', color: 'var(--settings-text)', fontWeight: '600' }}>
+                📦 手动安装 Miniconda
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>macOS (M1/M2/M3):</strong><br/>
+                  curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh<br/>
+                  bash Miniconda3-latest-MacOSX-arm64.sh
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>macOS (Intel):</strong><br/>
+                  curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh<br/>
+                  bash Miniconda3-latest-MacOSX-x86_64.sh
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>Linux:</strong><br/>
+                  curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh<br/>
+                  bash Miniconda3-latest-Linux-x86_64.sh
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>Windows:</strong><br/>
+                  下载并运行：https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+                </div>
+                <div style={{ marginTop: '6px', color: 'var(--settings-text)' }}>
+                  <strong>验证安装:</strong> conda --version
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{ color: 'var(--settings-text)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ marginRight: '8px' }}>📦</span>
+              <span style={{ fontWeight: '600', marginRight: '6px' }}>Node.js + nvm（推荐）：</span>
+              <span style={{ color: 'var(--settings-text-dim)' }}>用于运行需要 JavaScript 环境的程序</span>
+            </div>
+            <div style={{ 
+              marginLeft: '28px', 
+              padding: '10px 12px',
+              background: 'var(--settings-input-bg)',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: 'var(--settings-text-dim)',
+              lineHeight: '1.5'
+            }}>
+              <div style={{ marginBottom: '8px', color: 'var(--settings-text)', fontWeight: '600' }}>
+                💡 为什么推荐 nvm？
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                • 版本管理：轻松切换不同项目的 Node.js 版本<br/>
+                • 避免冲突：与系统 Node.js 隔离<br/>
+                • 简单升级：一条命令安装最新版本
+              </div>
+              <div style={{ marginBottom: '6px', color: 'var(--settings-text)', fontWeight: '600' }}>
+                ⚡ 快速安装
+              </div>
+              <div style={{ marginBottom: '8px', color: 'var(--settings-accent)', fontWeight: '600' }}>
+                💬 只需告诉 DeepBot："帮我安装 nodejs"，即可自动完成安装！
+              </div>
+              <div style={{ marginBottom: '6px', color: 'var(--settings-text)', fontWeight: '600' }}>
+                📦 手动安装 nvm
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>macOS/Linux:</strong><br/>
+                  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/latest/install.sh | bash<br/>
+                  source ~/.bashrc  # 或 source ~/.zshrc
+                </div>
+                <div style={{ marginBottom: '4px' }}>
+                  <strong>Windows:</strong><br/>
+                  下载 nvm-windows：https://github.com/coreybutler/nvm-windows/releases<br/>
+                  运行 nvm-setup.exe 安装
+                </div>
+                <div style={{ marginTop: '6px', marginBottom: '4px', color: 'var(--settings-text)' }}>
+                  <strong>使用 nvm 安装 Node.js:</strong><br/>
+                  nvm install --lts<br/>
+                  nvm use --lts
+                </div>
+                <div style={{ marginTop: '6px', color: 'var(--settings-text)' }}>
+                  <strong>验证安装:</strong> node --version
+                </div>
+              </div>
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', color: 'var(--settings-text)' }}>
             <span style={{ marginRight: '8px' }}>🌐</span>
@@ -204,6 +311,66 @@ export function QuickStart(_props: QuickStartProps) {
               <span>{tip.text}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 推荐工具和 Skill */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px' }}>⭐</span>
+          推荐工具和 Skill
+        </h4>
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--settings-input-bg)',
+          borderRadius: '8px',
+          fontSize: '13px',
+          color: 'var(--settings-text-dim)',
+          lineHeight: '1.6'
+        }}>
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>📄</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>MarkItDown - 文档转换神器</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              将各种文档格式转换为 Markdown，方便 DeepBot 读取和分析
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>支持格式：</strong>
+              <div style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
+                <div>• PDF、PowerPoint、Word、Excel</div>
+                <div>• 图片（EXIF + OCR）</div>
+                <div>• 音频（转录）</div>
+                <div>• HTML、CSV、JSON、XML</div>
+                <div>• ZIP 文件</div>
+                <div>• YouTube URL、EPUB</div>
+              </div>
+            </div>
+            <div style={{ marginLeft: '28px', marginTop: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>安装方式：</strong>
+              <div style={{ 
+                marginTop: '4px',
+                padding: '8px',
+                background: 'rgba(0,0,0,0.1)',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '12px'
+              }}>
+                💬 告诉 DeepBot："读取 github.com/microsoft/markitdown 说明，帮我安装 markitdown"
+              </div>
+              <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                或访问：<a 
+                  href="https://github.com/microsoft/markitdown" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--settings-accent)', textDecoration: 'none' }}
+                >
+                  github.com/microsoft/markitdown
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

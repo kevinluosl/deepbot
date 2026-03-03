@@ -1,5 +1,179 @@
 # DeepBot 工具使用指南
 
+## 🔧 环境配置建议
+
+### 推荐开发环境
+
+为了充分发挥 DeepBot 的能力，建议配置以下开发环境：
+
+#### 1. Python 环境（推荐使用 Conda）
+
+**为什么推荐 Conda？**
+- 隔离环境：避免不同项目的依赖冲突
+- 版本管理：轻松切换 Python 版本
+- 包管理：简化依赖安装和管理
+
+**安装 Miniconda**
+
+macOS (M1/M2/M3):
+```bash
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+bash Miniconda3-latest-MacOSX-arm64.sh
+source ~/miniconda3/bin/activate
+```
+
+macOS (Intel):
+```bash
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+bash Miniconda3-latest-MacOSX-x86_64.sh
+source ~/miniconda3/bin/activate
+```
+
+Linux:
+```bash
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/miniconda3/bin/activate
+```
+
+Windows:
+```bash
+# 下载并运行安装程序
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+# 双击运行 .exe 文件，按向导完成安装
+```
+
+**验证安装**:
+```bash
+conda --version
+```
+
+**在 Conda 中安装 Python**:
+```bash
+# 创建新环境并安装 Python 3.12
+conda create -n deepbot python=3.12
+conda create -n other python=3.12
+
+# 激活环境
+conda activate deepbot
+conda activate other
+
+# 验证
+python --version
+```
+
+**设置环境变量**:
+```bash
+# macOS/Linux - 添加到 ~/.bashrc 或 ~/.zshrc
+export PATH="$HOME/miniconda3/bin:$PATH"
+
+# 重新加载配置
+source ~/.bashrc  # 或 source ~/.zshrc
+```
+
+#### 2. Node.js 环境（推荐使用 nvm）
+
+**为什么推荐 nvm？**
+- 版本管理：轻松切换不同项目的 Node.js 版本
+- 避免冲突：与系统 Node.js 隔离
+- 简单升级：一条命令安装最新版本
+
+**安装 nvm**
+
+macOS/Linux:
+```bash
+# 安装 nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/latest/install.sh | bash
+
+# 重新加载配置
+source ~/.bashrc  # 或 source ~/.zshrc
+
+# 验证安装
+nvm --version
+```
+
+Windows:
+```bash
+# 下载 nvm-windows
+# https://github.com/coreybutler/nvm-windows/releases
+# 下载 nvm-setup.exe 并安装
+
+# 验证安装
+nvm version
+```
+
+**使用 nvm 安装 Node.js**:
+```bash
+# 安装最新 LTS 版本
+nvm install --lts
+
+# 使用已安装的版本
+nvm use --lts
+
+# 设置默认版本
+nvm alias default node
+
+# 验证
+node --version
+npm --version
+```
+
+**设置环境变量**:
+```bash
+# macOS/Linux - nvm 会自动添加到 ~/.bashrc 或 ~/.zshrc
+# 如果没有自动添加，手动添加以下内容：
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+```
+
+**nvm 和系统 Node.js 的区分**:
+- nvm 通过修改 PATH 环境变量来控制使用哪个 Node.js
+- 建议：安装 nvm 后卸载系统 Node.js，统一用 nvm 管理
+- 查看当前使用的 Node.js：`which node`（macOS/Linux）或 `where node`（Windows）
+- 切换版本：`nvm use <version>`
+
+#### 3. 快速安装（不使用版本管理器）
+
+如果不需要版本管理，可以直接安装：
+
+**Python**:
+```bash
+# macOS
+brew install python3
+
+# Ubuntu/Debian
+sudo apt-get install python3
+
+# Windows
+# 下载安装程序：https://www.python.org/downloads/
+```
+
+**Node.js**:
+```bash
+# macOS
+brew install node
+
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_lts.sh | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Windows
+# 使用 Chocolatey: choco install nodejs
+# 或使用 Winget: winget install OpenJS.NodeJS
+# 或下载安装程序：https://nodejs.org/
+```
+
+#### 4. 环境检查
+
+安装完成后，在 DeepBot 中执行环境检查：
+1. 打开「系统配置」→「环境配置」
+2. 点击「检查环境」按钮
+3. 确认 Python、Conda、Node.js 都已正确安装
+
+---
+
 ## 📸 图片显示规则
 
 **当你需要在响应中显示图片时**，必须使用 Markdown 图片语法：
@@ -780,6 +954,13 @@ google-chrome --remote-debugging-port=9222
 - ✅ 查看系统信息（df, ps, top）
 - ❌ 不要执行危险命令（rm -rf /, mkfs, shutdown）
 - ❌ 不要执行长时间运行的命令（使用定时任务）
+
+### 示例
+
+**在 Conda 环境中执行 Python 脚本**：
+```bash
+conda run -n deepbot python script.py
+```
 
 ### 安全规则
 - ❌ 禁止：`rm -rf /`、`mkfs`、`shutdown`

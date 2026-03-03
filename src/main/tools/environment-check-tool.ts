@@ -99,6 +99,22 @@ function checkPython(): { installed: boolean; version?: string; path?: string; e
 }
 
 /**
+ * 检查 Conda
+ */
+function checkConda(): { installed: boolean; version?: string; path?: string; error?: string } {
+  console.info('[EnvironmentCheck] 🔍 检查 Conda 环境...');
+  const condaResult = checkCommand('conda');
+  
+  if (condaResult.installed) {
+    console.info('[EnvironmentCheck] ✅ 找到 Conda');
+  } else {
+    console.warn('[EnvironmentCheck] ⚠️  Conda 未找到');
+  }
+  
+  return condaResult;
+}
+
+/**
  * 创建环境检查工具
  */
 export function createEnvironmentCheckTool(): AgentTool {
@@ -107,7 +123,7 @@ export function createEnvironmentCheckTool(): AgentTool {
   return {
     name: TOOL_NAMES.ENVIRONMENT_CHECK,
     label: '环境检查',
-    description: '检查系统环境依赖（Python、Node.js）并将结果保存到数据库',
+    description: '检查系统环境依赖（Python、Conda、Node.js）并将结果保存到数据库',
     parameters: Type.Object({
       action: Type.Union([
         Type.Literal('check', { description: '检查环境依赖' }),
@@ -160,6 +176,18 @@ export function createEnvironmentCheckTool(): AgentTool {
             path: pythonResult.path,
             lastChecked: Date.now(),
             error: pythonResult.error,
+          });
+          
+          // 检查 Conda
+          const condaResult = checkConda();
+          store.saveEnvironmentConfig({
+            id: 'conda',
+            name: 'conda',
+            isInstalled: condaResult.installed,
+            version: condaResult.version,
+            path: condaResult.path,
+            lastChecked: Date.now(),
+            error: condaResult.error,
           });
           
           // 🔥 保险机制：将 Python 路径添加到环境变量
@@ -244,6 +272,12 @@ export function createEnvironmentCheckTool(): AgentTool {
           } else {
             results.push(`❌ Python 未安装\n   错误: ${pythonResult.error}`);
           }
+          
+          if (condaResult.installed) {
+            results.push(`✅ Conda 已安装\n   版本: ${condaResult.version}\n   路径: ${condaResult.path}`);
+          } else {
+            results.push(`⚠️  Conda 未安装（推荐安装）\n   说明: Conda 可以更好地管理 Python 环境和依赖`);
+          }
 
           if (nodeResult.installed) {
             results.push(`✅ Node.js 已安装\n   版本: ${nodeResult.version}\n   路径: ${nodeResult.path}`);
@@ -253,7 +287,7 @@ export function createEnvironmentCheckTool(): AgentTool {
 
           const allInstalled = pythonResult.installed && nodeResult.installed;
           const summary = allInstalled 
-            ? '🎉 所有依赖已安装，环境配置完成！' 
+            ? (condaResult.installed ? '🎉 所有依赖已安装，环境配置完成！' : '✅ 核心依赖已安装，建议安装 Conda 以更好地管理 Python 环境')
             : '⚠️ 部分依赖未安装，请安装缺失的依赖';
 
           const message = `${summary}\n\n${results.join('\n\n')}`;
@@ -269,6 +303,7 @@ export function createEnvironmentCheckTool(): AgentTool {
               success: true,
               data: {
                 python: pythonResult,
+                conda: condaResult,
                 nodejs: nodeResult,
                 allInstalled,
               },
@@ -292,6 +327,7 @@ export function createEnvironmentCheckTool(): AgentTool {
                 success: true,
                 data: {
                   python: null,
+                  conda: null,
                   nodejs: null,
                   allInstalled: false,
                   needsCheck: true,
@@ -302,10 +338,11 @@ export function createEnvironmentCheckTool(): AgentTool {
           }
 
           const pythonConfig = configs.find(c => c.name === 'python');
+          const condaConfig = configs.find(c => c.name === 'conda');
           const nodejsConfig = configs.find(c => c.name === 'nodejs');
           const allInstalled = pythonConfig?.isInstalled && nodejsConfig?.isInstalled;
           const message = allInstalled 
-            ? '✅ 环境配置正常' 
+            ? (condaConfig?.isInstalled ? '✅ 环境配置完美' : '✅ 环境配置正常，建议安装 Conda')
             : '⚠️ 部分依赖未安装';
 
           return {
@@ -319,6 +356,7 @@ export function createEnvironmentCheckTool(): AgentTool {
               success: true,
               data: {
                 python: pythonConfig,
+                conda: condaConfig,
                 nodejs: nodejsConfig,
                 allInstalled,
                 needsCheck: false,
