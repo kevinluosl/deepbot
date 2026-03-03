@@ -31,6 +31,47 @@ export function QuickStart(_props: QuickStartProps) {
         </p>
       </div>
 
+      {/* 快速配置指南 */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px' }}>⚡</span>
+          快速配置（发挥最大能力）
+        </h4>
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--settings-input-bg)',
+          borderRadius: '8px',
+          fontSize: '13px', 
+          color: 'var(--settings-text-dim)', 
+          lineHeight: '1.6' 
+        }}>
+          <div style={{ marginBottom: '10px' }}>
+            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>1. 配置主大模型（必需）</span>
+            <div style={{ marginLeft: '16px', marginTop: '4px' }}>
+              前往「模型配置」→「主大模型」，配置通义千问、OpenAI 或 Claude 的 API 密钥
+            </div>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>2. 配置快速模型（推荐）</span>
+            <div style={{ marginLeft: '16px', marginTop: '4px' }}>
+              前往「模型配置」→「快速模型」，配置一个快速响应的模型（如 GPT-4o-mini），用于快速任务处理
+            </div>
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>3. 配置图片生成（可选）</span>
+            <div style={{ marginLeft: '16px', marginTop: '4px' }}>
+              前往「工具配置」→「图片生成工具」，配置通义千问或 Gemini 的 API 密钥，启用 AI 绘图功能
+            </div>
+          </div>
+          <div>
+            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>4. 配置网络搜索（可选）</span>
+            <div style={{ marginLeft: '16px', marginTop: '4px' }}>
+              前往「工具配置」→「网络搜索工具」，配置通义千问或 Gemini 的 API 密钥，启用实时信息查询
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 环境要求 */}
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
@@ -39,14 +80,9 @@ export function QuickStart(_props: QuickStartProps) {
         </h4>
         <div style={{ display: 'grid', gap: '8px', fontSize: '13px' }}>
           <div style={{ display: 'flex', alignItems: 'center', color: 'var(--settings-text)' }}>
-            <span style={{ marginRight: '8px' }}>🤖</span>
-            <span style={{ fontWeight: '600', marginRight: '6px' }}>AI 模型（必需）：</span>
-            <span style={{ color: 'var(--settings-text-dim)' }}>配置通义千问、OpenAI 或 Claude 的 API 密钥</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', color: 'var(--settings-text)' }}>
             <span style={{ marginRight: '8px' }}>🐍</span>
             <span style={{ fontWeight: '600', marginRight: '6px' }}>Python（可选）：</span>
-            <span style={{ color: 'var(--settings-text-dim)' }}>用于执行 Python 脚本，建议 3.8+</span>
+            <span style={{ color: 'var(--settings-text-dim)' }}>用于执行 Python 脚本和 Skill，建议 3.8+</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', color: 'var(--settings-text)' }}>
             <span style={{ marginRight: '8px' }}>🌐</span>
