@@ -196,13 +196,6 @@ export class SessionStore {
   }
   
   /**
-   * 删除 Tab 的 session 文件
-   */
-  async deleteSession(tabId: string): Promise<void> {
-    await this.clearSession(tabId);
-  }
-  
-  /**
    * 检查 session 文件是否存在
    */
   async sessionExists(tabId: string): Promise<boolean> {

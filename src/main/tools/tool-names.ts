@@ -58,6 +58,9 @@ export const TOOL_NAMES = {
   // AI 对话工具
   CHAT: 'chat',
   
+  // 系统指令工具
+  SYSTEM_COMMAND: 'system_command',
+  
   // Mock 工具（测试用）
   MOCK_TOOL: 'mock_tool',
   MOCK_LONG_RUNNING: 'mock_long_running',

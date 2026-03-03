@@ -33,7 +33,6 @@ export class Gateway {
   private tabIdCounter: number = 0; // Tab ID 计数器（确保唯一性）
   private readonly MAX_TABS = 10; // 最多 10 个 Tab
   private taskTabMap: Map<string, string> = new Map(); // 任务 ID -> Tab ID 映射
-  private connectorTabMap: Map<string, string> = new Map(); // 连接器会话 ID -> Tab ID 映射
   
   // 消息队列（每个会话一个队列）
   private messageQueues: Map<string, Array<{ content: string; displayContent?: string }>> = new Map();
@@ -287,40 +286,21 @@ export class Gateway {
   /**
    * 重新加载模型配置
    * 
-   * 当用户修改模型配置时调用，销毁所有现有的 AgentRuntime 并重新创建
+   * 当用户修改模型配置时调用，销毁所有现有的 AgentRuntime（但保留聊天记录）
    */
   async reloadModelConfig(): Promise<void> {
     console.log('[Gateway] 🔄 重新加载模型配置...');
     
-    // 🔥 清除 AI 连接缓存
+    // 清除 AI 连接缓存
     const { clearAICache } = await import('./utils/ai-client');
     clearAICache();
     
-    // 销毁所有现有的 AgentRuntime
-    for (const [sessionId, runtime] of this.agentRuntimes.entries()) {
-      console.log(`[Gateway] 销毁会话: ${sessionId}`);
-      await runtime.destroy();
-    }
+    // 销毁所有现有的 AgentRuntime（下次使用时会用新模型配置重新创建）
+    this.destroyAllRuntimes();
     
-    // 清空所有 Runtime
-    this.agentRuntimes.clear();
+    console.log('[Gateway] ✅ 模型配置已重新加载');
     
-    console.log('[Gateway] ✅ 模型配置已重新加载，所有会话已重置');
-    
-    // 🔥 等待 100ms 确保数据库写入完成（WAL 模式）
-    await sleep(100);
-    console.log('[Gateway] ⏳ 已等待数据库同步完成');
-    
-    // 🔥 通知前端清空所有聊天记录
-    sendToWindow(this.mainWindow, 'message:clear-all');
-    console.log('[Gateway] 📤 已发送清空聊天记录事件到前端');
-    
-    // 🔥 重新加载默认 Tab 历史消息（会自动判断是否发送欢迎消息）
-    this.loadDefaultTabHistory().catch(error => {
-      console.error('[Gateway] ❌ 重新加载默认 Tab 历史消息失败:', error);
-    });
-    
-    // 🔥 重新预热 AI 连接
+    // 重新预热 AI 连接
     this.warmupAIConnection().catch(error => {
       console.error('[Gateway] ❌ AI 连接预热失败:', error);
     });
@@ -338,13 +318,7 @@ export class Gateway {
     await this.reloadSessionManager();
     
     // 🔥 销毁所有现有的 AgentRuntime（但不清空前端聊天记录）
-    for (const [sessionId, runtime] of this.agentRuntimes.entries()) {
-      console.log(`[Gateway] 销毁会话 Runtime: ${sessionId}`);
-      await runtime.destroy();
-    }
-    
-    // 清空所有 Runtime（下次使用时会用新配置重新创建）
-    this.agentRuntimes.clear();
+    this.destroyAllRuntimes();
     
     console.log('[Gateway] ✅ 工作目录配置已重新加载，AgentRuntime 已重置');
   }
@@ -804,17 +778,39 @@ export class Gateway {
    */
   destroy(): void {
     console.info('[Gateway] 开始销毁 Gateway...');
-    
-    // 销毁所有 AgentRuntime
+    this.destroyAllRuntimes();
+    console.info('[Gateway] Gateway 已销毁');
+  }
+
+  /**
+   * 销毁所有 AgentRuntime 实例
+   * 
+   * 用于批量清理所有会话的 Runtime
+   */
+  private destroyAllRuntimes(): void {
     for (const [sessionId, runtime] of this.agentRuntimes.entries()) {
       console.info(`[Gateway] 销毁 AgentRuntime: ${sessionId}`);
       void runtime.destroy();
     }
-    
-    // 清空 Map
     this.agentRuntimes.clear();
+  }
+
+  /**
+   * 销毁指定会话的 Runtime（用于清空会话上下文）
+   * 
+   * @param sessionId - 会话 ID
+   */
+  async destroySessionRuntime(sessionId: string): Promise<void> {
+    const runtime = this.agentRuntimes.get(sessionId);
     
-    console.info('[Gateway] Gateway 已销毁');
+    if (runtime) {
+      console.log(`[Gateway] 销毁会话 Runtime: ${sessionId}`);
+      await runtime.destroy();
+      this.agentRuntimes.delete(sessionId);
+      console.log(`[Gateway] ✅ 会话 Runtime 已销毁并移除`);
+    } else {
+      console.log(`[Gateway] 会话 Runtime 不存在: ${sessionId}`);
+    }
   }
 
   /**
@@ -1197,11 +1193,7 @@ export class Gateway {
     }
     
     // 销毁对应的 AgentRuntime
-    const runtime = this.agentRuntimes.get(tabId);
-    if (runtime) {
-      await runtime.destroy();
-      this.agentRuntimes.delete(tabId);
-    }
+    await this.destroySessionRuntime(tabId);
     
     // 🔥 删除 Tab 的 memory 文件（必须在删除数据库配置之前）
     if (tab.memoryFile) {
@@ -1214,14 +1206,14 @@ export class Gateway {
       }
     }
     
-    // 🔥 删除 Tab 的 session 文件
+    // 🔥 清空 Tab 的 session 文件
     if (this.sessionManager) {
       try {
-        await this.sessionManager.deleteSession(tabId);
-        console.log('[Gateway] 🗑️ 已删除 Tab session 文件:', tabId);
+        await this.sessionManager.clearSession(tabId);
+        console.log('[Gateway] 🗑️ 已清空 Tab session 文件:', tabId);
       } catch (error) {
-        console.error('[Gateway] ❌ 删除 Tab session 文件失败:', error);
-        // 继续关闭 Tab，即使删除失败
+        console.error('[Gateway] ❌ 清空 Tab session 文件失败:', error);
+        // 继续关闭 Tab，即使清空失败
       }
     }
     

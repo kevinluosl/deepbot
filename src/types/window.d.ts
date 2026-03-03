@@ -40,6 +40,7 @@ interface DeepBotAPI {
   switchTab: (tabId: string) => Promise<{ success: boolean; error?: string }>;
   onTabCreated: (callback: (data: { tab: import('./agent-tab').AgentTab }) => void) => () => void;
   onTabHistoryLoaded: (callback: (data: { tabId: string; messages: any[] }) => void) => () => void;
+  onClearChat?: (callback: (data: { sessionId: string }) => void) => () => void;
   connectorGetAll: () => Promise<any>;
   connectorGetConfig: (connectorId: string) => Promise<any>;
   connectorSaveConfig: (connectorId: string, config: any) => Promise<any>;

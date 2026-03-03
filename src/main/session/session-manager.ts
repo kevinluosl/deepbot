@@ -130,13 +130,6 @@ export class SessionManager {
   }
   
   /**
-   * 删除 Tab 的 session
-   */
-  async deleteSession(tabId: string): Promise<void> {
-    await this.sessionStore.deleteSession(tabId);
-  }
-  
-  /**
    * 检查 session 是否存在
    */
   async sessionExists(tabId: string): Promise<boolean> {

@@ -46,6 +46,7 @@ interface DeepBotAPI {
   switchTab: (tabId: string) => Promise<{ success: boolean; error?: string }>;
   onTabCreated: (callback: (data: { tab: any }) => void) => () => void;
   onTabHistoryLoaded: (callback: (data: { tabId: string; messages: any[] }) => void) => () => void;
+  onClearChat?: (callback: (data: { sessionId: string }) => void) => () => void;
   onSubAgentStatusUpdate: (callback: (data: any) => void) => () => void;
   onMessageStream: (callback: (chunk: MessageStreamChunk) => void) => () => void;
   onMessageError: (callback: (error: any) => void) => () => void;

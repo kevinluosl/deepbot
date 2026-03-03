@@ -29,6 +29,7 @@ import { createChatTool } from '../chat-tool';
 import { emailToolPlugin } from '../email-tool';
 import { apiToolPlugin } from '../api-tool';
 import { connectorToolPlugin } from '../connector-tool';
+import { commandToolPlugin } from '../command-tool';
 
 /**
  * 工具加载器类
@@ -243,6 +244,25 @@ export class ToolLoader {
         tools.push(...connectorTools);
       } else {
         tools.push(connectorTools);
+      }
+      
+      // 系统指令工具
+      // 处理系统级别的指令，如 /new（清空会话）
+      const commandToolsResult = commandToolPlugin.create({
+        workspaceDir: this.workspaceDir,
+        sessionId: this.sessionId,
+        configStore,
+      });
+      
+      // 处理可能的 Promise 返回值
+      const commandTools = commandToolsResult instanceof Promise 
+        ? await commandToolsResult 
+        : commandToolsResult;
+      
+      if (Array.isArray(commandTools)) {
+        tools.push(...commandTools);
+      } else {
+        tools.push(commandTools);
       }
     } catch (error) {
       console.error('❌ 加载内置工具失败:', error);

@@ -276,6 +276,27 @@ function App() {
     };
   }, []);
 
+  // 🔥 监听清空单个 Tab 聊天事件（/new 指令触发）
+  useEffect(() => {
+    const unsubscribe = window.deepbot.onClearChat?.((data: { sessionId: string }) => {
+      console.log(`[App] 收到清空聊天事件: Tab ${data.sessionId}`);
+      
+      // 清空指定 Tab 的消息
+      setTabs(prev => prev.map(tab => 
+        tab.id === data.sessionId ? { ...tab, messages: [] } : tab
+      ));
+      
+      // 如果是当前 Tab，也清空显示的消息
+      if (data.sessionId === activeTabId) {
+        setMessages([]);
+      }
+    });
+    
+    return () => {
+      unsubscribe?.();
+    };
+  }, [activeTabId]);
+
   // 监听流式消息和 Sub Agent 通知
   useEffect(() => {
     const unsubscribeStream = window.deepbot.onMessageStream((chunk) => {
