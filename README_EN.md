@@ -34,6 +34,7 @@ DeepBot Terminal is a system-level AI assistant that acts like an intelligent br
 
 ## 📝 Changelog
 
+**2026-03-03**: ✨ Long-term Memory: Support up to 100 conversation rounds with automatic session compression; Each Tab (Agent) can have independent memory files, role settings, and work preferences for true multi-role collaboration  
 **2026-03-01**: 🔧 Browser Tool Optimization: More robust browser automation with improved success rate | 🔧 Build Optimization: Reduced package size  
 **2026-02-28**: ✨ Feishu Integration: Private & group chat support with independent session management | ✨ Web Fetch Tool: Web content fetching | ✨ Chat Tool: Background AI conversation processing | 🔧 Streaming output optimization, AutoContinue improvements, frontend experience enhancements
 
@@ -397,22 +398,49 @@ Tool Call → Path Security Check → Within Whitelist?
 
 ## 🧠 Memory System
 
-DeepBot supports long-term memory functionality to remember user preferences and important information:
+DeepBot supports powerful long-term memory functionality to remember user preferences and important information.
+
+### Global Memory
 
 - **Storage Location**: `~/.deepbot/memory/MEMORY.md`
 - **Format**: Markdown format, structured storage
 - **Auto-Injection**: Automatically loaded into system prompt for each conversation
 - **Real-time Update**: Memory updates automatically reload all Agents
+- **Scope**: Shared across all Tabs, stores general preferences and important information
 
-### Usage Example
+### Independent Memory (Multi-Agent Support)
 
+Each Tab (Agent) can have its own independent memory file for true multi-role collaboration:
+
+- **Independent Memory Files**: Each Tab can have its own `memory-<tab-id>.md`
+- **Independent Role Settings**: Different Tabs can play different roles (e.g., Product Manager, Developer, QA Engineer)
+- **Independent Work Preferences**: Each Agent can have its own expertise and working style
+- **Persistent Storage**: Tab memory and role settings are persisted
+
+### Usage Scenarios
+
+**Global Memory**:
 ```
 User: "Remember: I prefer concise code"
 DeepBot: "I've remembered your preference"
-
-User: "What are my preferences?"
-DeepBot: "You prefer concise code..."
 ```
+
+**Independent Memory**:
+```
+User: "Create a Product Manager Agent"
+DeepBot: "New Tab created, this Agent will focus on product design and requirements analysis"
+
+User: "Remember: You are a Product Manager responsible for requirements analysis and product design"
+Product Manager Agent: "I've remembered my role"
+```
+
+### Multi-Agent Collaboration Example
+
+1. **Product Manager Agent**: Responsible for requirements analysis, stores product planning and user needs in memory
+2. **Developer Agent**: Responsible for code implementation, stores tech stack and coding standards in memory
+3. **QA Engineer Agent**: Responsible for quality assurance, stores testing strategies and issue lists in memory
+
+Each Agent has independent memory and role settings, can focus on their own domain for efficient collaboration.
 
 ---
 
