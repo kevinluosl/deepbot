@@ -109,7 +109,7 @@ export const crossTabCallToolPlugin: ToolPlugin = {
             const messageWithSource = `[来自 ${senderName}]\n${params.message}`;
             
             // 添加系统提示，明确说明除非明确要求回复，否则不回复
-            const systemPrompt = `\n\n[系统提示: 这是来自其他 Tab 的消息。除非消息中明确要求你回复，否则不需要回复]`;
+            const systemPrompt = `\n\n[系统提示: 这是来自其他 Tab 的消息。除非消息中明确要求你回复，否则不需要回复，回复的时候根据最新一条[来自 xxxx]信息确认回复目标]`;
             const fullMessage = messageWithSource + systemPrompt;
             
             // 发送消息到目标 Tab（异步，不等待结果）
