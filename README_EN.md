@@ -34,8 +34,8 @@ DeepBot Terminal is a system AI assistant. Compared to OpenClaw's Geek-oriented 
 
 ## 📝 Changelog
 
-**2026-03-04**: ✨ Multi-Agent Communication & Orchestration: Support for inter-Tab Agent messaging and collaboration to complete complex tasks, implementing a true multi-Agent system; Optimized cross-Tab calling tools with asynchronous message passing  
-**2026-03-03**: ✨ Long-term Memory: Support up to 100 conversation rounds with automatic session compression; Each Tab (Agent) can have independent memory files, role settings, and work preferences for true multi-role collaboration  
+**2026-03-04**: ✨ Multi-Agent Communication & Orchestration: Support for inter-Tab Agent messaging and collaboration to complete complex tasks, implementing a true multi-Agent system;  
+**2026-03-03**: ✨ Long-term Memory: Support 100 conversation rounds with automatic session compression; Each Tab (Agent) can have independent memory files, role settings, and work preferences for true multi-role collaboration  
 **2026-03-01**: 🔧 Browser Tool Optimization: More robust browser automation with improved success rate | 🔧 Build Optimization: Reduced package size  
 **2026-02-28**: ✨ Feishu Integration: Private & group chat support with independent session management | ✨ Web Fetch Tool: Web content fetching | ✨ Chat Tool: Background AI conversation processing | 🔧 Streaming output optimization, AutoContinue improvements, frontend experience enhancements
 
