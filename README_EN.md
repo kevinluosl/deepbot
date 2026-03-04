@@ -17,7 +17,7 @@
 
 ## 📖 Introduction
 
-DeepBot Terminal is a system-level AI assistant that acts like an intelligent brain for your computer. Whether it's organizing files, setting reminders, web automation, or complex multi-step tasks, DeepBot handles it all effortlessly through AI Agent technology. It supports multi-task parallel processing, scheduled tasks, skill extensions, while protecting your system security through strict safety mechanisms.
+DeepBot Terminal is a system AI assistant. Compared to OpenClaw's Geek-oriented approach, DeepBot provides more convenient installation and usage, focusing on enterprise productivity enhancement. It can deeply integrate with existing enterprise systems, allowing AI to participate deeply in daily office efficiency across departments through multi-Agent collaboration to achieve automated complex business processes. Whether it's document processing, data analysis, system monitoring, or cross-departmental collaboration tasks, DeepBot handles it all effortlessly through AI Agent technology. It supports multi-task parallel processing, scheduled tasks, skill extensions, while protecting enterprise system security through strict safety mechanisms.
 
 ### ✨ Core Features
 
@@ -160,22 +160,33 @@ DeepBot adopts a modular architecture that supports multi-Agent communication an
 
 ```
 ┌─────────────────────────────────────────┐
-│           Multi-Agent Collaboration      │
+│      Enterprise Full-Process AI System  │
 └─────────────────┬───────────────────────┘
                   │
-    ┌─────────────┼─────────────┐
-    ▼             ▼             ▼
-┌─────────┐  ┌─────────┐  ┌─────────┐
-│ Agent A │◄─┤ Gateway ├─►│ Agent B │
-│Product  │  │Message  │  │Developer│
-│Manager  │  │Router   │  │Engineer │
-└─────────┘  └─────────┘  └─────────┘
-     ▲             │             ▲
-     │             ▼             │
-     │        ┌─────────┐        │
-     └────────┤ Agent C ├────────┘
-              │QA Eng.  │
-              └─────────┘
+        ┌─────────┼─────────┐
+        ▼         ▼         ▼
+┌─────────┐ ┌─────────┐ ┌─────────┐
+│ Sales   │ │ Gateway │ │Marketing│
+│AI Agent │ │Message  │ │AI Agent │
+└────┬────┘ │Router   │ └────┬────┘
+     │      └────┬────┘      │
+     └───────────┼───────────┘
+                 │
+     ┌───────────┼───────────┐
+     ▼           ▼           ▼
+┌─────────┐ ┌─────────┐ ┌─────────┐
+│Solution │ │Product  │ │R&D      │
+│AI Agent │ │AI Agent │ │AI Agent │
+└────┬────┘ └────┬────┘ └────┬────┘
+     │           │           │
+     └───────────┼───────────┘
+                 │
+                 ▼
+           ┌─────────┐
+           │Project  │
+           │Manager  │
+           │AI Agent │
+           └─────────┘
 ```
 
 ### Architecture Overview
@@ -464,20 +475,23 @@ DeepBot: "I've remembered your preference"
 
 **Independent Memory**:
 ```
-User: "Create a Product Manager Agent"
-DeepBot: "New Tab created, this Agent will focus on product design and requirements analysis"
+User: "Create a Sales Analysis Agent"
+DeepBot: "New Tab created, this Agent will focus on customer relationship management and sales data analysis"
 
-User: "Remember: You are a Product Manager responsible for requirements analysis and product design"
-Product Manager Agent: "I've remembered my role"
+User: "Remember: You are a Sales Expert responsible for customer follow-up and sales performance analysis"
+Sales Analysis Agent: "I've remembered my responsibilities"
 ```
 
 ### Multi-Agent Collaboration Example
 
-1. **Product Manager Agent**: Responsible for requirements analysis, stores product planning and user needs in memory
-2. **Developer Agent**: Responsible for code implementation, stores tech stack and coding standards in memory
-3. **QA Engineer Agent**: Responsible for quality assurance, stores testing strategies and issue lists in memory
+1. **Sales Agent**: Responsible for customer relationship management and sales processes, stores customer information and sales strategies in memory
+2. **Marketing Agent**: Responsible for market analysis and marketing activities, stores market data and promotion plans in memory
+3. **Solution Agent**: Responsible for technical solution design and customer requirement analysis, stores solution templates and technical specifications in memory
+4. **Product Agent**: Responsible for product planning and requirement management, stores product roadmaps and user feedback in memory
+5. **R&D Agent**: Responsible for technical development and system implementation, stores technical documentation and development standards in memory
+6. **Project Manager Agent**: Responsible for project coordination and progress control, stores project plans and resource allocation in memory
 
-Each Agent has independent memory and role settings, can focus on their own domain for efficient collaboration.
+Each Agent has independent memory and expertise, can focus on their own business domain for efficient cross-departmental collaboration.
 
 ---
 
