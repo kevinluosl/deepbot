@@ -142,6 +142,18 @@ DeepBot adopts a modular architecture that supports multi-Agent communication an
 │    • Operation Tracking (Max 3 times)   │
 │    • Independent Memory & Context       │
 │    • Cross-Tab Calling Tool 🆕          │
+│    • Dynamic System Prompt Assembly 🆕  │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│     System Prompt Assembly Layer 🆕     │
+│    • Base Agent Prompt (AGENT.md)       │
+│    • Tool Instructions (TOOLS.md)       │
+│    • Custom Tool Instructions (CUSTOM-TOOLS.md)│
+│    • Global Memory (MEMORY.md)          │
+│    • Independent Memory (memory-<tab-id>.md)│
+│    • Skills Instructions (SKILL.md)     │
+│    • Dynamic Loading & Real-time Update │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
@@ -194,9 +206,33 @@ DeepBot adopts a modular architecture that supports multi-Agent communication an
 - **Gateway**: Manages all Sessions, each Tab corresponds to an independent Session, supports cross-Tab message routing
 - **Session**: Independent conversation unit with its own Agent Runtime, memory, and context
 - **Agent Runtime**: Based on `@mariozechner/pi-agent-core`, responsible for intelligent decision-making and tool orchestration
+- **System Prompt Assembly Layer**: Dynamically assembles system prompts including base system prompts, tool instructions, memory files, Skills instructions, etc.
 - **Tools**: 13 built-in tools including cross-Tab calling tool for inter-Agent communication
 - **Security Check**: All file and command operations are validated through path whitelist
 - **Multi-Agent Collaboration**: Agents in different Tabs can send messages to each other for collaborative complex task completion
+
+#### System Prompt Assembly Process 🆕
+
+```
+Agent Startup → Load Base Agent Prompt (AGENT.md)
+              ↓
+            Load Tool Instructions (TOOLS.md + CUSTOM-TOOLS.md)
+              ↓
+            Load Global Memory (MEMORY.md)
+              ↓
+            Load Independent Memory (memory-<tab-id>.md)
+              ↓
+            Load Skills Instructions (SKILL.md files)
+              ↓
+            Assemble Complete System Prompt
+              ↓
+            Send to AI Model
+```
+
+**Dynamic Update Mechanism**:
+- When memory files are updated, automatically reload system prompts for all Agents
+- When Skills are installed/uninstalled, automatically update tool instructions
+- Supports runtime hot updates without application restart
 
 ---
 
