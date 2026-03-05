@@ -574,33 +574,29 @@ export class Gateway {
       if (isAIConnectionError) {
         console.warn('[Gateway] 🔧 检测到 AI 连接错误，尝试自动恢复...');
         console.warn(`[Gateway] 错误信息: ${errorMessage}`);
+        console.warn(`[Gateway] 仅恢复当前 Tab: ${currentSessionId}`);
         
         try {
-          // 步骤 1: 清理 AI 连接缓存
-          console.log('[Gateway] 🔄 清理 AI 连接缓存...');
-          const { clearAICache } = await import('./utils/ai-client');
-          clearAICache();
-          
-          // 步骤 2: 重置 Runtime 状态
-          console.log('[Gateway] 🔄 重置 Runtime 状态...');
+          // 步骤 1: 停止当前 Runtime 的生成
+          console.log('[Gateway] 🔄 停止当前 Runtime 生成...');
           await runtime.stopGeneration();
           
-          // 步骤 3: 重新加载模型配置（销毁所有 Runtime）
-          console.log('[Gateway] 🔄 重新加载模型配置...');
-          await this.reloadModelConfig();
+          // 步骤 2: 销毁当前 Tab 的 Runtime（不影响其他 Tab）
+          console.log('[Gateway] 🔄 销毁当前 Tab Runtime...');
+          await this.destroySessionRuntime(currentSessionId);
           
-          // 步骤 4: 等待一小段时间让连接完全释放
-          await sleep(1000);
+          // 步骤 3: 等待一小段时间让 Runtime 完全释放
+          await sleep(500);
           
-          // 步骤 5: 重新获取 Runtime（会创建新的）
-          console.log('[Gateway] 🔄 重新创建 Runtime...');
+          // 步骤 4: 重新创建当前 Tab 的 Runtime
+          console.log('[Gateway] 🔄 重新创建当前 Tab Runtime...');
           const retryRuntime = this.getOrCreateRuntime(currentSessionId);
           
-          // 步骤 6: 重试一次
+          // 步骤 5: 重试一次
           console.log('[Gateway] 🔄 重试发送消息...');
           await this.sendAIResponse(retryRuntime, content, currentSessionId);
           
-          console.log('[Gateway] ✅ 自动恢复成功');
+          console.log('[Gateway] ✅ 自动恢复成功（仅当前 Tab）');
           
           // 重试成功，直接返回
           return;
