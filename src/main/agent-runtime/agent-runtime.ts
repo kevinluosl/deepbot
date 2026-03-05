@@ -193,9 +193,10 @@ export class AgentRuntime {
       // 转换为 Agent 消息格式
       const agentMessages = contextMessages.map((msg: any) => {
         if (msg.role === 'user') {
+          // 🔥 用户消息必须使用数组格式，与 agent.prompt() 保持一致
           return {
             role: 'user',
-            content: msg.content,
+            content: [{ type: 'text', text: msg.content }],
           };
         } else {
           // assistant 消息需要更完整的结构，content 必须是数组
@@ -653,6 +654,49 @@ ${lastPart}
     }
     
     console.log('📤 发送消息到 AI:', content.substring(0, 50));
+    
+    // 🔥 DEBUG: 输出当前 Agent 上下文中的消息
+    if (this.instanceManager.agent) {
+      const messages = this.instanceManager.agent.state.messages;
+      console.log('📊 [DEBUG] 当前 Agent 上下文消息数量:', messages.length);
+      
+      // 🔥 检查是否有重复的用户消息（与当前要发送的消息内容相同）
+      // 这可能是由于 agent.prompt() 的异步调用导致的
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === 'user') {
+        // 提取最后一条用户消息的文本内容
+        let lastUserContent = '';
+        if (typeof lastMessage.content === 'string') {
+          lastUserContent = lastMessage.content;
+        } else if (Array.isArray(lastMessage.content)) {
+          const textPart = lastMessage.content.find((part: any) => 
+            typeof part === 'object' && part.type === 'text'
+          );
+          if (textPart) {
+            lastUserContent = (textPart as any).text;
+          }
+        }
+        
+        // 如果最后一条用户消息与当前消息相同，删除它
+        if (lastUserContent === content) {
+          console.warn('⚠️ [DEBUG] 检测到重复的用户消息，删除最后一条');
+          messages.pop();
+          console.log('📊 [DEBUG] 删除后消息数量:', messages.length);
+        }
+      }
+      
+      console.log('📊 [DEBUG] Agent 上下文消息列表:');
+      messages.forEach((msg, idx) => {
+        const contentPreview = typeof msg.content === 'string' 
+          ? msg.content.substring(0, 50) 
+          : Array.isArray(msg.content) 
+            ? JSON.stringify(msg.content).substring(0, 50)
+            : '(无内容)';
+        console.log(`   [${idx + 1}] role=${msg.role}, content=${contentPreview}...`);
+      });
+    } else {
+      console.log('⚠️ [DEBUG] Agent 实例不存在');
+    }
 
     // 等待系统提示词初始化完成
     if (!this.systemPrompt) {

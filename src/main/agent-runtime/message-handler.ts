@@ -249,6 +249,7 @@ export class MessageHandler {
         // Agent 内部会自动处理工具调用循环，直到完成
         // console.log(`🚀 调用 agent.prompt() with maxTurns=15`);
         console.log(`🚀 调用 agent.prompt()，等待 Agent 完成...`);
+        console.log(`🔍 [DEBUG] 调用 agent.prompt() 前，消息数量: ${this.agent.state.messages.length}`);
         
         // 添加超时保护
         const TIMEOUT_MS = TIMEOUTS.AGENT_MESSAGE_TIMEOUT;
@@ -278,6 +279,7 @@ export class MessageHandler {
             progressTimer = null;
           }
           
+          console.log(`🔍 [DEBUG] agent.prompt() 完成后，消息数量: ${this.agent?.state.messages.length || 0}`);
           const duration = Date.now() - startTime;
           console.log(`✅ agent.prompt() 完成，耗时: ${duration}ms`);
           console.log(`📊 Agent 最终状态:`);
