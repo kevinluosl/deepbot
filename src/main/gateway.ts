@@ -577,10 +577,16 @@ export class Gateway {
         console.warn(`[Gateway] 仅恢复当前 Tab: ${currentSessionId}`);
         
         try {
-          // 🔥 使用统一的重置逻辑
+          // 🔥 使用统一的重置逻辑（AI 错误恢复必须重新创建 Runtime）
           const retryRuntime = await this.resetSessionRuntime(currentSessionId, {
-            reason: `AI 连接错误: ${errorMessage}`
+            reason: `AI 连接错误: ${errorMessage}`,
+            recreate: true  // AI 错误恢复必须重新创建
           });
+          
+          // 类型断言：recreate: true 时必定返回 AgentRuntime
+          if (!retryRuntime) {
+            throw new Error('重新创建 Runtime 失败');
+          }
           
           // 重试发送消息
           console.log('[Gateway] 🔄 重试发送消息...');
@@ -753,9 +759,10 @@ export class Gateway {
     // 如果没有 sessionId，使用默认会话
     const currentSessionId = sessionId || this.defaultSessionId;
     
-    // 🔥 使用统一的重置逻辑（与 AI 出错重置保持一致）
+    // 🔥 使用统一的重置逻辑（仅清理，不重新创建）
     await this.resetSessionRuntime(currentSessionId, {
-      reason: '用户点击 Stop 按钮'
+      reason: '用户点击 Stop 按钮',
+      recreate: false  // 仅清理，用户下次发消息时会自动创建
     });
   }
 
@@ -954,11 +961,13 @@ export class Gateway {
    */
   async resetSessionRuntime(sessionId: string, options: {
     reason?: string;  // 重置原因（用于日志）
-  } = {}): Promise<AgentRuntime> {
-    const { reason = '未知原因' } = options;
+    recreate?: boolean;  // 是否重新创建 Runtime（默认 true）
+  } = {}): Promise<AgentRuntime | null> {
+    const { reason = '未知原因', recreate = true } = options;
     
     console.log(`[Gateway] 🔄 重置会话 Runtime: ${sessionId}`);
     console.log(`[Gateway] 📝 重置原因: ${reason}`);
+    console.log(`[Gateway] 🔧 重新创建: ${recreate ? '是' : '否'}`);
     
     // 步骤 1: 停止当前 Runtime 的生成
     const runtime = this.agentRuntimes.get(sessionId);
@@ -970,6 +979,11 @@ export class Gateway {
     // 步骤 2: 销毁当前 Runtime
     console.log('[Gateway] 🗑️ 销毁当前 Runtime...');
     await this.destroySessionRuntime(sessionId);
+    
+    if (!recreate) {
+      console.log('[Gateway] ✅ 会话 Runtime 重置完成（仅销毁）');
+      return null;
+    }
     
     // 步骤 3: 等待一小段时间让 Runtime 完全释放
     await sleep(500);
@@ -1567,6 +1581,15 @@ export class Gateway {
    */
   getSessionManager(): SessionManager | null {
     return this.sessionManager;
+  }
+  /**
+   * 获取指定会话的 AgentRuntime 实例
+   * @param sessionId 会话 ID，如果不提供则使用默认会话
+   * @returns AgentRuntime 实例，如果不存在则返回 null
+   */
+  getAgentRuntime(sessionId?: string): AgentRuntime | null {
+    const currentSessionId = sessionId || this.defaultSessionId;
+    return this.agentRuntimes.get(currentSessionId) || null;
   }
 }
 

@@ -98,14 +98,16 @@ async function handleNewCommand(sessionId: string) {
     
     console.log(`[Command Tool] ✅ 会话历史已清空: ${sessionId}`);
 
-    // 2. 销毁并删除 AgentRuntime（清除缓存的 10 轮上下文）
+    // 2. 🔥 使用统一的重置逻辑（销毁但不重新创建 Runtime）
     const { getGatewayInstance } = await import('../gateway');
     const gateway = getGatewayInstance();
     
     if (gateway) {
-      // 销毁当前 session 的 Runtime
-      await gateway.destroySessionRuntime(sessionId);
-      console.log(`[Command Tool] ✅ AgentRuntime 已销毁，上下文已清除`);
+      await gateway.resetSessionRuntime(sessionId, {
+        reason: '/new 指令清空会话',
+        recreate: false  // 仅清理，不重新创建（用户下次发消息时会自动创建）
+      });
+      console.log(`[Command Tool] ✅ AgentRuntime 已重置，上下文已清除`);
     }
 
     // 3. 通知前端清空 UI

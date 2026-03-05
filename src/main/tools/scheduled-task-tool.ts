@@ -248,6 +248,18 @@ export function createScheduledTaskTool(): AgentTool {
             
             taskScheduler.deleteTask(taskId);
             
+            // 🔥 使用统一的重置逻辑（销毁但不重新创建 Runtime）
+            try {
+              const gateway = getGatewayInstance();
+              await gateway.resetSessionRuntime(gateway.getSessionIds()[0] || 'default', {
+                reason: '删除定时任务',
+                recreate: false
+              });
+              console.info('[Scheduled Task] ✅ Agent Runtime 已重置（删除任务）');
+            } catch (error) {
+              console.warn('[Scheduled Task] ⚠️ Agent Runtime 重置失败（删除任务）:', getErrorMessage(error));
+            }
+            
             result = {
               success: true,
               message: `任务 "${task.name}" 已删除`,
@@ -269,6 +281,18 @@ export function createScheduledTaskTool(): AgentTool {
             }
             
             taskScheduler.pauseTask(taskId);
+            
+            // 🔥 使用统一的重置逻辑（销毁但不重新创建 Runtime）
+            try {
+              const gateway = getGatewayInstance();
+              await gateway.resetSessionRuntime(gateway.getSessionIds()[0] || 'default', {
+                reason: '暂停定时任务',
+                recreate: false
+              });
+              console.info('[Scheduled Task] ✅ Agent Runtime 已重置（暂停任务）');
+            } catch (error) {
+              console.warn('[Scheduled Task] ⚠️ Agent Runtime 重置失败（暂停任务）:', getErrorMessage(error));
+            }
             
             result = {
               success: true,
