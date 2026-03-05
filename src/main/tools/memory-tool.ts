@@ -75,6 +75,11 @@ const MemoryToolSchema = Type.Object({
   context: Type.Optional(Type.String({
     description: '执行上下文（用于 update 操作，可选）',
   })),
+  
+  updateMainMemory: Type.Optional(Type.Boolean({
+    description: '是否同时更新主记忆（用于 update 操作，默认 false）。设为 true 时会同时更新当前 Tab 记忆和主记忆',
+    default: false,
+  })),
 });
 
 // ==================== Gateway 实例管理 ====================
@@ -370,6 +375,11 @@ export const memoryToolPlugin: ToolPlugin = {
 - "我通常用 weather skill 查天气" → 用户习惯
 - "记住这个错误：不要用 rm -rf" → 错误总结
 
+主记忆更新：
+- 默认只更新当前 Tab 的记忆
+- 设置 updateMainMemory=true 可同时更新主记忆和当前 Tab 记忆
+- 主记忆只影响默认 Tab，其他 Tab 使用独立记忆文件
+
 注意：
 - 记忆文件最大 5000 字符
 - 更新时会自动提炼和分类
@@ -383,6 +393,7 @@ export const memoryToolPlugin: ToolPlugin = {
             action: 'read' | 'update';
             userMessage?: string;
             context?: string;
+            updateMainMemory?: boolean;
           };
           
           try {
@@ -393,9 +404,9 @@ export const memoryToolPlugin: ToolPlugin = {
               throw err;
             }
 
-            const { action, userMessage, context } = params;
+            const { action, userMessage, context, updateMainMemory = false } = params;
             
-            console.log(`[Memory Tool] 执行操作: ${action}, Tab ID: ${tabId || 'default'}`);
+            console.log(`[Memory Tool] 执行操作: ${action}, Tab ID: ${tabId || 'default'}, 更新主记忆: ${updateMainMemory}`);
             
             if (action === 'read') {
               // 读取记忆（使用当前 Tab 的 memory 文件）
@@ -429,55 +440,133 @@ export const memoryToolPlugin: ToolPlugin = {
                 throw err;
               }
               
-              const currentMemory = await readMemory(tabId);
-              
-              console.log('\n' + '='.repeat(80));
-              console.log(`[Memory Tool] 📝 开始更新记忆 (Tab: ${tabId || 'default'})`);
-              console.log('='.repeat(80));
-              console.log('[Memory Tool] 📥 当前记忆内容:');
-              console.log(currentMemory);
-              console.log('='.repeat(80));
-              
-              console.log('[Memory Tool] 🤖 使用大模型提炼记忆...');
-              const updatedMemory = await refineMemory(userMessage, context, currentMemory, signal);
-              
-              console.log('\n' + '='.repeat(80));
-              console.log('[Memory Tool] 📤 更新后的记忆内容:');
-              console.log(updatedMemory);
-              console.log('='.repeat(80) + '\n');
-              
-              await writeMemory(updatedMemory, tabId);
-              const { memoryFile } = getMemoryFilePath(tabId);
-              console.log('[Memory Tool] ✅ 记忆文件已写入:', memoryFile);
-              
-              // 🔥 只重新加载当前 Tab 的系统提示词（确保下一次对话使用新记忆）
-              const gateway = getGatewayInstance();
-              if (gateway) {
+              // 🔥 根据 updateMainMemory 参数决定更新策略
+              if (updateMainMemory) {
                 console.log('\n' + '='.repeat(80));
-                console.log(`[Memory Tool] 🔄 触发当前 Tab (${sessionId}) 系统提示词重新加载...`);
+                console.log('[Memory Tool] 🔄 同时更新主记忆和当前 Tab 记忆');
                 console.log('='.repeat(80));
-                await gateway.reloadSessionSystemPrompt(sessionId);
+                
+                // 1. 更新主记忆（memory.md）
+                const mainMemory = await readMemory(); // 不传 tabId，读取主记忆
+                console.log('[Memory Tool] 📥 当前主记忆内容:');
+                console.log(mainMemory);
                 console.log('='.repeat(80));
-                console.log(`[Memory Tool] ✅ Tab ${sessionId} 系统提示词已重新加载`);
-                console.log('='.repeat(80) + '\n');
-              } else {
-                console.warn('[Memory Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
-              }
-              
-              return {
-                content: [
-                  {
-                    type: 'text' as const,
-                    text: '记忆已更新。',
+                
+                console.log('[Memory Tool] 🤖 使用大模型提炼主记忆...');
+                const updatedMainMemory = await refineMemory(userMessage, context, mainMemory, signal);
+                
+                console.log('\n' + '='.repeat(80));
+                console.log('[Memory Tool] 📤 更新后的主记忆内容:');
+                console.log(updatedMainMemory);
+                console.log('='.repeat(80));
+                
+                await writeMemory(updatedMainMemory); // 不传 tabId，写入主记忆
+                console.log('[Memory Tool] ✅ 主记忆文件已更新');
+                
+                // 2. 如果当前 Tab 有独立记忆，也同步更新
+                if (tabId) {
+                  console.log('\n' + '='.repeat(80));
+                  console.log(`[Memory Tool] 🔄 同步更新当前 Tab (${tabId}) 记忆`);
+                  console.log('='.repeat(80));
+                  
+                  const currentTabMemory = await readMemory(tabId);
+                  console.log('[Memory Tool] 📥 当前 Tab 记忆内容:');
+                  console.log(currentTabMemory);
+                  console.log('='.repeat(80));
+                  
+                  console.log('[Memory Tool] 🤖 使用大模型提炼 Tab 记忆...');
+                  const updatedTabMemory = await refineMemory(userMessage, context, currentTabMemory, signal);
+                  
+                  console.log('\n' + '='.repeat(80));
+                  console.log('[Memory Tool] 📤 更新后的 Tab 记忆内容:');
+                  console.log(updatedTabMemory);
+                  console.log('='.repeat(80));
+                  
+                  await writeMemory(updatedTabMemory, tabId);
+                  console.log(`[Memory Tool] ✅ Tab ${tabId} 记忆文件已更新`);
+                }
+                
+                // 3. 重新加载默认 Tab 的系统提示词（因为主记忆更新了）
+                const gateway = getGatewayInstance();
+                if (gateway) {
+                  console.log('\n' + '='.repeat(80));
+                  console.log('[Memory Tool] 🔄 触发默认 Tab 系统提示词重新加载...');
+                  console.log('='.repeat(80));
+                  await gateway.reloadSessionSystemPrompt('default');
+                  console.log('='.repeat(80));
+                  console.log('[Memory Tool] ✅ 默认 Tab 系统提示词已重新加载');
+                  console.log('='.repeat(80) + '\n');
+                } else {
+                  console.warn('[Memory Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
+                }
+                
+                return {
+                  content: [
+                    {
+                      type: 'text' as const,
+                      text: '记忆已更新（同时更新了主记忆和当前 Tab 记忆）。',
+                    },
+                  ],
+                  details: {
+                    success: true,
+                    updatedMainMemory: true,
+                    updatedTabMemory: !!tabId,
+                    tabId: tabId || 'default',
                   },
-                ],
-                details: {
-                  success: true,
-                  oldLength: currentMemory.length,
-                  newLength: updatedMemory.length,
-                  tabId: tabId || 'default',
-                },
-              };
+                };
+              } else {
+                // 🔥 只更新当前 Tab 记忆（原有逻辑）
+                const currentMemory = await readMemory(tabId);
+                
+                console.log('\n' + '='.repeat(80));
+                console.log(`[Memory Tool] 📝 更新当前 Tab 记忆 (Tab: ${tabId || 'default'})`);
+                console.log('='.repeat(80));
+                console.log('[Memory Tool] 📥 当前记忆内容:');
+                console.log(currentMemory);
+                console.log('='.repeat(80));
+                
+                console.log('[Memory Tool] 🤖 使用大模型提炼记忆...');
+                const updatedMemory = await refineMemory(userMessage, context, currentMemory, signal);
+                
+                console.log('\n' + '='.repeat(80));
+                console.log('[Memory Tool] 📤 更新后的记忆内容:');
+                console.log(updatedMemory);
+                console.log('='.repeat(80) + '\n');
+                
+                await writeMemory(updatedMemory, tabId);
+                const { memoryFile } = getMemoryFilePath(tabId);
+                console.log('[Memory Tool] ✅ 记忆文件已写入:', memoryFile);
+                
+                // 🔥 只重新加载当前 Tab 的系统提示词
+                const gateway = getGatewayInstance();
+                if (gateway) {
+                  console.log('\n' + '='.repeat(80));
+                  console.log(`[Memory Tool] 🔄 触发当前 Tab (${sessionId}) 系统提示词重新加载...`);
+                  console.log('='.repeat(80));
+                  await gateway.reloadSessionSystemPrompt(sessionId);
+                  console.log('='.repeat(80));
+                  console.log(`[Memory Tool] ✅ Tab ${sessionId} 系统提示词已重新加载`);
+                  console.log('='.repeat(80) + '\n');
+                } else {
+                  console.warn('[Memory Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
+                }
+                
+                return {
+                  content: [
+                    {
+                      type: 'text' as const,
+                      text: '记忆已更新。',
+                    },
+                  ],
+                  details: {
+                    success: true,
+                    oldLength: currentMemory.length,
+                    newLength: updatedMemory.length,
+                    tabId: tabId || 'default',
+                    updatedMainMemory: false,
+                  },
+                };
+              }
             }
             
             throw new Error(`未知操作: ${action}`);

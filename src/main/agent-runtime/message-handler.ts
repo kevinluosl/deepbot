@@ -504,6 +504,29 @@ export class MessageHandler {
   }
 
   /**
+   * 强制重置 MessageHandler 状态
+   * 
+   * 用于解决 Agent 卡在异常状态的问题
+   */
+  forceReset(): void {
+    console.log('[MessageHandler] 🔄 强制重置状态...');
+    
+    // 停止当前生成（如果有）
+    if (this.isGenerating) {
+      this.stopGeneration();
+    }
+    
+    // 重置所有状态
+    this.isGenerating = false;
+    this.abortController = null;
+    this.userAborted = false;
+    this.currentGenerationId++;
+    this.executionSteps = [];
+    
+    console.log('[MessageHandler] ✅ 状态重置完成');
+  }
+
+  /**
    * 检测结果中是否有错误
    */
   private detectErrorInResult(resultText: string): boolean {

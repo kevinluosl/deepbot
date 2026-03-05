@@ -558,34 +558,68 @@ export class Gateway {
     } catch (error) {
       console.error('处理消息失败:', error);
       
-      // 🔥 如果是 "AI 返回空响应" 错误，尝试重置模型连接并重试一次
+      // 🔥 检查是否是 AI 连接/超时错误，尝试自动恢复
       const errorMessage = getErrorMessage(error);
-      if (errorMessage.includes('AI 返回空响应')) {
-        console.log('[Gateway] 🔄 检测到空响应错误，尝试重置模型连接...');
+      const isAIConnectionError = 
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('超时') ||
+        errorMessage.includes('AI 返回空响应') ||
+        errorMessage.includes('API 请求超时') ||
+        errorMessage.includes('连接') ||
+        errorMessage.includes('网络') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('fetch failed');
+      
+      if (isAIConnectionError) {
+        console.warn('[Gateway] 🔧 检测到 AI 连接错误，尝试自动恢复...');
+        console.warn(`[Gateway] 错误信息: ${errorMessage}`);
         
         try {
-          // 重置模型连接
-          await this.reloadModelConfig();
-          console.log('[Gateway] ✅ 模型连接已重置，重试发送消息...');
+          // 步骤 1: 清理 AI 连接缓存
+          console.log('[Gateway] 🔄 清理 AI 连接缓存...');
+          const { clearAICache } = await import('./utils/ai-client');
+          clearAICache();
           
-          // 重新获取 Runtime（可能已被销毁）
+          // 步骤 2: 重置 Runtime 状态
+          console.log('[Gateway] 🔄 重置 Runtime 状态...');
+          await runtime.stopGeneration();
+          
+          // 步骤 3: 重新加载模型配置（销毁所有 Runtime）
+          console.log('[Gateway] 🔄 重新加载模型配置...');
+          await this.reloadModelConfig();
+          
+          // 步骤 4: 等待一小段时间让连接完全释放
+          await sleep(1000);
+          
+          // 步骤 5: 重新获取 Runtime（会创建新的）
+          console.log('[Gateway] 🔄 重新创建 Runtime...');
           const retryRuntime = this.getOrCreateRuntime(currentSessionId);
           
-          // 重试一次
+          // 步骤 6: 重试一次
+          console.log('[Gateway] 🔄 重试发送消息...');
           await this.sendAIResponse(retryRuntime, content, currentSessionId);
-          console.log('[Gateway] ✅ 重试成功');
           
-          // sendAIResponse 内部会处理队列，这里不需要再调用
+          console.log('[Gateway] ✅ 自动恢复成功');
           
           // 重试成功，直接返回
           return;
         } catch (retryError) {
-          console.error('[Gateway] ❌ 重试失败:', retryError);
-          // 继续抛出原始错误
+          console.error('[Gateway] ❌ 自动恢复失败:', getErrorMessage(retryError));
+          
+          // 提供详细的错误提示
+          const userMessage = `AI 连接超时，已尝试自动恢复但失败。\n\n可能的原因：\n1. 网络连接不稳定\n2. AI 服务响应缓慢\n3. API 配置错误\n\n建议操作：\n1. 检查网络连接\n2. 重新保存模型配置\n3. 如问题持续，请重启应用\n\n错误详情: ${getErrorMessage(retryError)}`;
+          
+          this.sendError(userMessage, currentSessionId);
+          
+          // 即使出错，也要处理队列
+          await this.processMessageQueue(currentSessionId);
+          return;
         }
       }
       
-      this.sendError(getErrorMessage(error), currentSessionId);
+      // 其他错误直接显示
+      this.sendError(errorMessage, currentSessionId);
       
       // 即使出错，也要处理队列
       await this.processMessageQueue(currentSessionId);
@@ -653,7 +687,71 @@ export class Gateway {
       await this.sendAIResponse(runtime, message.content, sessionId);
     } catch (error) {
       console.error('[Gateway] ❌ 处理队列消息失败:', error);
-      this.sendError(getErrorMessage(error), sessionId);
+      
+      // 🔥 检查是否是 AI 连接/超时错误，尝试自动恢复
+      const errorMessage = getErrorMessage(error);
+      const isAIConnectionError = 
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('超时') ||
+        errorMessage.includes('AI 返回空响应') ||
+        errorMessage.includes('API 请求超时') ||
+        errorMessage.includes('连接') ||
+        errorMessage.includes('网络') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('fetch failed');
+      
+      const isAgentStateError = 
+        errorMessage.includes('already processing') ||
+        errorMessage.includes('Agent 未初始化') ||
+        errorMessage.includes('卡在') ||
+        errorMessage.includes('streaming');
+      
+      if (isAIConnectionError || isAgentStateError) {
+        console.warn('[Gateway] 🔧 检测到 AI 连接或状态错误，尝试自动恢复...');
+        console.warn(`[Gateway] 错误类型: ${isAIConnectionError ? 'AI连接错误' : 'Agent状态错误'}`);
+        
+        try {
+          // 步骤 1: 清理 AI 连接缓存
+          if (isAIConnectionError) {
+            console.log('[Gateway] 🔄 清理 AI 连接缓存...');
+            const { clearAICache } = await import('./utils/ai-client');
+            clearAICache();
+          }
+          
+          // 步骤 2: 重置 Runtime 状态
+          console.log('[Gateway] 🔄 重置 Runtime 状态...');
+          await runtime.stopGeneration();
+          
+          // 步骤 3: 等待一小段时间让连接完全释放
+          await sleep(1000);
+          
+          // 步骤 4: 重试一次
+          console.log('[Gateway] 🔄 重试消息处理...');
+          await this.sendAIResponse(runtime, message.content, sessionId);
+          
+          console.log('[Gateway] ✅ 自动恢复成功');
+          
+          // 递归处理下一条消息
+          await this.processMessageQueue(sessionId);
+          return;
+        } catch (retryError) {
+          console.error('[Gateway] ❌ 自动恢复失败:', getErrorMessage(retryError));
+          
+          // 根据错误类型提供不同的提示
+          let userMessage = '';
+          if (isAIConnectionError) {
+            userMessage = `AI 连接超时，已尝试自动恢复但失败。\n\n可能的原因：\n1. 网络连接不稳定\n2. AI 服务响应缓慢\n3. API 配置错误\n\n建议操作：\n1. 检查网络连接\n2. 重新保存模型配置\n3. 如问题持续，请重启应用\n\n错误详情: ${getErrorMessage(retryError)}`;
+          } else {
+            userMessage = `AI Agent 状态异常，已尝试自动恢复但失败。请重新保存模型配置或重启应用。\n\n错误详情: ${getErrorMessage(retryError)}`;
+          }
+          
+          this.sendError(userMessage, sessionId);
+        }
+      } else {
+        // 其他错误直接显示
+        this.sendError(errorMessage, sessionId);
+      }
     }
     
     // 递归处理下一条消息

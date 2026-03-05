@@ -259,9 +259,12 @@ export class AgentRuntime {
   }
 
   /**
-   * 确保 Agent 已初始化
+   * 检查并修复 Agent 状态
+   * 
+   * 在发送消息前调用，确保 Agent 处于可用状态
    */
-  private async ensureInitialized(): Promise<void> {
+  private async ensureAgentReady(): Promise<void> {
+    // 确保 Agent 已初始化
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -269,6 +272,23 @@ export class AgentRuntime {
     if (!this.instanceManager.agent) {
       throw new Error('Agent 未初始化');
     }
+    
+    // 🔥 检查 Agent 是否处于异常状态
+    const agent = this.instanceManager.agent;
+    
+    // 检查是否卡在 streaming 状态
+    if (agent.state.isStreaming) {
+      console.warn('[AgentRuntime] ⚠️ 检测到 Agent 卡在 streaming 状态，重置...');
+      agent.state.isStreaming = false;
+    }
+    
+    // 🔥 如果 MessageHandler 认为还在生成，但实际上可能已经卡住了
+    if (this.messageHandler.isCurrentlyGenerating()) {
+      console.warn('[AgentRuntime] ⚠️ 检测到 MessageHandler 卡在生成状态，重置...');
+      this.messageHandler.forceReset();
+    }
+    
+    console.log('[AgentRuntime] ✅ Agent 状态检查完成');
   }
 
   /**
@@ -303,7 +323,10 @@ export class AgentRuntime {
     this.systemPromptInitializing = true;
     
     try {
-      await this.ensureInitialized();
+      // 确保 Agent 已初始化
+      if (this.initPromise) {
+        await this.initPromise;
+      }
       
       if (!this.instanceManager.agent) {
         console.error('❌ Agent 未初始化，无法构建系统提示词');
@@ -348,6 +371,28 @@ export class AgentRuntime {
    * 销毁 AgentRuntime 实例
    */
   async destroy(): Promise<void> {
+    // 🔥 强制停止当前生成（如果有）
+    if (this.messageHandler.isCurrentlyGenerating()) {
+      console.log('[AgentRuntime] 🛑 强制停止当前生成...');
+      this.messageHandler.stopGeneration();
+    }
+    
+    // 🔥 重置 Agent 实例状态（解决状态残留问题）
+    if (this.instanceManager.agent) {
+      try {
+        // 清空消息历史，重置内部状态
+        this.instanceManager.agent.state.messages = [];
+        this.instanceManager.agent.state.isStreaming = false;
+        
+        console.log('[AgentRuntime] 🔄 Agent 状态已重置');
+      } catch (error) {
+        console.warn('[AgentRuntime] ⚠️ Agent 状态重置失败:', error);
+      }
+      
+      // 清空 Agent 引用
+      this.instanceManager.agent = null;
+    }
+    
     // 停止 Browser Control Server
     await this.initializer.cleanup();
     
@@ -372,7 +417,9 @@ export class AgentRuntime {
     this.runtimeConfig.sessionId = sessionId;
     
     // 确保 Agent 已初始化
-    await this.ensureInitialized();
+    if (this.initPromise) {
+      await this.initPromise;
+    }
     
     if (!this.instanceManager.agent) {
       throw new Error('Agent 未初始化');
@@ -542,7 +589,10 @@ ${lastPart}
    * 用于定时任务场景，避免历史消息干扰
    */
   async clearMessageHistory(): Promise<void> {
-    await this.ensureInitialized();
+    // 确保 Agent 已初始化
+    if (this.initPromise) {
+      await this.initPromise;
+    }
     
     if (this.instanceManager.agent) {
       const messageCount = this.instanceManager.agent.state.messages.length;
@@ -582,6 +632,9 @@ ${lastPart}
     maxContinuations: number = 100,
     isAutoContinue: boolean = false
   ): AsyncGenerator<string, void, unknown> {
+    // 🔥 检查并修复 Agent 状态
+    await this.ensureAgentReady();
+    
     // 🔥 设置当前 sessionId 供 connector-tool 使用
     const { setConnectorToolSessionId } = await import('../tools/connector-tool');
     setConnectorToolSessionId(this.runtimeConfig.sessionId);
@@ -601,9 +654,6 @@ ${lastPart}
     
     console.log('📤 发送消息到 AI:', content.substring(0, 50));
 
-    // 确保 Agent 已初始化
-    await this.ensureInitialized();
-    
     // 等待系统提示词初始化完成
     if (!this.systemPrompt) {
       console.log('⏳ 等待系统提示词初始化...');
