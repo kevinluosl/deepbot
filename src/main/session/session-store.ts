@@ -156,6 +156,8 @@ export class SessionStore {
   /**
    * 加载最近 N 轮对话（用于 Agent 上下文）
    * 
+   * 一轮对话 = 1 条 user 消息 + 1 条 assistant 消息（assistant 消息可能包含多个工具调用）
+   * 
    * @param tabId - Tab ID
    * @param maxRounds - 最多加载多少轮对话（默认 10）
    * @returns 最近的消息列表
@@ -163,15 +165,42 @@ export class SessionStore {
   async loadContextMessages(tabId: string, maxRounds: number = 10): Promise<SessionMessage[]> {
     const allMessages = await this.loadAllMessages(tabId);
     
-    // 计算最多保留多少条消息（每轮 2 条：user + assistant）
-    const maxMessages = maxRounds * 2;
-    
-    if (allMessages.length <= maxMessages) {
-      return allMessages;
+    if (allMessages.length === 0) {
+      return [];
     }
     
-    // 返回最后 N 条消息
-    return allMessages.slice(-maxMessages);
+    // 按对话轮次分组（user + assistant 为一轮）
+    const rounds: SessionMessage[][] = [];
+    let currentRound: SessionMessage[] = [];
+    
+    for (const message of allMessages) {
+      if (message.role === 'user') {
+        // 遇到新的 user 消息，开始新的一轮
+        if (currentRound.length > 0) {
+          rounds.push(currentRound);
+        }
+        currentRound = [message];
+      } else if (message.role === 'assistant') {
+        // assistant 消息加入当前轮
+        currentRound.push(message);
+      }
+      // system 消息忽略（不计入对话轮次）
+    }
+    
+    // 添加最后一轮
+    if (currentRound.length > 0) {
+      rounds.push(currentRound);
+    }
+    
+    // 取最后 N 轮
+    const recentRounds = rounds.slice(-maxRounds);
+    
+    // 展平为消息列表
+    const result = recentRounds.flat();
+    
+    console.log(`[SessionStore] 📖 加载最近 ${recentRounds.length} 轮对话，共 ${result.length} 条消息`);
+    
+    return result;
   }
   
   /**
