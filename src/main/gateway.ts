@@ -577,22 +577,12 @@ export class Gateway {
         console.warn(`[Gateway] 仅恢复当前 Tab: ${currentSessionId}`);
         
         try {
-          // 步骤 1: 停止当前 Runtime 的生成
-          console.log('[Gateway] 🔄 停止当前 Runtime 生成...');
-          await runtime.stopGeneration();
+          // 🔥 使用统一的重置逻辑
+          const retryRuntime = await this.resetSessionRuntime(currentSessionId, {
+            reason: `AI 连接错误: ${errorMessage}`
+          });
           
-          // 步骤 2: 销毁当前 Tab 的 Runtime（不影响其他 Tab）
-          console.log('[Gateway] 🔄 销毁当前 Tab Runtime...');
-          await this.destroySessionRuntime(currentSessionId);
-          
-          // 步骤 3: 等待一小段时间让 Runtime 完全释放
-          await sleep(500);
-          
-          // 步骤 4: 重新创建当前 Tab 的 Runtime
-          console.log('[Gateway] 🔄 重新创建当前 Tab Runtime...');
-          const retryRuntime = this.getOrCreateRuntime(currentSessionId);
-          
-          // 步骤 5: 重试一次
+          // 重试发送消息
           console.log('[Gateway] 🔄 重试发送消息...');
           await this.sendAIResponse(retryRuntime, content, currentSessionId);
           
@@ -763,14 +753,10 @@ export class Gateway {
     // 如果没有 sessionId，使用默认会话
     const currentSessionId = sessionId || this.defaultSessionId;
     
-    // 获取 AgentRuntime
-    const runtime = this.agentRuntimes.get(currentSessionId);
-    
-    if (runtime) {
-      await runtime.stopGeneration();
-    } else {
-      console.warn(`[Gateway] 会话不存在: ${currentSessionId}`);
-    }
+    // 🔥 使用统一的重置逻辑（与 AI 出错重置保持一致）
+    await this.resetSessionRuntime(currentSessionId, {
+      reason: '用户点击 Stop 按钮'
+    });
   }
 
 
@@ -952,6 +938,49 @@ export class Gateway {
     } else {
       console.log(`[Gateway] 会话 Runtime 不存在: ${sessionId}`);
     }
+  }
+
+  /**
+   * 重置会话 Runtime（统一的重置逻辑）
+   * 
+   * 用于以下场景：
+   * 1. 用户点击 Stop 按钮
+   * 2. AI 调用出错时自动恢复
+   * 3. 其他需要彻底重置 Agent 的场景
+   * 
+   * @param sessionId - 会话 ID
+   * @param options - 重置选项
+   * @returns 重新创建的 Runtime
+   */
+  async resetSessionRuntime(sessionId: string, options: {
+    reason?: string;  // 重置原因（用于日志）
+  } = {}): Promise<AgentRuntime> {
+    const { reason = '未知原因' } = options;
+    
+    console.log(`[Gateway] 🔄 重置会话 Runtime: ${sessionId}`);
+    console.log(`[Gateway] 📝 重置原因: ${reason}`);
+    
+    // 步骤 1: 停止当前 Runtime 的生成
+    const runtime = this.agentRuntimes.get(sessionId);
+    if (runtime) {
+      console.log('[Gateway] 🛑 停止当前 Runtime 生成...');
+      await runtime.stopGeneration();
+    }
+    
+    // 步骤 2: 销毁当前 Runtime
+    console.log('[Gateway] 🗑️ 销毁当前 Runtime...');
+    await this.destroySessionRuntime(sessionId);
+    
+    // 步骤 3: 等待一小段时间让 Runtime 完全释放
+    await sleep(500);
+    
+    // 步骤 4: 重新创建 Runtime
+    console.log('[Gateway] ✨ 重新创建 Runtime...');
+    const newRuntime = this.getOrCreateRuntime(sessionId);
+    
+    console.log('[Gateway] ✅ 会话 Runtime 重置完成');
+    
+    return newRuntime;
   }
 
   /**
