@@ -307,7 +307,7 @@ export const browserToolPlugin: ToolPlugin = {
                 if (!connected) {
                   throw new Error('Chrome 启动超时，请手动启动 Chrome 后重试');
                 }
-              } catch (launchError) {
+            } catch (launchError) {
                 const launchErrorMsg = getErrorMessage(launchError);
                 const userDataDir = expandUserPath('~/.deepbot/browser-profile');
                 
@@ -913,6 +913,12 @@ export const browserToolPlugin: ToolPlugin = {
               errorMessage += `   • 必须先使用 snapshot 获取元素列表\n`;
               errorMessage += `   • 使用 snapshot 返回的 @ref（如 @e1, @e36）\n`;
               errorMessage += `   • 不要猜测 ref 编号\n`;
+            } else if (errorStr.includes('spawn') || errorStr.includes('enoent') || errorStr.includes('command not found')) {
+              errorMessage += `💡 agent-browser 可执行文件问题：\n`;
+              errorMessage += `   • 开发环境：确保已安装 agent-browser 依赖\n`;
+              errorMessage += `   • 生产环境：可执行文件可能未正确打包\n`;
+              errorMessage += `   • 请检查 node_modules/agent-browser/bin/ 目录\n`;
+              errorMessage += `   • 尝试重新安装依赖：pnpm install\n`;
             }
             
             return {

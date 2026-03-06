@@ -10,10 +10,14 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { getErrorMessage } from '../../shared/utils/error-handler';
+import { createLogger } from '../../shared/utils/logger';
 import { TIMEOUTS } from '../config/timeouts';
 
 const execAsync = promisify(exec);
+const logger = createLogger('AgentBrowser');
 
 /**
  * Snapshot 结果接口
@@ -73,6 +77,78 @@ export class AgentBrowserWrapper {
   }
   
   /**
+   * 获取 agent-browser 可执行文件路径
+   */
+  private getAgentBrowserPath(): string {
+    // 记录环境信息
+    logger.info(`环境检测 - NODE_ENV: ${process.env.NODE_ENV}, VITE_DEV_SERVER_URL: ${process.env.VITE_DEV_SERVER_URL}`);
+    logger.info(`进程信息 - PID: ${process.pid}, CWD: ${process.cwd()}`);
+    logger.info(`资源路径 - resourcesPath: ${process.resourcesPath}`);
+    
+    // 开发环境：使用 npx
+    if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
+      logger.info('开发环境，使用 npx agent-browser');
+      return 'npx agent-browser';
+    }
+    
+    // 生产环境：直接调用可执行文件
+    const platform = process.platform;
+    const arch = process.arch;
+    
+    logger.info(`生产环境检测 - Platform: ${platform}, Arch: ${arch}`);
+    
+    // 确定可执行文件名
+    let executableName: string;
+    if (platform === 'win32') {
+      executableName = 'agent-browser-win32-x64.exe';
+    } else if (platform === 'darwin') {
+      executableName = arch === 'arm64' ? 'agent-browser-darwin-arm64' : 'agent-browser-darwin-x64';
+    } else {
+      // Linux
+      executableName = arch === 'arm64' ? 'agent-browser-linux-arm64' : 'agent-browser-linux-x64';
+    }
+    
+    // 在 asar: false 的情况下，文件直接在 app 目录中
+    const resourcesPath = process.resourcesPath || process.cwd();
+    logger.info(`Resources path: ${resourcesPath}`);
+    
+    // 尝试多个可能的路径
+    const possiblePaths = [
+      // asar: false 的标准路径
+      join(resourcesPath, 'app', 'node_modules', 'agent-browser', 'bin', executableName),
+      // 备选路径
+      join(resourcesPath, 'node_modules', 'agent-browser', 'bin', executableName),
+      // 相对于当前工作目录
+      join(process.cwd(), 'node_modules', 'agent-browser', 'bin', executableName),
+    ];
+    
+    logger.info(`尝试查找可执行文件: ${executableName}`);
+    
+    for (const executablePath of possiblePaths) {
+      logger.info(`检查路径: ${executablePath}`);
+      const exists = existsSync(executablePath);
+      logger.info(`路径存在: ${exists}`);
+      
+      if (exists) {
+        // 检查文件权限
+        try {
+          const stats = require('fs').statSync(executablePath);
+          logger.info(`文件权限: ${stats.mode.toString(8)}, 大小: ${stats.size} bytes`);
+        } catch (error) {
+          logger.warn(`无法获取文件信息: ${getErrorMessage(error)}`);
+        }
+        
+        logger.info(`✅ 找到可执行文件: ${executablePath}`);
+        return `"${executablePath}"`;
+      }
+    }
+    
+    // 如果都找不到，尝试使用系统 PATH 中的 agent-browser
+    logger.warn('⚠️ 未找到可执行文件，尝试系统 PATH');
+    return 'agent-browser';
+  }
+
+  /**
    * 执行 agent-browser 命令
    */
   private async execute(
@@ -94,26 +170,41 @@ export class AgentBrowserWrapper {
       }
     }
     
-    // 构建完整命令：npx agent-browser [--session ID] [--cdp URL] command [--json]
-    const fullCommand = `npx agent-browser ${sessionFlag} ${cdpFlag} ${command} ${jsonFlag}`.trim().replace(/\s+/g, ' ');
+    // 获取 agent-browser 路径
+    const agentBrowserCmd = this.getAgentBrowserPath();
     
-    console.log(`[AgentBrowser] 执行命令: ${fullCommand}`);
+    // 构建完整命令
+    const fullCommand = `${agentBrowserCmd} ${sessionFlag} ${cdpFlag} ${command} ${jsonFlag}`.trim().replace(/\s+/g, ' ');
+    
+    logger.info(`准备执行命令: ${fullCommand}`);
+    logger.info(`当前工作目录: ${process.cwd()}`);
     
     try {
       const { stdout, stderr } = await execAsync(fullCommand, {
         timeout: options.timeout || TIMEOUTS.BROWSER_NAVIGATION_TIMEOUT,
         maxBuffer: 10 * 1024 * 1024, // 10MB
+        cwd: process.cwd(), // 明确设置工作目录
       });
       
       if (stderr && !stderr.includes('Debugger') && !stderr.includes('npm warn')) {
-        console.warn(`[AgentBrowser] stderr: ${stderr}`);
+        logger.warn(`stderr: ${stderr}`);
       }
       
+      logger.info(`命令执行成功，输出长度: ${stdout.length}`);
       return stdout.trim();
     } catch (error: any) {
+      logger.error(`命令执行失败:`, error);
+      logger.error(`失败的命令: ${fullCommand}`);
+      logger.error(`错误代码: ${error.code}, 信号: ${error.signal}`);
+      
       // 处理超时错误
       if (error.killed && error.signal === 'SIGTERM') {
         throw new Error(`命令执行超时: ${command}`);
+      }
+      
+      // 处理可执行文件不存在的错误
+      if (error.code === 'ENOENT' || error.message.includes('command not found')) {
+        throw new Error(`agent-browser 可执行文件未找到。请检查安装或联系技术支持。错误详情: ${getErrorMessage(error)}`);
       }
       
       throw new Error(`命令执行失败: ${getErrorMessage(error)}`);

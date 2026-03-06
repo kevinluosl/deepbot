@@ -2,6 +2,10 @@
  * 统一的日志工具
  */
 
+import { writeFileSync, appendFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { expandUserPath } from './path-utils';
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -12,9 +16,46 @@ export enum LogLevel {
 class Logger {
   private level: LogLevel = LogLevel.INFO;
   private module: string;
+  private static logDir: string = expandUserPath('~/.deepbot/logs');
+  private static logFile: string = join(Logger.logDir, 'deepbot.log');
+  private static initialized: boolean = false;
 
   constructor(module: string) {
     this.module = module;
+    Logger.initializeLogFile();
+  }
+
+  private static initializeLogFile() {
+    if (Logger.initialized) return;
+    
+    try {
+      // 确保日志目录存在
+      if (!existsSync(Logger.logDir)) {
+        mkdirSync(Logger.logDir, { recursive: true });
+      }
+      
+      // 在应用启动时写入分隔符
+      const startupMessage = `\n=== DeepBot 启动 ${new Date().toISOString()} ===\n`;
+      appendFileSync(Logger.logFile, startupMessage);
+      
+      Logger.initialized = true;
+    } catch (error) {
+      console.error('初始化日志文件失败:', error);
+    }
+  }
+
+  private writeToFile(level: string, message: string, ...args: any[]) {
+    try {
+      const timestamp = new Date().toISOString();
+      const argsStr = args.length > 0 ? ' ' + args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ') : '';
+      
+      const logEntry = `[${timestamp}] [${level}] [${this.module}] ${message}${argsStr}\n`;
+      appendFileSync(Logger.logFile, logEntry);
+    } catch (error) {
+      console.error('写入日志文件失败:', error);
+    }
   }
 
   setLevel(level: LogLevel) {
@@ -24,25 +65,43 @@ class Logger {
   debug(message: string, ...args: any[]) {
     if (this.level <= LogLevel.DEBUG) {
       console.debug(`[${this.module}] 🔍 ${message}`, ...args);
+      this.writeToFile('DEBUG', message, ...args);
     }
   }
 
   info(message: string, ...args: any[]) {
     if (this.level <= LogLevel.INFO) {
       console.info(`[${this.module}] ℹ️  ${message}`, ...args);
+      this.writeToFile('INFO', message, ...args);
     }
   }
 
   warn(message: string, ...args: any[]) {
     if (this.level <= LogLevel.WARN) {
       console.warn(`[${this.module}] ⚠️  ${message}`, ...args);
+      this.writeToFile('WARN', message, ...args);
     }
   }
 
   error(message: string, ...args: any[]) {
     if (this.level <= LogLevel.ERROR) {
       console.error(`[${this.module}] ❌ ${message}`, ...args);
+      this.writeToFile('ERROR', message, ...args);
     }
+  }
+
+  /**
+   * 获取日志文件路径
+   */
+  static getLogFilePath(): string {
+    return Logger.logFile;
+  }
+
+  /**
+   * 清理旧日志文件（保留最近7天）
+   */
+  static cleanupOldLogs() {
+    // TODO: 实现日志清理逻辑
   }
 }
 
@@ -64,5 +123,12 @@ export function setGlobalLogLevel(level: LogLevel) {
 
 export function getGlobalLogLevel(): LogLevel {
   return globalLogLevel;
+}
+
+/**
+ * 获取日志文件路径
+ */
+export function getLogFilePath(): string {
+  return Logger.getLogFilePath();
 }
 
