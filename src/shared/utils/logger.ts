@@ -62,30 +62,45 @@ class Logger {
     this.level = level;
   }
 
+  /**
+   * 安全地写入控制台（捕获 EPIPE 错误）
+   */
+  private safeConsoleLog(method: 'debug' | 'info' | 'warn' | 'error', message: string, ...args: any[]) {
+    try {
+      console[method](`[${this.module}] ${message}`, ...args);
+    } catch (error: any) {
+      // 忽略 EPIPE 错误（应用退出时管道关闭）
+      if (error?.code !== 'EPIPE') {
+        // 其他错误写入文件
+        this.writeToFile('ERROR', `Console write failed: ${error?.message || 'Unknown error'}`);
+      }
+    }
+  }
+
   debug(message: string, ...args: any[]) {
     if (this.level <= LogLevel.DEBUG) {
-      console.debug(`[${this.module}] 🔍 ${message}`, ...args);
+      this.safeConsoleLog('debug', `🔍 ${message}`, ...args);
       this.writeToFile('DEBUG', message, ...args);
     }
   }
 
   info(message: string, ...args: any[]) {
     if (this.level <= LogLevel.INFO) {
-      console.info(`[${this.module}] ℹ️  ${message}`, ...args);
+      this.safeConsoleLog('info', `ℹ️  ${message}`, ...args);
       this.writeToFile('INFO', message, ...args);
     }
   }
 
   warn(message: string, ...args: any[]) {
     if (this.level <= LogLevel.WARN) {
-      console.warn(`[${this.module}] ⚠️  ${message}`, ...args);
+      this.safeConsoleLog('warn', `⚠️  ${message}`, ...args);
       this.writeToFile('WARN', message, ...args);
     }
   }
 
   error(message: string, ...args: any[]) {
     if (this.level <= LogLevel.ERROR) {
-      console.error(`[${this.module}] ❌ ${message}`, ...args);
+      this.safeConsoleLog('error', `❌ ${message}`, ...args);
       this.writeToFile('ERROR', message, ...args);
     }
   }
