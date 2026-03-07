@@ -1043,17 +1043,57 @@ export class Gateway {
       const nameConfig = configStore.getNameConfig();
       
       const isDefaultUserName = nameConfig.userName === 'user';
-      const greeting = isDefaultUserName 
-        ? `你好！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`
-        : `你好，${nameConfig.userName}！我是 ${nameConfig.agentName}，一个运行在桌面的 AI 助手。`;
+      const isDefaultAgentName = nameConfig.agentName === 'DeepBot';
       
+      // 构建欢迎消息内容
+      const welcomeContent = `🎉 先认识一下吧？
+
+按照我的"出生指南"，我们应该先互相认识：
+
+关于我：
+
+- 我还没有名字，你帮我取一个？（说"你叫 XXX"即可）${!isDefaultAgentName ? ` 当前名字：${nameConfig.agentName}` : ''}
+- 我是谁？桌面 AI 助手，24 小时待命帮你干活
+- 对话风格？你希望我正式/随意/专业/温暖？
+- 记忆系统：你可以随时说"记住 XXX"，我会永久记住：
+  - 你的偏好和习惯
+  - 常用的工具和命令
+  - 项目相关的信息
+  - 任何你觉得重要的事
+- 角色设定：你可以给我设定专业角色，比如：
+  - "你是 Python 开发专家"
+  - "你擅长前端开发，熟悉 React 和 TypeScript"
+  - "你是运维工程师，精通 Docker 和 K8s"
+  设定角色后，我会按照这个专业领域来帮你，还可以安装对应的 Skill 扩展能力
+
+关于你：
+
+- 怎么称呼你？（我会永久记住）${!isDefaultUserName ? ` 当前称呼：${nameConfig.userName}` : ''}
+- 你主要做什么项目/工作？（我可以记住常用工具和命令）
+- 有什么特别在意或讨厌的？（比如代码风格、工作习惯）
+
+我能帮你做什么：
+
+- 📁 文件操作：读写、搜索、整理文件
+- 🌐 浏览网页：自动化网页操作、信息提取
+- ⚙️ 执行命令：运行脚本、管理进程
+- 📋 任务管理：创建、跟踪、提醒任务
+- ⏰ 定时任务：设置后台自动执行的任务
+- 🧠 记忆系统：记住你的偏好、常用工具、项目信息
+- 🔧 Skill 扩展：安装专业技能包，扩展我的能力
+
+咱们边聊边把这些定下来，然后我就可以真正成为你的得力助手了！😊
+
+有什么问题或者需要帮忙的，尽管说！`;
+
       const welcomeMessage = `请按照以下方式欢迎用户：
 
-1. 说"${greeting}"
-2. ${isDefaultUserName ? '告诉用户可以随时给你改名字，也可以告诉你希望怎么称呼用户，你会永久记住' : `告诉${nameConfig.userName}可以随时给你改名字，你会永久记住`}
-3. 简单介绍你的能力：处理文件、浏览网页、执行命令、管理任务、创建后台任务等
-4. 使用 environment_check 工具检查运行环境
-5. 如果环境未配置，提醒${isDefaultUserName ? '用户' : nameConfig.userName}你可以帮助安装
+1. 直接输出以下内容（保持格式）：
+
+${welcomeContent}
+
+2. 然后使用 environment_check 工具检查运行环境
+3. 如果环境未配置，提醒${isDefaultUserName ? '用户' : nameConfig.userName}你可以帮助安装
 
 不要显示计划步骤，直接执行。`;
       
