@@ -1046,9 +1046,11 @@ export class Gateway {
       const isDefaultAgentName = nameConfig.agentName === 'DeepBot';
       
       // 构建欢迎消息内容
-      const welcomeContent = `🎉 先认识一下吧？
+      const welcomeContent = `👋 你好！欢迎第一次使用 DeepBot！
 
-按照我的"出生指南"，我们应该先互相认识：
+我是你的全能 AI 助手，24 小时待命帮你处理各种任务。在开始之前，让我们先互相认识一下吧！
+
+---
 
 关于我：
 
@@ -1099,8 +1101,8 @@ ${welcomeContent}
       
       console.log('[Gateway] 📤 发送欢迎消息到默认会话');
       
-      // 🔥 发送欢迎消息，不跳过历史记录（让欢迎消息也被保存）
-      await this.handleSendMessage(welcomeMessage, 'default', undefined, false, false);
+      // 🔥 发送欢迎消息，跳过历史记录（欢迎消息不应该被保存）
+      await this.handleSendMessage(welcomeMessage, 'default', undefined, false, true);
     } catch (error) {
       console.error('[Gateway] ❌ 发送欢迎消息失败:', getErrorMessage(error));
     }
