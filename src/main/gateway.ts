@@ -832,13 +832,13 @@ export class Gateway {
       const finalSteps = runtime.getExecutionSteps();
       this.sendStreamChunk(messageId, '', true, false, undefined, finalSteps, sessionId);
       
-      // 🔥 保存 AI 响应到 session（除非跳过历史记录或定时任务 Tab）
-      if (this.sessionManager && fullResponse.trim() && !skipHistory && !isTaskTab) {
+      // 🔥 保存 AI 响应到 session
+      // 注意：即使是欢迎消息模式（skipHistory=true），AI 的响应也要保存
+      // 只有用户的欢迎消息不保存，AI 的欢迎回复要保存
+      if (this.sessionManager && fullResponse.trim() && !isTaskTab) {
         // 保存响应内容和执行步骤
         await this.sessionManager.saveAssistantMessage(sessionId, fullResponse, finalSteps);
         console.log(`[Gateway] 💾 已保存 AI 响应和 ${finalSteps.length} 个执行步骤`);
-      } else if (skipHistory && fullResponse.trim()) {
-        console.log('[Gateway] 🚫 跳过保存 AI 响应到历史记录（欢迎消息模式）');
       } else if (isTaskTab && fullResponse.trim()) {
         console.log('[Gateway] 🚫 跳过保存 AI 响应到历史记录（定时任务 Tab）');
       }
@@ -1089,7 +1089,7 @@ export class Gateway {
 - 🧠 记忆系统：记住你的偏好、常用工具、项目信息
 - 🔧 Skill 扩展：安装专业技能包，扩展我的能力
 
-咱们边聊边把这些定下来，然后我就可以真正成为你的得力助手了！😊
+在我们的沟通过程中，我会越来越了解你，知道怎么更好的完成任务。😊
 
 有什么问题或者需要帮忙的，尽管说！`;
 

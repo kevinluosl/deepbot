@@ -73,7 +73,7 @@ export class SessionStore {
       const line = JSON.stringify(message) + '\n';
       
       await fs.appendFile(filePath, line, 'utf-8');
-      // console.log(`[SessionStore] 💾 已保存消息: ${tabId} (${message.role})`);
+      console.log(`[SessionStore] 💾 已保存消息: ${tabId} (${message.role})`);
     } catch (error) {
       console.error('[SessionStore] ❌ 保存消息失败:', getErrorMessage(error));
       throw error;
