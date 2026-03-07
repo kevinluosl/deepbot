@@ -42,9 +42,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<MessageInputRef>(null); // 🔥 添加输入框引用
+  const messagesContainerRef = useRef<HTMLDivElement>(null); // 🔥 消息容器引用
   const [agentName, setAgentName] = useState('matrix');
   const [userName, setUserName] = useState('user');
   const [isInitializing, setIsInitializing] = useState(true);
+  const [autoScroll, setAutoScroll] = useState(true); // 🔥 是否自动滚动
+  const isUserScrollingRef = useRef(false); // 🔥 用户是否正在手动滚动
   
   // 🔥 获取当前 Tab 类型
   const currentTab = tabs?.find(t => t.id === activeTabId);
@@ -121,10 +124,57 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
     }
   }, [messages.length, isInitializing]);
 
-  // 自动滚动到底部 - 监听消息变化（包括内容更新）
+  // 🔥 检测用户手动滚动
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]); // 监听整个 messages 数组的变化
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    let lastScrollTop = container.scrollTop;
+
+    const handleScroll = () => {
+      const currentScrollTop = container.scrollTop;
+      
+      // 🔥 只有当 scrollTop 发生变化，且不是程序滚动时，才认为是用户手动滚动
+      if (currentScrollTop !== lastScrollTop && !isUserScrollingRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10; // 10px 容差
+
+        // 如果用户滚动到底部，恢复自动滚动
+        if (isAtBottom && !autoScroll) {
+          console.log('[ChatWindow] 用户滚动到底部，恢复自动滚动');
+          setAutoScroll(true);
+        }
+        // 如果用户向上滚动（离开底部），暂停自动滚动
+        else if (!isAtBottom && autoScroll) {
+          console.log('[ChatWindow] 用户向上滚动，暂停自动滚动');
+          setAutoScroll(false);
+        }
+      }
+      
+      lastScrollTop = currentScrollTop;
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [autoScroll]);
+
+  // 🔥 自动滚动到底部 - 只在 autoScroll 为 true 时执行
+  useEffect(() => {
+    if (autoScroll && messagesEndRef.current) {
+      isUserScrollingRef.current = true; // 标记为程序滚动
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      // 滚动完成后重置标记
+      setTimeout(() => {
+        isUserScrollingRef.current = false;
+      }, 500); // smooth 滚动大约需要 500ms
+    }
+  }, [messages, autoScroll]);
+
+  // 🔥 发送消息时恢复自动滚动
+  const handleSendMessage = (content: string) => {
+    setAutoScroll(true);
+    onSendMessage(content);
+  };
 
   return (
     <div className="terminal-container flex flex-col h-screen">
@@ -210,7 +260,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       )}
 
       {/* 消息列表区域 */}
-      <div className="terminal-content flex-1">
+      <div ref={messagesContainerRef} className="terminal-content flex-1">
         {isInitializing ? (
           // 初始化提示 - 显示在提示符后面
           <div className="terminal-line" style={{ display: 'block' }}>
@@ -267,7 +317,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       {tabs && activeTabId && tabs.find(t => t.id === activeTabId)?.type === 'connector' ? null : (
         <MessageInput 
           ref={messageInputRef}
-          onSend={onSendMessage} 
+          onSend={handleSendMessage}
           onStop={onStopGeneration} 
           disabled={isLoading || isLocked || isInitializing} 
           isGenerating={isLoading}
