@@ -40,6 +40,16 @@ function App() {
       });
     });
     
+    // 🔥 监听 Tab 消息清除事件
+    const unsubscribeMessagesCleared = window.deepbot.onTabMessagesCleared((data: { tabId: string }) => {
+      console.log('[App] 收到 Tab 消息清除通知:', data.tabId);
+      setTabs(prev => prev.map(tab => 
+        tab.id === data.tabId 
+          ? { ...tab, messages: [] }
+          : tab
+      ));
+    });
+    
     // 🔥 监听名字配置更新事件（更新 Tab 标题）
     const unsubscribeNameUpdate = window.deepbot.onNameConfigUpdate((config) => {
       console.log('[App] 收到名字配置更新:', config);
@@ -74,6 +84,7 @@ function App() {
     
     return () => {
       unsubscribeTabCreated();
+      unsubscribeMessagesCleared();
       unsubscribeNameUpdate();
     };
   }, []);
@@ -86,6 +97,15 @@ function App() {
       }
     } catch (error) {
       console.error('加载 Tab 失败:', error);
+      
+      // 🔥 如果是 Gateway 未初始化错误，延迟重试
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Gateway 未初始化')) {
+        console.log('[App] Gateway 未初始化，500ms 后重试...');
+        setTimeout(() => {
+          loadTabs();
+        }, 500);
+      }
     }
   };
   

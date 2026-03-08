@@ -65,9 +65,15 @@ export function setGatewayInstance(gateway: Gateway): void {
   setGatewayForExecutor(gateway);
   console.info('[Scheduled Task] Gateway 实例已传递给 TaskExecutor');
   
-  // 🔥 自动启动调度器（确保系统重启后定时任务能继续执行）
-  const taskScheduler = getScheduler();
-  console.info('[Scheduled Task] 调度器已自动启动');
+  // 🔥 异步启动调度器（避免阻塞 Gateway 初始化）
+  setTimeout(() => {
+    try {
+      const taskScheduler = getScheduler();
+      console.info('[Scheduled Task] 调度器已自动启动');
+    } catch (error) {
+      console.error('[Scheduled Task] ❌ 启动调度器失败:', error);
+    }
+  }, 1000);
 }
 
 /**

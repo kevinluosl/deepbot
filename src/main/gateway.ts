@@ -12,6 +12,7 @@ import { BrowserWindow } from 'electron';
 import { IPC_CHANNELS } from '../types/ipc';
 import { AgentRuntime } from './agent-runtime/index';
 import type { AgentTab } from '../types/agent-tab';
+import type { Message } from '../types/message';
 import { getErrorMessage } from '../shared/utils/error-handler';
 import { sleep, waitUntil } from '../shared/utils/async-utils';
 import { generateMessageId, generateUserMessageId, generateTabId, generateExecutionId } from '../shared/utils/id-generator';
@@ -306,6 +307,11 @@ export class Gateway {
     // 重新预热 AI 连接
     this.warmupAIConnection().catch(error => {
       console.error('[Gateway] ❌ AI 连接预热失败:', error);
+    });
+    
+    // 🔥 检查是否需要发送欢迎消息（首次配置模型的场景）
+    this.checkAndSendWelcomeMessage().catch(error => {
+      console.error('[Gateway] ❌ 检查欢迎消息失败:', getErrorMessage(error));
     });
   }
 
@@ -1051,6 +1057,24 @@ export class Gateway {
       const isDefaultUserName = nameConfig.userName === 'user';
       const isDefaultAgentName = nameConfig.agentName === 'DeepBot';
       
+      // 🔥 清除默认 Tab 的所有消息（包括错误提示）
+      const defaultTab = this.tabs.get('default');
+      if (defaultTab) {
+        defaultTab.messages = [];
+        console.log('[Gateway] 🧹 已清除默认 Tab 的所有消息');
+        
+        // 通知前端清除消息
+        sendToWindow(this.mainWindow, 'tab:messages-cleared', {
+          tabId: 'default',
+        });
+      }
+      
+      // 🔥 清除历史记录
+      if (this.sessionManager) {
+        await this.sessionManager.clearSession('default');
+        console.log('[Gateway] 🧹 已清除默认 Tab 的历史记录');
+      }
+      
       // 构建欢迎消息内容
       const welcomeContent = `👋 你好！欢迎第一次使用 DeepBot！
 
@@ -1167,11 +1191,14 @@ ${welcomeContent}
       // 加载 UI 显示消息（最近 100 轮）
       const messages = await this.sessionManager.loadUIMessages('default');
       
-      if (messages.length === 0) {
-        console.log('[Gateway] 📝 没有历史消息，发送欢迎消息');
+      // 🔥 检查是否需要发送欢迎消息
+      const shouldSendWelcome = this.shouldSendWelcomeMessage(messages);
+      
+      if (shouldSendWelcome) {
+        console.log('[Gateway] 📝 需要发送欢迎消息');
         await this.sendWelcomeMessage();
       } else {
-        console.log(`[Gateway] 📖 找到 ${messages.length} 条历史消息，跳过欢迎消息`);
+        console.log(`[Gateway] 📖 找到 ${messages.length} 条有效历史消息，跳过欢迎消息`);
         
         // 更新 Tab 的消息列表
         const tab = this.tabs.get('default');
@@ -1189,6 +1216,79 @@ ${welcomeContent}
       console.error('[Gateway] ❌ 检查历史消息失败，发送欢迎消息:', getErrorMessage(error));
       await this.sendWelcomeMessage();
     }
+  }
+  
+  /**
+   * 检查并发送欢迎消息
+   * 
+   * 🔥 用于模型配置后检查是否需要发送欢迎消息
+   */
+  private async checkAndSendWelcomeMessage(): Promise<void> {
+    // 等待 SessionManager 初始化完成
+    await sleep(500);
+    
+    if (!this.sessionManager) {
+      console.warn('[Gateway] SessionManager 未初始化，跳过欢迎消息检查');
+      return;
+    }
+    
+    try {
+      console.log('[Gateway] 🔄 检查是否需要发送欢迎消息...');
+      
+      // 加载 UI 显示消息（最近 100 轮）
+      const messages = await this.sessionManager.loadUIMessages('default');
+      
+      // 🔥 检查是否需要发送欢迎消息
+      const shouldSendWelcome = this.shouldSendWelcomeMessage(messages);
+      
+      if (shouldSendWelcome) {
+        console.log('[Gateway] 📝 需要发送欢迎消息');
+        await this.sendWelcomeMessage();
+      } else {
+        console.log(`[Gateway] 📖 找到 ${messages.length} 条有效历史消息，跳过欢迎消息`);
+      }
+    } catch (error) {
+      console.error('[Gateway] ❌ 检查欢迎消息失败:', getErrorMessage(error));
+    }
+  }
+  
+  /**
+   * 判断是否需要发送欢迎消息
+   * 
+   * 条件：
+   * 1. 没有历史记录
+   * 2. 只有一条用户消息，没有 AI 回复
+   * 3. 只有系统错误消息
+   */
+  private shouldSendWelcomeMessage(messages: Message[]): boolean {
+    // 情况 1: 没有历史记录
+    if (messages.length === 0) {
+      console.log('[Gateway] 原因: 没有历史记录');
+      return true;
+    }
+    
+    // 情况 2: 只有一条用户消息，没有 AI 回复
+    if (messages.length === 1 && messages[0].role === 'user') {
+      console.log('[Gateway] 原因: 只有一条用户消息，没有 AI 回复');
+      return true;
+    }
+    
+    // 情况 3: 只有系统错误消息（通常是"模型未配置"的错误）
+    const hasOnlySystemMessages = messages.every(msg => msg.role === 'system');
+    if (hasOnlySystemMessages) {
+      console.log('[Gateway] 原因: 只有系统错误消息');
+      return true;
+    }
+    
+    // 情况 4: 有用户消息但没有 assistant 回复
+    const hasUserMessage = messages.some(msg => msg.role === 'user');
+    const hasAssistantMessage = messages.some(msg => msg.role === 'assistant');
+    if (hasUserMessage && !hasAssistantMessage) {
+      console.log('[Gateway] 原因: 有用户消息但没有 AI 回复');
+      return true;
+    }
+    
+    return false;
   }
   
   /**
