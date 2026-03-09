@@ -117,7 +117,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
     const handleHistoryLoaded = (data: { tabId: string; messages: Message[] }) => {
       // 只处理当前 Tab 的历史消息
       if (data.tabId === (activeTabId || 'default')) {
-        console.log(`[ChatWindow] 📖 收到历史消息: ${data.messages.length} 条`);
         // 历史消息在 App.tsx 中处理，这里只记录日志
       }
     };
@@ -144,7 +143,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       const currentTabId = activeTabId || 'default';
       // 只在 default Tab 被清除时，重新显示初始化状态
       if (data.tabId === currentTabId && currentTabId === 'default') {
-        console.log('[ChatWindow] 消息已清除，重新显示初始化状态');
         setIsInitializing(true);
       }
     };
@@ -178,12 +176,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
 
         // 用户滚动到底部，恢复自动滚动
         if (isAtBottom && !autoScroll) {
-          console.log('[ChatWindow] 用户滚动到底部，恢复自动滚动');
           setAutoScroll(true);
         }
         // 用户向上滚动（离开底部），暂停自动滚动
         else if (!isAtBottom && autoScroll) {
-          console.log('[ChatWindow] 用户向上滚动，暂停自动滚动');
           setAutoScroll(false);
         }
       }, 150); // 延迟 150ms，等待滚动完全停止

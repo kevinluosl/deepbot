@@ -30,7 +30,6 @@ function App() {
     loadTabs();
     
     const unsubscribeTabCreated = window.deepbot.onTabCreated((data) => {
-      console.log('[App] 收到 Tab 创建通知:', data.tab);
       setTabs(prev => {
         // 检查是否已存在（避免重复）
         if (prev.some(t => t.id === data.tab.id)) {
@@ -42,7 +41,6 @@ function App() {
     
     // 🔥 监听 Tab 消息清除事件
     const unsubscribeMessagesCleared = window.deepbot.onTabMessagesCleared((data: { tabId: string }) => {
-      console.log('[App] 收到 Tab 消息清除通知:', data.tabId);
       setTabs(prev => prev.map(tab => 
         tab.id === data.tabId 
           ? { ...tab, messages: [] }
@@ -52,8 +50,6 @@ function App() {
     
     // 🔥 监听名字配置更新事件（更新 Tab 标题）
     const unsubscribeNameUpdate = window.deepbot.onNameConfigUpdate((config) => {
-      console.log('[App] 收到名字配置更新:', config);
-      
       // 🔥 如果是全局更新，需要更新所有继承的 Tab
       if (config.isGlobalUpdate && config.agentName) {
         setTabs(prev => prev.map(tab => {
@@ -101,7 +97,6 @@ function App() {
       // 🔥 如果是 Gateway 未初始化错误，延迟重试
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('Gateway 未初始化')) {
-        console.log('[App] Gateway 未初始化，500ms 后重试...');
         setTimeout(() => {
           loadTabs();
         }, 500);
@@ -121,8 +116,6 @@ function App() {
   // 🔥 监听历史消息加载事件
   useEffect(() => {
     const cleanup = window.deepbot.onTabHistoryLoaded((data: { tabId: string; messages: Message[] }) => {
-      console.log(`[App] 📖 收到历史消息: Tab ${data.tabId}, ${data.messages.length} 条`);
-      
       // 更新对应 Tab 的消息列表
       setTabs(prev => prev.map(tab => 
         tab.id === data.tabId 
@@ -133,7 +126,6 @@ function App() {
       // 如果是当前 Tab，同步更新 messages 状态
       if (data.tabId === activeTabId) {
         setMessages(data.messages);
-        console.log(`[App] ✅ 已加载 ${data.messages.length} 条历史消息到当前 Tab`);
       }
     });
     
@@ -234,7 +226,6 @@ function App() {
     
     // 监听模型配置更新事件
     const unsubscribe = window.deepbot.onModelConfigUpdate(() => {
-      console.log('[App] 收到模型配置更新事件');
       setHasModelConfig(true);
     });
     
@@ -267,7 +258,6 @@ function App() {
         setHasModelConfig(true);
       }
     } catch (error) {
-      console.error('检查模型配置失败:', error);
       setHasModelConfig(false);
       setIsSystemSettingsOpen(true);
     }
@@ -284,7 +274,6 @@ function App() {
   // 监听清空所有消息事件（切换模型时触发）
   useEffect(() => {
     const unsubscribe = window.deepbot.onClearAllMessages(() => {
-      console.log('[App] 收到清空所有消息事件');
       // 清空所有 Tab 的消息
       setTabs(prev => prev.map(tab => ({ ...tab, messages: [] })));
       // 清空当前显示的消息
@@ -299,8 +288,6 @@ function App() {
   // 🔥 监听清空单个 Tab 聊天事件（/new 指令触发）
   useEffect(() => {
     const unsubscribe = window.deepbot.onClearChat?.((data: { sessionId: string }) => {
-      console.log(`[App] 收到清空聊天事件: Tab ${data.sessionId}`);
-      
       // 清空指定 Tab 的消息
       setTabs(prev => prev.map(tab => 
         tab.id === data.sessionId ? { ...tab, messages: [] } : tab
@@ -325,14 +312,11 @@ function App() {
       
       // 如果消息不属于任何已知 Tab，忽略
       if (!tabsRef.current.some(tab => tab.id === targetTabId)) {
-        console.log(`[App] 忽略未知 Tab 的消息: ${targetTabId}`);
         return;
       }
       
       // 🔥 处理用户消息（定时任务的原始内容）
       if ((chunk as any).role === 'user') {
-        console.log('[App] 📥 收到用户消息:', chunk.content);
-        
         // 创建用户消息
         const userMessage: Message = {
           id: chunk.messageId,
@@ -484,8 +468,6 @@ function App() {
         return;
       }
       
-      console.log('收到执行步骤更新:', data);
-      
       // 更新目标 Tab 的消息
       setTabs(prev => prev.map(tab => {
         if (tab.id !== targetTabId) return tab;
@@ -552,9 +534,6 @@ function App() {
         return;
       }
       
-      console.log('[App] 收到错误消息:', error);
-      console.error('消息错误:', error);
-      
       // 添加错误消息（使用更醒目的格式）
       const errorMessage: Message = {
         id: Date.now().toString(),
@@ -606,12 +585,8 @@ function App() {
     // 🔥 如果有上传的图片，将图片路径按上传顺序插入到消息开头
     let messageContent = content;
     if (images && images.length > 0) {
-      console.log('[App] 🖼️ 检测到上传的图片:', images.length, '张');
       const imagePaths = images.map((img, index) => `[参考图${index + 1}]: ${img.path}`).join('\n');
       messageContent = `${imagePaths}\n\n${content}`;
-      console.log('[App] 📝 完整消息内容:\n', messageContent);
-    } else {
-      console.log('[App] ⚠️ 没有检测到上传的图片');
     }
 
     // 添加用户消息（显示原始内容和图片）
@@ -630,7 +605,6 @@ function App() {
       // 发送消息到主进程（使用包含图片路径的完整内容）
       await window.deepbot.sendMessage(messageContent, activeTabId);
     } catch (error) {
-      console.error('发送消息失败:', error);
       updateCurrentTabLoading(false);
       
       // 添加错误消息
@@ -662,7 +636,7 @@ function App() {
       await window.deepbot.stopGeneration(activeTabId);
       updateCurrentTabLoading(false);
     } catch (error) {
-      console.error('停止生成失败:', error);
+      // 忽略停止生成错误
     }
   };
 
