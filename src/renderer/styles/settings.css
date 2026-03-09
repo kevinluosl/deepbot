@@ -75,6 +75,7 @@
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  margin-top: auto;
 }
 
 .settings-title,
@@ -112,6 +113,8 @@
   width: 200px;
   flex-shrink: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-nav {

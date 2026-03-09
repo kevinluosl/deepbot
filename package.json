@@ -1,6 +1,6 @@
 {
   "name": "deepbot",
-  "version": "0.1.0",
+  "version": "0.2.0-beta",
   "description": "DeepBot Terminal - 通用桌面 AI 助手",
   "main": "dist-electron/main/index.js",
   "author": "Kevin Luo @ Deepglint",

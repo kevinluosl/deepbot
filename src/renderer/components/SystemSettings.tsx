@@ -6,7 +6,7 @@
  * - 右侧：设置内容
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QuickStart } from './settings/QuickStart';
 import { ModelConfig } from './settings/ModelConfig';
 import { EnvironmentConfig } from './settings/EnvironmentConfig';
@@ -25,6 +25,20 @@ interface SystemSettingsProps {
 
 export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('quickstart');
+  const [appVersion, setAppVersion] = useState<string>('');
+
+  // 获取应用版本号
+  useEffect(() => {
+    if (isOpen) {
+      window.deepbot.getAppVersion().then((result: any) => {
+        if (result.success && result.version) {
+          setAppVersion(result.version);
+        }
+      }).catch((error: any) => {
+        console.error('获取应用版本失败:', error);
+      });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -83,6 +97,15 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
                 外部通讯
               </button>
             </nav>
+            
+            {/* 版本号显示 */}
+            {appVersion && (
+              <div className="settings-footer">
+                <span className="text-text-tertiary" style={{ fontSize: '12px' }}>
+                  v{appVersion}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* 右侧内容 */}
