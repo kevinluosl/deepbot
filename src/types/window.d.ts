@@ -4,7 +4,6 @@
 
 interface DeepBotAPI {
   version: string;
-  getAppVersion: () => Promise<{ success: boolean; version?: string; error?: string }>;
   sendMessage: (content: string, sessionId?: string) => Promise<any>;
   stopGeneration: (sessionId?: string) => Promise<any>;
   getSubAgents: (sessionId?: string) => Promise<any>;

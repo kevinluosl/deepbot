@@ -1002,23 +1002,6 @@ function registerIpcHandlers() {
       };
     }
   });
-  
-  // 获取应用版本号
-  ipcMain.handle(IPC_CHANNELS.GET_APP_VERSION, async () => {
-    console.log('IPC: 收到获取应用版本请求');
-    
-    try {
-      return {
-        success: true,
-        version: app.getVersion(),
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: getErrorMessage(error),
-      };
-    }
-  });
 }
 
 /**

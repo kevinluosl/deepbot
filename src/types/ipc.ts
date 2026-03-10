@@ -88,7 +88,6 @@ export const IPC_CHANNELS = {
   CONNECTOR_DELETE_PAIRING: 'connector:delete-pairing',
   
   // 应用信息
-  GET_APP_VERSION: 'app:get-version',
 } as const;
 
 // 发送消息请求

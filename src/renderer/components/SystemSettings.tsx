@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { APP_VERSION } from '../../shared/constants/version';
 import { QuickStart } from './settings/QuickStart';
 import { ModelConfig } from './settings/ModelConfig';
 import { EnvironmentConfig } from './settings/EnvironmentConfig';
@@ -25,20 +26,7 @@ interface SystemSettingsProps {
 
 export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('quickstart');
-  const [appVersion, setAppVersion] = useState<string>('');
-
-  // 获取应用版本号
-  useEffect(() => {
-    if (isOpen) {
-      window.deepbot.getAppVersion().then((result: any) => {
-        if (result.success && result.version) {
-          setAppVersion(result.version);
-        }
-      }).catch((error: any) => {
-        console.error('获取应用版本失败:', error);
-      });
-    }
-  }, [isOpen]);
+  const appVersion = APP_VERSION; // 直接使用常量
 
   if (!isOpen) return null;
 

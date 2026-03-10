@@ -60,18 +60,12 @@ const IPC_CHANNELS = {
   CONNECTOR_GET_PAIRING_RECORDS: 'connector:get-pairing-records',
   CONNECTOR_APPROVE_PAIRING: 'connector:approve-pairing',
   CONNECTOR_DELETE_PAIRING: 'connector:delete-pairing',
-  GET_APP_VERSION: 'app:get-version',
 } as const;
 
 /**
  * 暴露给渲染进程的 API
  */
 contextBridge.exposeInMainWorld('deepbot', {
-  // 获取应用版本号
-  getAppVersion: () => {
-    return ipcRenderer.invoke(IPC_CHANNELS.GET_APP_VERSION);
-  },
-
   // 发送消息
   sendMessage: (content: string, sessionId?: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SEND_MESSAGE, { content, sessionId });
