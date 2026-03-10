@@ -209,13 +209,12 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               value={imageGenConfig.apiUrl}
               onChange={(e) => setImageGenConfig({ ...imageGenConfig, apiUrl: e.target.value })}
               placeholder="https://api.example.com/v1"
-              disabled={imageGenConfig.provider !== 'custom'}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500">
               {imageGenConfig.provider === 'custom' 
                 ? '输入兼容 Gemini API 格式的地址' 
-                : '预设提供商的 API 地址（不可修改）'}
+                : '预设提供商的 API 地址（可修改）'}
             </p>
           </div>
 
