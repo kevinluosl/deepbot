@@ -218,12 +218,13 @@ export class SystemConfigStore {
       console.warn('[SystemConfigStore] ⚠️ 数据库迁移检查失败（表可能不存在）:', error);
     }
 
-    // 迁移：添加 provider_type, context_window, last_fetched 字段到 model_config 表
+    // 迁移：添加 provider_type, context_window, last_fetched, api_type 字段到 model_config 表
     try {
       const tableInfo = this.db.prepare("PRAGMA table_info(model_config)").all() as any[];
       const hasProviderTypeColumn = tableInfo.some((col: any) => col.name === 'provider_type');
       const hasContextWindowColumn = tableInfo.some((col: any) => col.name === 'context_window');
       const hasLastFetchedColumn = tableInfo.some((col: any) => col.name === 'last_fetched');
+      const hasApiTypeColumn = tableInfo.some((col: any) => col.name === 'api_type');
       
       if (!hasProviderTypeColumn) {
         console.log('[SystemConfigStore] 🔄 迁移数据库：添加 provider_type 字段到 model_config 表');
@@ -246,7 +247,14 @@ export class SystemConfigStore {
         `);
       }
       
-      if (!hasProviderTypeColumn || !hasContextWindowColumn || !hasLastFetchedColumn) {
+      if (!hasApiTypeColumn) {
+        console.log('[SystemConfigStore] 🔄 迁移数据库：添加 api_type 字段到 model_config 表');
+        this.db.exec(`
+          ALTER TABLE model_config ADD COLUMN api_type TEXT NOT NULL DEFAULT 'openai-completions'
+        `);
+      }
+      
+      if (!hasProviderTypeColumn || !hasContextWindowColumn || !hasLastFetchedColumn || !hasApiTypeColumn) {
         console.log('[SystemConfigStore] ✅ 数据库迁移完成');
       }
     } catch (error) {

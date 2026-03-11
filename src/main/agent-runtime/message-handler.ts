@@ -133,6 +133,17 @@ export class MessageHandler {
           return;
         }
         
+        // 🔥 添加更多事件类型的调试信息
+        if (event.type === 'agent_start') {
+          console.log('🚀 Agent 开始执行');
+        }
+        
+        if (event.type === 'agent_end') {
+          console.log('🏁 Agent 执行完成');
+          console.log(`   最终消息数量: ${event.messages?.length || 0}`);
+          console.log(`   最终响应长度: ${fullResponse.length} 字符`);
+        }
+        
         // 只处理 message_update 事件中的 text_delta
         if (event.type === 'message_update' && event.assistantMessageEvent) {
           const assistantEvent = event.assistantMessageEvent;
@@ -250,6 +261,13 @@ export class MessageHandler {
         // console.log(`🚀 调用 agent.prompt() with maxTurns=15`);
         console.log(`🚀 调用 agent.prompt()，等待 Agent 完成...`);
         
+        // 🔥 添加 Agent 配置调试信息
+        console.log(`📊 Agent 配置信息:`);
+        console.log(`   模型 API: ${this.agent.state.model?.api || 'unknown'}`);
+        console.log(`   模型 ID: ${this.agent.state.model?.id || 'unknown'}`);
+        console.log(`   模型 Provider: ${this.agent.state.model?.provider || 'unknown'}`);
+        console.log(`   模型 BaseURL: ${this.agent.state.model?.baseUrl || 'unknown'}`);
+        
         // 添加超时保护
         const TIMEOUT_MS = TIMEOUTS.AGENT_MESSAGE_TIMEOUT;
         const startTime = Date.now();
@@ -285,6 +303,30 @@ export class MessageHandler {
           console.log(`   工具调用数: ${toolCallCount}`);
           console.log(`   最终响应长度: ${fullResponse.length} 字符`);
           console.log(`   最终响应预览: ${fullResponse.substring(0, 200)}...`);
+          
+          // 🔥 如果响应为空，检查最后一条消息
+          if (fullResponse.trim().length === 0 && this.agent) {
+            const messages = this.agent.state.messages;
+            const lastMessage = messages[messages.length - 1];
+            console.error('⚠️ Agent 完成但响应为空，检查最后一条消息:');
+            console.error('   最后消息角色:', lastMessage?.role);
+            console.error('   最后消息内容类型:', Array.isArray(lastMessage?.content) ? 'array' : typeof lastMessage?.content);
+            
+            if (lastMessage?.role === 'assistant' && Array.isArray(lastMessage.content)) {
+              console.error('   Assistant 消息内容项数:', lastMessage.content.length);
+              lastMessage.content.forEach((item, index) => {
+                if (typeof item === 'object' && item && 'type' in item) {
+                  console.error(`   [${index}] type: ${item.type}`);
+                  if (item.type === 'text') {
+                    console.error(`   [${index}] text: "${(item as any).text || ''}"`);
+                  }
+                } else {
+                  console.error(`   [${index}] raw: ${JSON.stringify(item)}`);
+                }
+              });
+            }
+          }
+          
           console.log(`🎯 agent.prompt() 完成，准备返回结果...`);
           resolvePrompt?.();
         }).catch((error) => {
@@ -295,6 +337,18 @@ export class MessageHandler {
           }
           
           console.error(`❌ agent.prompt() 失败:`, error);
+          console.error(`   错误类型: ${error?.constructor?.name || 'unknown'}`);
+          console.error(`   错误消息: ${error?.message || 'no message'}`);
+          console.error(`   错误堆栈: ${error?.stack || 'no stack'}`);
+          
+          // 🔥 检查是否是 Gemini 相关的错误
+          if (this.agent?.state.model?.api === 'google-generative-ai') {
+            console.error(`🔍 Gemini 模型调试信息:`);
+            console.error(`   模型 ID: ${this.agent.state.model.id}`);
+            console.error(`   Base URL: ${this.agent.state.model.baseUrl}`);
+            console.error(`   Provider: ${this.agent.state.model.provider}`);
+          }
+          
           rejectPrompt?.(error);
         });
         

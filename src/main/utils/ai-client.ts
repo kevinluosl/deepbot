@@ -57,7 +57,7 @@ let cachedPiAI: any = null;
 /**
  * 缓存的 Model 实例（连接池）
  */
-let cachedModel: Model<'openai-completions'> | null = null;
+let cachedModel: Model<'openai-completions' | 'google-generative-ai'> | null = null;
 
 /**
  * 上次使用的配置 Key（用于检测配置变更）
@@ -101,7 +101,7 @@ export function clearAICache(): void {
  * @param options - 调用选项
  * @returns Model 实例
  */
-function createModel(options: AICallOptions = {}): Model<'openai-completions'> {
+function createModel(options: AICallOptions = {}): Model<'openai-completions' | 'google-generative-ai'> {
   let config;
   try {
     config = getConfig();
@@ -114,11 +114,33 @@ function createModel(options: AICallOptions = {}): Model<'openai-completions'> {
     baseUrl = config.baseUrl,
   } = options;
   
+  // 根据 API 类型创建不同的模型
+  if (config.apiType === 'google-generative-ai') {
+    return {
+      api: 'google-generative-ai',
+      id: model,
+      name: config.modelName,
+      provider: config.providerName,
+      input: ['text', 'image'],
+      reasoning: false,
+      baseUrl: baseUrl,
+      contextWindow: 32768,
+      maxTokens: 8192,
+      cost: {
+        input: 0,
+        output: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+      },
+    } as Model<'google-generative-ai'>;
+  }
+  
+  // 默认：OpenAI 兼容模式
   return {
     api: 'openai-completions',
     id: model,
     name: config.modelName,
-    provider: config.providerName, // 始终使用配置中的 provider
+    provider: config.providerName,
     input: ['text'],
     reasoning: false,
     baseUrl: baseUrl,
@@ -130,7 +152,7 @@ function createModel(options: AICallOptions = {}): Model<'openai-completions'> {
       cacheRead: 0,
       cacheWrite: 0,
     },
-  };
+  } as Model<'openai-completions'>;
 }
 
 /**
@@ -139,35 +161,33 @@ function createModel(options: AICallOptions = {}): Model<'openai-completions'> {
  * @param options - 调用选项
  * @returns Model 实例
  */
-function getOrCreateModel(options: AICallOptions = {}): Model<'openai-completions'> {
+function getOrCreateModel(options: AICallOptions = {}): Model<'openai-completions' | 'google-generative-ai'> {
   let config;
   try {
     config = getConfig();
   } catch (error) {
     throw new Error('模型未配置，无法创建 Model 实例');
   }
-  
-  // 🔥 如果请求使用快速模型且配置了 modelId2，使用 modelId2
+
+  // 如果请求使用快速模型且配置了 modelId2，使用 modelId2
   let modelId = options.model || config.modelId;
   if (options.useFastModel && config.modelId2) {
     modelId = config.modelId2;
-    console.log(`[AI Client] 🚀 使用快速模型: ${modelId}`);
   }
-  
-  // 生成配置 Key（包含 useFastModel 标志）
-  const configKey = generateConfigKey(config, { ...options, model: modelId });
-  
+
+  // 生成配置 Key（包含 useFastModel 标志和 apiType）
+  const configKey = generateConfigKey(config, { ...options, model: modelId }) + `-${config.apiType}`;
+
   // 如果配置未变且有缓存，直接返回
   if (cachedModel && lastConfigKey === configKey) {
     console.log('[AI Client] ♻️ 复用缓存的 Model 实例');
     return cachedModel;
   }
-  
+
   // 配置变更或首次创建，创建新 Model
-  console.log('[AI Client] 🆕 创建新的 Model 实例');
   cachedModel = createModel({ ...options, model: modelId });
   lastConfigKey = configKey;
-  
+
   return cachedModel;
 }
 
@@ -191,7 +211,7 @@ export async function callAI(
   options: AICallOptions = {}
 ): Promise<AIResponse> {
   let config;
-  
+
   try {
     config = getConfig();
   } catch (error) {
@@ -199,66 +219,71 @@ export async function callAI(
     console.error('[AI Client] ❌', errorMsg);
     throw new Error(errorMsg);
   }
-  
+
   const {
     temperature = 0.7,
     maxTokens,
     apiKey = config.apiKey,
     signal,
   } = options;
-  
+
   // 检查是否已被取消
   if (signal?.aborted) {
     const err = new Error('AI 调用被取消');
     err.name = 'AbortError';
     throw err;
   }
-  
+
   if (!apiKey) {
     throw new Error('AI API Key 未配置，请在系统设置中配置 AI 模型');
   }
-  
-  // 🔥 使用连接池获取 Model（复用实例）
+
+  // 使用连接池获取 Model（复用实例）
   const model = getOrCreateModel(options);
-  
-  // 🔥 使用单例模式获取 pi-ai 模块（避免重复导入）
+
+  // 使用单例模式获取 pi-ai 模块（避免重复导入）
   if (!cachedPiAI) {
-    console.log('[AI Client] 📦 首次导入 pi-ai 模块');
     // eslint-disable-next-line no-eval
     cachedPiAI = await eval('import("@mariozechner/pi-ai")');
   }
-  
+
   const piAI = cachedPiAI;
-  
+
   // 转换消息格式
   const formattedMessages = messages.map(msg => ({
     role: msg.role,
     content: msg.content,
     timestamp: Date.now(),
   }));
-  
+
   // 构建 Context
   const context: any = {
     messages: formattedMessages,
   };
-  
-  // 🔥 构建 pi-ai options（启用 Keep-Alive）
+
+  // 构建 pi-ai options（启用 Keep-Alive）
   const piOptions: any = {
     temperature,
     apiKey: apiKey,
-    // 尝试启用 HTTP Keep-Alive（如果 pi-ai 支持）
     keepAlive: true,
     timeout: 30000,
   };
-  
+
+  // 如果是 Google Generative AI，添加特殊的认证处理
+  if (model.api === 'google-generative-ai') {
+    const { parseGeminiAuth } = await import('./gemini-auth');
+    const authHeaders = parseGeminiAuth(apiKey);
+    piOptions.headers = authHeaders.headers;
+  }
+
   if (maxTokens) {
     piOptions.maxTokens = maxTokens;
   }
-  
+
   try {
     // 创建一个可以被 signal 中止的 Promise
     const completePromise = piAI.complete(model, context, piOptions);
-    
+
     // 如果有 signal，使用 Promise.race 来实现中止
     let result;
     if (signal) {
@@ -269,44 +294,56 @@ export async function callAI(
           reject(err);
           return;
         }
-        
+
         const onAbort = () => {
-          console.log('[AI Client] ⏹️ 收到停止信号，中止 AI 调用');
           const err = new Error('AI 调用被取消');
           err.name = 'AbortError';
           reject(err);
         };
-        
+
         signal.addEventListener('abort', onAbort, { once: true });
       });
-      
+
       result = await Promise.race([completePromise, abortPromise]);
     } else {
       result = await completePromise;
     }
-    
+
     // 检查是否有错误
     if (result.stopReason === 'error' && result.errorMessage) {
-      console.error('[AI Client] ❌ AI 调用失败:', result.errorMessage);
       throw new Error(`AI API 错误: ${result.errorMessage}`);
     }
-    
+
     // 提取文本内容
-    // AssistantMessage.content 是 (TextContent | ThinkingContent | ToolCall)[]
     let responseText = '';
     for (const item of result.content) {
       if (item.type === 'text') {
-        responseText += item.text;
-      } else if (item.type === 'thinking') {
-        // 可选：是否包含思考内容
-        // responseText += item.thinking;
+        // 对于 Gemini，优先使用 textSignature 中的内容
+        if (item.textSignature && (!item.text || item.text.trim().length === 0)) {
+          try {
+            // 尝试 Base64 解码
+            const decoded = Buffer.from(item.textSignature, 'base64').toString('utf-8');
+            responseText += decoded;
+          } catch (decodeError) {
+            responseText += item.textSignature;
+          }
+        } else {
+          responseText += item.text;
+        }
       }
     }
-    
+
+    // 如果仍然为空，尝试从 pi-ai 的 text 属性获取
+    if (!responseText || responseText.trim().length === 0) {
+      if (result.text && typeof result.text === 'string') {
+        responseText = result.text;
+      }
+    }
+
     if (!responseText || responseText.trim().length === 0) {
       throw new Error('AI 返回空响应');
     }
-    
+
     // 返回响应
     return {
       content: responseText.trim(),
@@ -317,8 +354,8 @@ export async function callAI(
       },
     };
   } catch (error) {
-    console.error('AI API 调用失败:', error);
-    
+    console.error('[AI Client] ❌ AI API 调用失败:', error);
+
     // 提供更友好的错误提示
     let errorMessage = 'AI API 调用失败';
     if (error instanceof Error) {
@@ -332,7 +369,7 @@ export async function callAI(
         errorMessage = `AI API 调用失败: ${error.message}`;
       }
     }
-    
+
     throw new Error(errorMessage);
   }
 }
@@ -351,31 +388,30 @@ export async function warmupAIConnection(): Promise<boolean> {
     console.log('[AI Client] ✅ AI 连接已预热，跳过');
     return true;
   }
-  
+
   try {
     console.log('[AI Client] 🔥 开始预热 AI 连接...');
-    
+
     const startTime = Date.now();
-    
-    // 发送一个极简请求来建立连接（🔥 使用快速模型）
+
+    // 发送一个极简请求来建立连接（使用快速模型）
     await callAI([
-      { role: 'user', content: 'ping' }
+      { role: 'user', content: 'Hi' }
     ], {
       temperature: 0,
-      maxTokens: 1,
-      useFastModel: true, // 🔥 使用快速模型（预热更快）
+      maxTokens: 10,
+      useFastModel: true,
     });
-    
+
     const duration = Date.now() - startTime;
-    
+
     isWarmedUp = true;
     console.log(`[AI Client] ✅ AI 连接预热完成 (耗时: ${duration}ms)`);
-    
+
     return true;
   } catch (error) {
     // 预热失败不影响后续使用，只记录警告
-    const errorMsg = error instanceof Error ? error.message : '未知错误';
-    console.warn('[AI Client] ⚠️ AI 连接预热失败:', errorMsg);
+    console.error('[AI Client] ❌ AI 连接预热失败:', error instanceof Error ? error.message : '未知错误');
     return false;
   }
 }

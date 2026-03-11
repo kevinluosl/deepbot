@@ -17,14 +17,14 @@ import { SystemConfigStore } from '../database/system-config-store';
 export class AgentInitializer {
   private workspaceDir: string;
   private sessionId: string;
-  private model: Model<'openai-completions'>;
+  private model: Model<'openai-completions' | 'google-generative-ai'>;
   private apiKey: string;
   private configStore: SystemConfigStore;
 
   constructor(
     workspaceDir: string,
     sessionId: string,
-    model: Model<'openai-completions'>,
+    model: Model<'openai-completions' | 'google-generative-ai'>,
     apiKey: string
   ) {
     this.workspaceDir = workspaceDir;

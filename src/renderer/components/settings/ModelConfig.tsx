@@ -8,13 +8,14 @@ import React, { useState, useEffect } from 'react';
 import { PROVIDER_PRESETS } from '../../../shared/config/default-configs';
 
 interface ModelConfig {
-  providerType: 'qwen' | 'deepseek' | 'custom';
+  providerType: 'qwen' | 'deepseek' | 'gemini' | 'custom';
   providerId: string;
   providerName: string;
   baseUrl: string;
   modelId: string;
   modelId2?: string;       // 快速模型 ID（可选）
   modelName: string;
+  apiType: string;         // API 类型
   apiKey: string;
   contextWindow?: number;  // 上下文窗口大小
   lastFetched?: number;    // 最后获取时间
@@ -33,6 +34,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
     modelId: PROVIDER_PRESETS.qwen.defaultModelId,
     modelId2: PROVIDER_PRESETS.qwen.defaultModelId2,  // 设置快速模型默认值
     modelName: PROVIDER_PRESETS.qwen.defaultModelId,
+    apiType: PROVIDER_PRESETS.qwen.apiType,
     apiKey: '',
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -54,10 +56,11 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success && actualResult.config) {
-        // 确保 providerType 字段存在（兼容旧数据）
+        // 确保 providerType 和 apiType 字段存在（兼容旧数据）
         const loadedConfig = {
           ...actualResult.config,
           providerType: actualResult.config.providerType || 'qwen', // 默认为 qwen
+          apiType: actualResult.config.apiType || 'openai-completions', // 默认为 OpenAI 兼容
         };
         setConfig(loadedConfig);
       }
@@ -67,7 +70,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   };
 
   // 处理提供商类型变化
-  const handleProviderTypeChange = (providerType: 'qwen' | 'deepseek' | 'custom') => {
+  const handleProviderTypeChange = (providerType: 'qwen' | 'deepseek' | 'gemini' | 'custom') => {
     const preset = PROVIDER_PRESETS[providerType];
     
     setConfig({
@@ -79,6 +82,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       modelId: preset.defaultModelId,
       modelId2: preset.defaultModelId2 || undefined,  // 设置快速模型默认值
       modelName: preset.defaultModelId,
+      apiType: preset.apiType,
     });
   };
 
@@ -160,11 +164,12 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         </label>
         <select
           value={config.providerType}
-          onChange={(e) => handleProviderTypeChange(e.target.value as 'qwen' | 'deepseek' | 'custom')}
+          onChange={(e) => handleProviderTypeChange(e.target.value as 'qwen' | 'deepseek' | 'gemini' | 'custom')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="qwen">通义千问 (Qwen)</option>
           <option value="deepseek">DeepSeek</option>
+          <option value="gemini">Google Gemini</option>
           <option value="custom">自定义</option>
         </select>
         <p className="mt-1 text-xs text-gray-500">
@@ -186,7 +191,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         />
         <p className="mt-1 text-xs text-gray-500">
           {config.providerType === 'custom' 
-            ? '输入兼容 OpenAI API 格式的地址' 
+            ? '输入兼容 OpenAI API 或 Google Generative AI 格式的地址' 
             : '预设提供商的 API 地址（可修改）'}
         </p>
       </div>
@@ -205,13 +210,16 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
               ? 'qwen-max' 
               : config.providerType === 'deepseek' 
                 ? 'deepseek-chat' 
-                : 'model-id'
+                : config.providerType === 'gemini'
+                  ? 'gemini-3-pro-preview'
+                  : 'model-id'
           }
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
           {config.providerType === 'qwen' && '推荐: qwen-max（高质量）或 qwen-plus（平衡）'}
           {config.providerType === 'deepseek' && '推荐: deepseek-chat'}
+          {config.providerType === 'gemini' && '推荐: gemini-3-pro-preview（高质量）或 gemini-3-flash-preview（快速）'}
           {config.providerType === 'custom' && '输入主模型 ID'}
         </p>
       </div>
@@ -230,13 +238,16 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
               ? 'qwen-plus' 
               : config.providerType === 'deepseek' 
                 ? 'deepseek-chat' 
-                : 'fast-model-id'
+                : config.providerType === 'gemini'
+                  ? 'gemini-3-flash-preview'
+                  : 'fast-model-id'
           }
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
           {config.providerType === 'qwen' && '推荐: qwen-plus（用于轻量级任务，如语义判断）'}
           {config.providerType === 'deepseek' && '推荐: deepseek-chat（与主模型相同）'}
+          {config.providerType === 'gemini' && '推荐: gemini-3-flash-preview（用于轻量级任务）'}
           {config.providerType === 'custom' && '输入快速模型 ID（用于轻量级任务）'}
         </p>
       </div>
@@ -250,11 +261,17 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           type="password"
           value={config.apiKey}
           onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-          placeholder="sk-..."
+          placeholder={
+            config.providerType === 'gemini' 
+              ? 'AIza...' 
+              : 'sk-...'
+          }
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          API 密钥将加密存储在本地
+          {config.providerType === 'gemini' 
+            ? 'Google AI Studio API Key（以 AIza 开头）将加密存储在本地' 
+            : 'API 密钥将加密存储在本地'}
         </p>
       </div>
 

@@ -24,6 +24,7 @@ export function getModelConfig(db: Database.Database): ModelConfig | null {
       baseUrl: row.base_url,
       modelId: row.model_id,
       modelName: row.model_name,
+      apiType: row.api_type || 'openai-completions', // 默认 OpenAI 兼容
       modelId2: row.model_id_2 || undefined, // 快速模型（选填）
       apiKey: row.api_key,
       contextWindow: row.context_window,
@@ -41,8 +42,8 @@ export function getModelConfig(db: Database.Database): ModelConfig | null {
 export function saveModelConfig(db: Database.Database, config: ModelConfig): void {
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO model_config 
-    (id, provider_type, provider_id, provider_name, base_url, model_id, model_name, model_id_2, api_key, context_window, last_fetched)
-    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, provider_type, provider_id, provider_name, base_url, model_id, model_name, api_type, model_id_2, api_key, context_window, last_fetched)
+    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -52,6 +53,7 @@ export function saveModelConfig(db: Database.Database, config: ModelConfig): voi
     config.baseUrl,
     config.modelId,
     config.modelName,
+    config.apiType || 'openai-completions', // 默认 OpenAI 兼容
     config.modelId2 || null, // 快速模型（选填）
     config.apiKey,
     config.contextWindow || null,

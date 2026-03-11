@@ -141,8 +141,25 @@ export function registerModelConfigHandlers(): void {
         // eslint-disable-next-line no-eval
         const piAI = await eval('import("@mariozechner/pi-ai")');
         
-        // 创建测试模型
-        const model = {
+        // 创建测试模型（根据 API 类型）
+        const apiType = request.config.apiType || 'openai-completions';
+        const model = apiType === 'google-generative-ai' ? {
+          api: 'google-generative-ai' as const,
+          id: request.config.modelId,
+          name: request.config.modelName,
+          provider: request.config.providerId,
+          input: ['text', 'image'] as const,
+          reasoning: false,
+          baseUrl: request.config.baseUrl,
+          contextWindow: 32768,
+          maxTokens: 8192,
+          cost: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+          },
+        } : {
           api: 'openai-completions' as const,
           id: request.config.modelId,
           name: request.config.modelName,

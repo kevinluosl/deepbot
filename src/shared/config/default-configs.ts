@@ -14,18 +14,28 @@ export const PROVIDER_PRESETS = {
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     defaultModelId: 'qwen3.5-plus',
     defaultModelId2: 'qwen-plus',  // 快速模型
+    apiType: 'openai-completions',
   },
   deepseek: {
     name: 'DeepSeek',
     baseUrl: 'https://api.deepseek.com/v1',
     defaultModelId: 'deepseek-chat',
     defaultModelId2: 'deepseek-chat',  // 快速模型（与主模型相同）
+    apiType: 'openai-completions',
+  },
+  gemini: {
+    name: 'Google Gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    defaultModelId: 'gemini-3-pro-preview',
+    defaultModelId2: 'gemini-3-flash-preview',  // 快速模型
+    apiType: 'google-generative-ai',
   },
   custom: {
     name: '自定义',
     baseUrl: '',
     defaultModelId: '',
     defaultModelId2: '',  // 快速模型
+    apiType: 'openai-completions',
   },
 } as const;
 
@@ -79,6 +89,7 @@ export const DEFAULT_MODEL_CONFIG = {
   modelId: PROVIDER_PRESETS.qwen.defaultModelId,
   modelId2: PROVIDER_PRESETS.qwen.defaultModelId2,  // 快速模型默认值
   modelName: PROVIDER_PRESETS.qwen.defaultModelId,
+  apiType: PROVIDER_PRESETS.qwen.apiType,
   apiKey: '',
 };
 

@@ -8,15 +8,17 @@
  * 
  */
 
+import type { Agent, AgentMessage } from '@mariozechner/pi-agent-core';
+import type { Model } from '@mariozechner/pi-ai';
 import { getConfig } from '../config';
 import { wrapToolWithAbortSignal, OperationTracker, wrapToolWithDuplicateDetection } from '../tools/tool-abort';
 import type { AgentRuntimeConfig, AgentStateInfo, AgentInstanceManager } from './types';
 import { AgentInitializer } from './agent-initializer';
 import { MessageHandler } from './message-handler';
 import { StepTracker } from './step-tracker';
-import type { TaskPlan } from './step-tracker';
 import { callAI } from '../utils/ai-client';
 import { getErrorMessage } from '../../shared/utils/error-handler';
+import type { TaskPlan } from '../../types/task-plan';
 
 /**
  * Agent Runtime 类
@@ -61,11 +63,41 @@ export class AgentRuntime {
   constructor(workspaceDir: string, sessionId?: string) {
     this.config = getConfig();
     
-    // 构建运行时配置
-    this.runtimeConfig = {
-      workspaceDir: workspaceDir, // 必须提供工作目录，不使用默认值
-      sessionId: sessionId || 'default',
-      model: {
+    // 🔥 添加配置调试信息
+    console.log('🔧 AgentRuntime 配置调试:');
+    console.log('   原始配置:', {
+      apiKey: this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'none',
+      baseUrl: this.config.baseUrl,
+      modelId: this.config.modelId,
+      modelName: this.config.modelName,
+      providerName: this.config.providerName,
+      apiType: this.config.apiType,
+      modelId2: this.config.modelId2,
+    });
+    
+    // 🔥 根据配置的 apiType 创建正确的模型对象
+    let model: Model<'openai-completions' | 'google-generative-ai'>;
+    
+    if (this.config.apiType === 'google-generative-ai') {
+      model = {
+        api: 'google-generative-ai',
+        id: this.config.modelId,
+        name: this.config.modelName,
+        provider: this.config.providerName,
+        input: ['text', 'image'],
+        reasoning: false,
+        baseUrl: this.config.baseUrl,
+        contextWindow: 32768,
+        maxTokens: 8192,
+        cost: {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+        },
+      } as Model<'google-generative-ai'>;
+    } else {
+      model = {
         api: 'openai-completions',
         id: this.config.modelId,
         name: this.config.modelName,
@@ -81,7 +113,14 @@ export class AgentRuntime {
           cacheRead: 0,
           cacheWrite: 0,
         },
-      },
+      } as Model<'openai-completions'>;
+    }
+    
+    // 构建运行时配置
+    this.runtimeConfig = {
+      workspaceDir: workspaceDir, // 必须提供工作目录，不使用默认值
+      sessionId: sessionId || 'default',
+      model: model,
       apiKey: this.config.apiKey,
       baseUrl: this.config.baseUrl,
       maxConcurrentSubAgents: 8,
@@ -89,8 +128,11 @@ export class AgentRuntime {
     
     console.log('✅ AgentRuntime 构造函数完成');
     console.log('   模型:', this.runtimeConfig.model.id);
+    console.log('   API 类型:', this.runtimeConfig.model.api);
     console.log('   提供商:', this.runtimeConfig.model.provider);
     console.log('   Base URL:', this.runtimeConfig.baseUrl);
+    console.log('   输入类型:', this.runtimeConfig.model.input.join(', '));
+    console.log('   API Key 状态:', this.runtimeConfig.apiKey ? '已配置' : '未配置');
     console.log('   工作区:', this.runtimeConfig.workspaceDir);
     console.log('   会话ID:', this.runtimeConfig.sessionId);
     
@@ -984,6 +1026,47 @@ ${lastPart}
       const wasAborted = this.messageHandler.wasAbortedByUser();
       
       if (fullResponse.trim().length === 0 && !wasAborted) {
+        // 🔥 添加更多调试信息，特别是针对 Gemini 模型
+        console.error('❌ AI 返回空响应，开始诊断...');
+        console.error('   模型配置:', {
+          modelId: this.runtimeConfig.model.id,
+          apiType: this.runtimeConfig.model.api,
+          baseUrl: this.runtimeConfig.model.baseUrl,
+          hasApiKey: !!this.runtimeConfig.apiKey,
+          apiKeyPrefix: this.runtimeConfig.apiKey ? 
+            `${this.runtimeConfig.apiKey.substring(0, 8)}...` : 'none'
+        });
+        
+        // 检查 Agent 状态
+        if (this.instanceManager.agent) {
+          const messages = this.instanceManager.agent.state.messages;
+          const lastMessage = messages[messages.length - 1];
+          console.error('   Agent 状态:', {
+            totalMessages: messages.length,
+            lastMessageRole: lastMessage?.role,
+            lastMessageContentType: Array.isArray(lastMessage?.content) ? 'array' : typeof lastMessage?.content,
+            lastMessageContentLength: Array.isArray(lastMessage?.content) ? 
+              lastMessage.content.length : 
+              (typeof lastMessage?.content === 'string' ? lastMessage.content.length : 0)
+          });
+          
+          // 如果最后一条消息是 assistant，检查其内容
+          if (lastMessage?.role === 'assistant' && Array.isArray(lastMessage.content)) {
+            const contentTypes = lastMessage.content.map(c => 
+              typeof c === 'object' && c && 'type' in c ? c.type : 'unknown'
+            );
+            console.error('   最后一条 assistant 消息内容类型:', contentTypes);
+            
+            // 检查是否有文本内容
+            const textContent = lastMessage.content
+              .filter(c => typeof c === 'object' && c && 'type' in c && c.type === 'text')
+              .map(c => (c as any).text || '')
+              .join('');
+            console.error('   提取的文本内容长度:', textContent.length);
+            console.error('   提取的文本内容预览:', textContent.substring(0, 200));
+          }
+        }
+        
         throw new Error('AI 返回空响应，可能是 API 配置错误或网络问题');
       }
       

@@ -192,13 +192,14 @@ export async function handleSetWorkspaceConfig(
  */
 export async function handleSetModelConfig(
   params: Partial<{
-    providerType: 'qwen' | 'deepseek' | 'custom';
+    providerType: 'qwen' | 'deepseek' | 'gemini' | 'custom';
     providerId: string;
     providerName: string;
     baseUrl: string;
     modelId: string;
     modelId2: string;
     modelName: string;
+    apiType: string;
     apiKey: string;
     contextWindow: number;
   }>,
@@ -230,6 +231,7 @@ export async function handleSetModelConfig(
       modelId: params.modelId || currentConfig?.modelId || DEFAULT_MODEL_CONFIG.modelId,
       modelId2: params.modelId2 !== undefined ? params.modelId2 : currentConfig?.modelId2,
       modelName: params.modelName || currentConfig?.modelName || DEFAULT_MODEL_CONFIG.modelName,
+      apiType: params.apiType || currentConfig?.apiType || DEFAULT_MODEL_CONFIG.apiType,
       apiKey: params.apiKey || currentConfig?.apiKey || DEFAULT_MODEL_CONFIG.apiKey,
       contextWindow: params.contextWindow || currentConfig?.contextWindow,
       lastFetched: params.contextWindow ? Date.now() : currentConfig?.lastFetched,
