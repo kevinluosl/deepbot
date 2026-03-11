@@ -40,6 +40,11 @@ export const IMAGE_GENERATION_PROVIDER_PRESETS = {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     defaultModelId: 'gemini-3-pro-image-preview',
   },
+  qwen: {
+    name: '通义千问 Qwen-Image',
+    baseUrl: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+    defaultModelId: 'qwen-image-2.0-pro',
+  },
   custom: {
     name: '自定义',
     baseUrl: '',

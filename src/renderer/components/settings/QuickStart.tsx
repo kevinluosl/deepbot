@@ -60,7 +60,7 @@ export function QuickStart(_props: QuickStartProps) {
           <div style={{ marginBottom: '10px' }}>
             <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>3. 配置图片生成（可选）</span>
             <div style={{ marginLeft: '16px', marginTop: '4px' }}>
-              前往「工具配置」→「图片生成工具」，配置通义千问或 Gemini 的 API 密钥，启用 AI 绘图功能
+              前往「工具配置」→「图片生成工具」，配置通义千问万相、Gemini 或自定义 API 密钥，启用 AI 绘图功能
             </div>
           </div>
           <div>
