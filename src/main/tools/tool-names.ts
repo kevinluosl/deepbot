@@ -51,6 +51,7 @@ export const TOOL_NAMES = {
   API_GET_NAME: 'api_get_name',
   API_SET_NAME: 'api_set_name',
   API_GET_SESSION_FILE_PATH: 'api_get_session_file_path',
+  API_GET_DATETIME: 'api_get_datetime',
   
   // 连接器工具
   CONNECTOR_SEND_IMAGE: 'connector_send_image',

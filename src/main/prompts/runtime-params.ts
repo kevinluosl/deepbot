@@ -10,41 +10,7 @@
 
 import os from 'os';
 import type { RuntimeInfo, RuntimeParams } from '../../types/prompt';
-
-/**
- * 获取用户时区
- */
-function getUserTimezone(): string {
-  try {
-    // 尝试从 Intl API 获取时区
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  } catch {
-    // 降级到默认时区
-    return 'Asia/Shanghai';
-  }
-}
-
-/**
- * 格式化当前时间
- */
-function formatCurrentTime(timezone: string): string {
-  try {
-    const now = new Date();
-    return now.toLocaleString('zh-CN', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
-  } catch {
-    // 降级到 ISO 格式
-    return new Date().toISOString().replace('T', ' ').slice(0, 19);
-  }
-}
+import { getSystemTimezone, formatCurrentTime } from '../../shared/utils/datetime-utils';
 
 /**
  * 构建运行时参数
@@ -57,8 +23,8 @@ export function buildRuntimeParams(params: {
   model: string;
   sessionId?: string;
 }): RuntimeParams {
-  const userTimezone = getUserTimezone();
-  const userTime = formatCurrentTime(userTimezone);
+  const userTimezone = getSystemTimezone();
+  const userTime = formatCurrentTime({ timezone: userTimezone });
 
   const runtimeInfo: RuntimeInfo = {
     agentId: params.agentId,

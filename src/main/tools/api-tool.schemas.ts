@@ -156,3 +156,21 @@ export const SetNameConfigSchema = Type.Object({
  */
 export const GetSessionFilePathSchema = Type.Object({});
 
+/**
+ * 获取日期时间 Schema
+ */
+export const GetDateTimeSchema = Type.Object({
+  format: Type.Optional(Type.Union([
+    Type.Literal('full', { description: '完整格式：2026年3月11日 星期二 15:51:30 (Asia/Shanghai)' }),
+    Type.Literal('date', { description: '仅日期：2026年3月11日 星期二' }),
+    Type.Literal('time', { description: '仅时间：15:51:30' }),
+    Type.Literal('datetime', { description: '日期时间：2026年3月11日 15:51:30' }),
+    Type.Literal('iso', { description: 'ISO格式：2026-03-11T15:51:30+08:00' }),
+    Type.Literal('timestamp', { description: '时间戳：1741766290000' }),
+  ], { default: 'full' })),
+  
+  timezone: Type.Optional(Type.String({
+    description: '时区（如：Asia/Shanghai, UTC, America/New_York），默认为系统时区',
+  })),
+});
+

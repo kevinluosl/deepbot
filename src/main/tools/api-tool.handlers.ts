@@ -773,3 +773,125 @@ export async function handleGetSessionFilePath(
     };
   }
 }
+// ==================== 获取日期时间 ====================
+
+/**
+ * 获取系统当前日期时间和时区信息
+ */
+export async function handleGetDateTime(
+  args: { format?: string; timezone?: string },
+  signal?: AbortSignal
+): Promise<ToolResult> {
+  try {
+    console.log('[API Tool] 🕐 获取日期时间:', args);
+    
+    // 检查是否被取消
+    if (signal?.aborted) {
+      const err = new Error('获取日期时间操作被取消');
+      err.name = 'AbortError';
+      throw err;
+    }
+    
+    // 使用统一的日期时间工具
+    const { getSystemTimezone, getDetailedDateTime, formatCurrentDate, formatCurrentTimeOnly } = await import('../../shared/utils/datetime-utils');
+    
+    const format = args.format || 'full';
+    const timezone = args.timezone || getSystemTimezone();
+    
+    // 获取详细的日期时间信息
+    const dateTimeInfo = getDetailedDateTime({ timezone });
+    
+    // 根据格式返回相应的时间字符串
+    let formattedTime: string;
+    let description: string;
+    
+    switch (format) {
+      case 'date':
+        formattedTime = dateTimeInfo.formatted.date;
+        description = '仅日期';
+        break;
+        
+      case 'time':
+        formattedTime = dateTimeInfo.formatted.time;
+        description = '仅时间';
+        break;
+        
+      case 'datetime':
+        formattedTime = dateTimeInfo.formatted.datetime;
+        description = '日期时间';
+        break;
+        
+      case 'iso':
+        formattedTime = dateTimeInfo.iso;
+        description = 'ISO 格式';
+        break;
+        
+      case 'timestamp':
+        formattedTime = dateTimeInfo.timestamp.toString();
+        description = '时间戳（毫秒）';
+        break;
+        
+      case 'full':
+      default:
+        formattedTime = `${dateTimeInfo.formatted.date} ${dateTimeInfo.formatted.time} (${timezone})`;
+        description = '完整格式';
+        break;
+    }
+    
+    // 构建详细信息
+    const details = {
+      success: true,
+      currentTime: formattedTime,
+      format: format,
+      timezone: timezone,
+      systemTimezone: dateTimeInfo.timezone,
+      timestamp: dateTimeInfo.timestamp,
+      iso: dateTimeInfo.iso,
+      offsetString: dateTimeInfo.offsetString,
+      year: dateTimeInfo.year,
+      month: dateTimeInfo.month,
+      day: dateTimeInfo.day,
+      hour: dateTimeInfo.hour,
+      minute: dateTimeInfo.minute,
+      second: dateTimeInfo.second,
+      weekday: dateTimeInfo.weekday,
+    };
+    
+    // 构建响应消息
+    let message = `🕐 当前时间（${description}）：${formattedTime}`;
+    
+    if (format === 'full') {
+      message += `\n\n📊 详细信息：`;
+      message += `\n• 系统时区：${dateTimeInfo.timezone}`;
+      message += `\n• 时区偏移：UTC${dateTimeInfo.offsetString}`;
+      message += `\n• 时间戳：${dateTimeInfo.timestamp}`;
+      message += `\n• ISO 格式：${dateTimeInfo.iso}`;
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: message,
+        },
+      ],
+      details,
+    };
+  } catch (error) {
+    console.error('[API Tool] ❌ 获取日期时间失败:', error);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ 获取日期时间失败: ${getErrorMessage(error)}`,
+        },
+      ],
+      details: {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      isError: true,
+    };
+  }
+}

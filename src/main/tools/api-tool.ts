@@ -126,6 +126,17 @@ export const apiToolPlugin: ToolPlugin = {
           return handlers.handleGetSessionFilePath(sessionId, signal);
         },
       },
+      
+      // 获取日期时间
+      {
+        name: TOOL_NAMES.API_GET_DATETIME,
+        label: '获取日期时间',
+        description: '获取系统当前日期时间和时区信息。支持多种格式：完整格式、仅日期、仅时间、ISO格式、时间戳等',
+        parameters: schemas.GetDateTimeSchema,
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          return handlers.handleGetDateTime(args, signal);
+        },
+      },
     ];
   },
 };
