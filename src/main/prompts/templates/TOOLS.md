@@ -414,9 +414,10 @@ google-chrome --remote-debugging-port=9222
 ## Skill Manager（Skill 管理）
 
 ### 核心原则
-1. 执行 Skill 前必须先调用 `info` 获取使用说明
-2. 从 `readme` 中提取正确的执行命令（完整路径、脚本名、参数格式）
-3. 不要猜测文件名和参数，只有 SKILL.md 才有正确答案
+1. **执行 Skill 前必须先调用 `info` 获取 SKILL.md**：了解正确的使用方式、配置要求、执行命令
+2. **检查并完成配置**：从 SKILL.md 中确认所需配置（如 API Key、环境变量），缺失时先自动配置或要求用户提供
+3. **从 `readme` 中提取正确的执行命令**：完整路径、脚本名、参数格式，不要猜测
+4. **适用于所有安装位置**：无论 Skill 安装在配置目录还是其他目录，都遵循相同流程
 
 ### 使用时机
 用户说了以下关键词时使用：
@@ -502,12 +503,58 @@ google-chrome --remote-debugging-port=9222
 }
 ```
 
-### 🔴 强制要求：执行 Skill 前必须先调用 `info` 获取使用说明
+### 🔴 强制要求：执行 Skill 的完整流程（5 步，缺一不可）
 
-**正确流程（3 步，缺一不可）**：
-1. **调用 `info`** 获取 SKILL.md 内容
-2. **阅读 `readme` 字段**，从中提取正确的执行命令（包括完整路径、脚本名、参数格式）
-3. **使用 `bash` 工具**执行提取的命令
+**步骤 1：调用 `info` 获取 SKILL.md**
+```json
+{
+  "action": "info",
+  "name": "skill-name"
+}
+```
+
+**步骤 2：阅读 SKILL.md 内容**
+- 查看 `readme` 字段：了解 Skill 的功能、使用方法、执行命令
+- 查看 `configuration` 字段：确认所需配置（API Key、环境变量、依赖等）
+- 查看 `examples` 字段：参考使用示例
+
+**步骤 3：检查并完成配置**
+- 如果 SKILL.md 中说明需要配置（如 API Key、环境变量）：
+  - ✅ 能自动配置的：先自动完成配置（如设置环境变量）
+  - ✅ 需要用户提供的：明确告诉用户需要什么信息（如"需要 OpenAI API Key"），等待用户提供后再配置
+  - ❌ 不要跳过配置直接执行：会导致 Skill 执行失败
+- 如果 SKILL.md 中没有配置要求：直接进入下一步
+
+**步骤 4：从 `readme` 中提取执行命令**
+- **完整路径**：如 `<defaultSkillDir>/skill-name/scripts/main.py`（使用 `api_get_config` 查询 defaultSkillDir）
+- **脚本名称**：精确匹配 readme 中的文件名（不要猜测或修改）
+- **参数格式**：精确使用 readme 中的参数名（如 `--input` 不是 `--file`）
+- **执行方式**：如 `python3`、`node`、`bash`（根据 readme 说明）
+
+**步骤 5：使用 `bash` 工具执行命令**
+```json
+{
+  "command": "cd <skillPath> && <执行命令>"
+}
+```
+
+### 📍 Skill 安装位置说明
+
+**无论 Skill 安装在哪里，都遵循相同的 5 步流程**：
+
+**情况 1：Skill 安装在配置的默认目录**
+- 默认目录：`~/.agents/skills/`（通过 `api_get_config` 查询 `defaultSkillDir`）
+- 执行路径：`<defaultSkillDir>/skill-name/`
+
+**情况 2：Skill 安装在其他目录**
+- 用户可能安装在：`~/my-skills/`、`/opt/skills/` 等任意位置
+- 执行路径：使用 `info` 返回的实际路径（SKILL.md 中会包含完整路径信息）
+
+**关键规则**：
+- ✅ 始终先调用 `info` 获取 SKILL.md（无论安装在哪里）
+- ✅ 从 SKILL.md 中获取正确的执行路径和命令
+- ❌ 不要假设 Skill 一定在默认目录
+- ❌ 不要猜测 Skill 的安装位置
 
 ### 📋 执行命令提取规则
 
@@ -517,23 +564,57 @@ google-chrome --remote-debugging-port=9222
 - **参数格式**：精确使用 readme 中的参数名（如 `--input` 不是 `--file`）
 - **执行方式**：如 `python3`、`node`、`bash`（根据 readme 说明）
 
-### ✅ 正确示例
+### ✅ 正确示例（完整流程）
+
+**场景：用户要求使用图片处理 Skill**
 
 ```json
-// 步骤 1: 获取使用说明
+// 步骤 1: 获取 SKILL.md
 {
   "action": "info",
-  "name": "example-skill"
+  "name": "image-processor"
 }
 
-// 步骤 2: 从 readme 中提取到的执行命令示例：
-// python3 <defaultSkillDir>/example-skill/scripts/process.py \
-//   --input "data.txt" \
-//   --output "result.txt"
+// 步骤 2: 阅读返回的 SKILL.md 内容
+// readme 字段示例：
+// "使用方法：python3 scripts/process.py --input <输入文件> --output <输出文件>"
+// configuration 字段示例：
+// "需要配置：OPENAI_API_KEY 环境变量"
 
-// 步骤 3: 执行（使用提取的完整路径和参数）
+// 步骤 3: 检查配置
+// 发现需要 OPENAI_API_KEY，询问用户：
+// "这个 Skill 需要 OpenAI API Key，请提供您的 API Key"
+// 用户提供后，设置环境变量：
 {
-  "command": "cd <defaultSkillDir>/example-skill && python3 scripts/process.py --input 'data.txt' --output 'result.txt'"
+  "command": "export OPENAI_API_KEY='sk-xxx'"
+}
+
+// 步骤 4: 从 readme 提取执行命令
+// 提取到：python3 scripts/process.py --input "input.jpg" --output "output.jpg"
+
+// 步骤 5: 执行命令
+{
+  "command": "cd ~/.agents/skills/image-processor && python3 scripts/process.py --input 'input.jpg' --output 'output.jpg'"
+}
+```
+
+**场景：Skill 安装在非默认目录**
+
+```json
+// 步骤 1: 获取 SKILL.md（无论安装在哪里）
+{
+  "action": "info",
+  "name": "custom-skill"
+}
+
+// 步骤 2-3: 阅读 SKILL.md，完成配置（同上）
+
+// 步骤 4: 从 readme 提取执行命令
+// 假设 SKILL.md 中说明：安装在 ~/my-custom-skills/custom-skill/
+
+// 步骤 5: 使用实际路径执行
+{
+  "command": "cd ~/my-custom-skills/custom-skill && python3 main.py --arg value"
 }
 ```
 
@@ -542,18 +623,43 @@ google-chrome --remote-debugging-port=9222
 ```json
 // ❌ 错误 1: 没有先调用 info，直接猜测执行命令
 {
-  "command": "python3 <defaultSkillDir>/example-skill/main.py ..."  // 文件名可能错误！
+  "command": "python3 ~/.agents/skills/example-skill/main.py ..."
 }
+// 问题：文件名可能错误！SKILL.md 中可能是 process.py 或 run.py
 
 // ❌ 错误 2: 调用了 info 但没有仔细阅读 readme，自己编造文件名
 {
-  "command": "python3 <defaultSkillDir>/example-skill/scripts/run.py ..."  // readme 中是 process.py！
+  "action": "info",
+  "name": "example-skill"
 }
+// 然后直接执行：
+{
+  "command": "python3 ~/.agents/skills/example-skill/scripts/run.py ..."
+}
+// 问题：readme 中明明写的是 process.py，不是 run.py！
 
 // ❌ 错误 3: 参数名自己编造
 {
-  "command": "python3 <defaultSkillDir>/example-skill/scripts/process.py --file ... --out ..."  // readme 中是 --input 和 --output！
+  "command": "python3 ~/.agents/skills/example-skill/scripts/process.py --file input.txt --out output.txt"
 }
+// 问题：readme 中的参数是 --input 和 --output，不是 --file 和 --out！
+
+// ❌ 错误 4: 跳过配置检查，直接执行
+{
+  "action": "info",
+  "name": "openai-skill"
+}
+// SKILL.md 中说明需要 OPENAI_API_KEY，但直接执行：
+{
+  "command": "cd ~/.agents/skills/openai-skill && python3 main.py"
+}
+// 问题：缺少必需的 API Key 配置，执行会失败！
+
+// ❌ 错误 5: 假设 Skill 在默认目录
+{
+  "command": "cd ~/.agents/skills/custom-skill && python3 main.py"
+}
+// 问题：用户可能安装在 ~/my-skills/custom-skill/，路径错误！
 ```
 
 ### 🎯 为什么必须这样做
@@ -563,8 +669,32 @@ google-chrome --remote-debugging-port=9222
 - **文件名不同**：`main.py` / `process.py` / `run.py` / `index.js` 等
 - **参数不同**：`--input` / `--file` / `-i` / `--source` 等
 - **路径不同**：`scripts/` / `bin/` / `src/` / 根目录
+- **配置要求不同**：有的需要 API Key，有的需要环境变量，有的需要依赖安装
 
 **只有 SKILL.md 才有正确答案，不要猜测！**
+
+### ⚠️ 配置检查的重要性
+
+**为什么必须先检查配置？**
+1. **避免执行失败**：缺少必需的 API Key 或环境变量会导致 Skill 执行失败
+2. **提升用户体验**：提前告知用户需要什么配置，而不是执行失败后才发现
+3. **自动化配置**：能自动配置的先自动完成，减少用户操作
+
+**常见配置类型**：
+- **API Key**：如 `OPENAI_API_KEY`、`ANTHROPIC_API_KEY`
+- **环境变量**：如 `PATH`、`PYTHONPATH`
+- **依赖安装**：如 `pip install requests`、`npm install axios`
+- **配置文件**：如 `config.json`、`.env`
+
+**配置检查流程**：
+```
+1. 从 SKILL.md 的 configuration 字段中查找配置要求
+2. 检查是否已配置（查询环境变量、配置文件等）
+3. 如果未配置：
+   - 能自动配置的：先自动完成（如设置环境变量）
+   - 需要用户提供的：明确告知用户需要什么（如"需要 OpenAI API Key"）
+4. 配置完成后再执行 Skill
+```
 
 ### 列出 Skills 的特殊情况
 

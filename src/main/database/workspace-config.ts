@@ -16,8 +16,8 @@ export function getDefaultWorkspaceSettings(): WorkspaceSettings {
   return {
     workspaceDir: homedir(), // 默认工作目录为用户主目录
     scriptDir: join(homedir(), '.deepbot', 'scripts'),
-    skillDirs: [join(homedir(), '.deepbot', 'skills')],
-    defaultSkillDir: join(homedir(), '.deepbot', 'skills'),
+    skillDirs: [join(homedir(), '.agents', 'skills')],
+    defaultSkillDir: join(homedir(), '.agents', 'skills'),
     imageDir: join(homedir(), '.deepbot', 'generated-images'),
     memoryDir: join(homedir(), '.deepbot', 'memory'),
     sessionDir: join(homedir(), '.deepbot', 'sessions'), // 🔥 新增：session 目录
