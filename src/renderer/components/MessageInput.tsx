@@ -37,6 +37,20 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempContent, setTempContent] = useState(''); // 临时保存当前输入
 
+  // 🔥 命令提示功能
+  const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const commandSuggestionsRef = useRef<HTMLDivElement>(null);
+  
+  // 🔥 防止重复执行标志
+  const isExecutingCommandRef = useRef(false);
+  
+  // 可用命令列表
+  const availableCommands = [
+    { name: 'new', description: '清空当前会话历史，开始新对话' },
+    { name: 'memory', description: '查看和管理记忆' },
+  ];
+
   // 🔥 暴露 focus 方法给父组件
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -72,6 +86,51 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
     }
   }, [content]);
 
+  // 🔥 检测命令输入，显示/隐藏命令提示
+  useEffect(() => {
+    const trimmedContent = content.trim();
+    
+    // 只有当输入以 / 开头且没有空格时才显示命令提示
+    if (trimmedContent.startsWith('/') && !trimmedContent.includes(' ')) {
+      const commandPrefix = trimmedContent.slice(1).toLowerCase();
+      
+      // 过滤匹配的命令
+      const matchedCommands = availableCommands.filter(cmd => 
+        cmd.name.toLowerCase().startsWith(commandPrefix)
+      );
+      
+      if (matchedCommands.length > 0) {
+        setShowCommandSuggestions(true);
+        setSelectedCommandIndex(0);
+      } else {
+        setShowCommandSuggestions(false);
+      }
+    } else {
+      setShowCommandSuggestions(false);
+    }
+  }, [content]);
+
+  // 🔥 点击外部关闭命令提示
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        commandSuggestionsRef.current &&
+        !commandSuggestionsRef.current.contains(event.target as Node) &&
+        textareaRef.current &&
+        !textareaRef.current.contains(event.target as Node)
+      ) {
+        setShowCommandSuggestions(false);
+      }
+    };
+
+    if (showCommandSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showCommandSuggestions]);
+
   const handleSend = () => {
     const trimmedContent = content.trim();
     if (trimmedContent && !disabled) {
@@ -98,9 +157,108 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 🔥 命令提示激活时，处理上下键和 Tab/Enter 选择
+    if (showCommandSuggestions) {
+      const trimmedContent = content.trim();
+      const commandPrefix = trimmedContent.slice(1).toLowerCase();
+      const matchedCommands = availableCommands.filter(cmd => 
+        cmd.name.toLowerCase().startsWith(commandPrefix)
+      );
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedCommandIndex(prev => 
+          prev < matchedCommands.length - 1 ? prev + 1 : 0
+        );
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedCommandIndex(prev => 
+          prev > 0 ? prev - 1 : matchedCommands.length - 1
+        );
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        // Tab 键：填充命令到输入框（保留原有行为）
+        e.preventDefault();
+        const selectedCommand = matchedCommands[selectedCommandIndex];
+        if (selectedCommand) {
+          setContent(`/${selectedCommand.name} `);
+          setShowCommandSuggestions(false);
+          // 聚焦回输入框
+          setTimeout(() => {
+            if (textareaRef.current) {
+              textareaRef.current.focus();
+            }
+          }, 0);
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        // Enter 键：直接执行命令
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // 防止重复执行
+        if (isExecutingCommandRef.current) {
+          return;
+        }
+        
+        const selectedCommand = matchedCommands[selectedCommandIndex];
+        if (selectedCommand) {
+          isExecutingCommandRef.current = true;
+          
+          const commandText = `/${selectedCommand.name}`;
+          setShowCommandSuggestions(false);
+          setContent('');
+          
+          // 保存到历史记录
+          setHistory(prev => {
+            const newHistory = prev.filter(item => item !== commandText);
+            return [...newHistory, commandText];
+          });
+          setHistoryIndex(-1);
+          setTempContent('');
+          
+          // 发送命令
+          onSend(commandText);
+          
+          // 重置文本框
+          if (textareaRef.current) {
+            textareaRef.current.style.height = '32px';
+            textareaRef.current.style.overflowY = 'hidden';
+            textareaRef.current.focus();
+          }
+          
+          // 延迟重置执行标志
+          setTimeout(() => {
+            isExecutingCommandRef.current = false;
+          }, 200);
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowCommandSuggestions(false);
+        return;
+      }
+    }
+
     // Enter 发送，Shift + Enter 换行
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      
+      // 如果命令正在执行，跳过
+      if (isExecutingCommandRef.current) {
+        return;
+      }
+      
+      // 普通消息发送
       handleSend();
       return;
     }
@@ -166,6 +324,46 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
 
   return (
     <div className="terminal-input-container">
+      {/* 🔥 命令提示列表 */}
+      {showCommandSuggestions && (
+        <div ref={commandSuggestionsRef} className="command-suggestions">
+          {availableCommands
+            .filter(cmd => cmd.name.toLowerCase().startsWith(content.trim().slice(1).toLowerCase()))
+            .map((cmd, index) => (
+              <div
+                key={cmd.name}
+                className={`command-suggestion-item ${index === selectedCommandIndex ? 'selected' : ''}`}
+                onClick={() => {
+                  const commandText = `/${cmd.name}`;
+                  setShowCommandSuggestions(false);
+                  setContent('');
+                  
+                  // 保存到历史记录
+                  setHistory(prev => {
+                    const newHistory = prev.filter(item => item !== commandText);
+                    return [...newHistory, commandText];
+                  });
+                  setHistoryIndex(-1);
+                  setTempContent('');
+                  
+                  // 直接发送命令
+                  onSend(commandText);
+                  
+                  // 重置文本框高度
+                  if (textareaRef.current) {
+                    textareaRef.current.style.height = '32px';
+                    textareaRef.current.style.overflowY = 'hidden';
+                    textareaRef.current.focus();
+                  }
+                }}
+              >
+                <span className="command-suggestion-name">/{cmd.name}</span>
+                <span className="command-suggestion-description">{cmd.description}</span>
+              </div>
+            ))}
+        </div>
+      )}
+
       <div className="terminal-input-wrapper">
         {/* 提示符 */}
         <div className="terminal-input-prompt">{userName}@deepbot:~$</div>

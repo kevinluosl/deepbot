@@ -1092,3 +1092,72 @@ ul.terminal-list {
 .terminal-message table tr:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
+
+/* ==================== 命令提示样式 ==================== */
+
+.command-suggestions {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 8px;
+  background: rgba(26, 31, 46, 0.98);
+  border: 1px solid var(--terminal-prompt-user);
+  border-radius: 4px;
+  box-shadow: 0 -4px 12px rgba(122, 162, 247, 0.3);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.command-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid rgba(122, 162, 247, 0.1);
+}
+
+.command-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.command-suggestion-item:hover,
+.command-suggestion-item.selected {
+  background: rgba(122, 162, 247, 0.15);
+}
+
+.command-suggestion-name {
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  font-size: 13px;
+  color: var(--terminal-prompt-user);
+  font-weight: bold;
+}
+
+.command-suggestion-description {
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  font-size: 11px;
+  color: var(--terminal-text-dim);
+  opacity: 0.8;
+}
+
+/* 命令提示滚动条样式 */
+.command-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.command-suggestions::-webkit-scrollbar-track {
+  background: rgba(122, 162, 247, 0.05);
+}
+
+.command-suggestions::-webkit-scrollbar-thumb {
+  background: var(--terminal-text-dim);
+  border-radius: 3px;
+}
+
+.command-suggestions::-webkit-scrollbar-thumb:hover {
+  background: var(--terminal-text);
+}

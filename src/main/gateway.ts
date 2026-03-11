@@ -462,6 +462,21 @@ export class Gateway {
     // 如果没有 sessionId，使用默认会话
     const currentSessionId = sessionId || this.defaultSessionId;
     
+    // 🔥 命令预处理：检查是否是系统命令（/xxx 格式）
+    const commandMatch = content.trim().match(/^\/(\w+)(?:\s+(.*))?$/);
+    if (commandMatch) {
+      const [, commandName, commandArgs] = commandMatch;
+      
+      // 支持的命令列表
+      const supportedCommands = ['new', 'memory'];
+      
+      if (supportedCommands.includes(commandName.toLowerCase())) {
+        console.log(`[Gateway] 🎯 检测到系统命令: /${commandName}，直接执行`);
+        await this.executeSystemCommand(commandName, commandArgs, currentSessionId);
+        return; // 命令执行完成，不进入 Agent
+      }
+    }
+    
     // 获取或创建 AgentRuntime（同步）
     const runtime = this.getOrCreateRuntime(currentSessionId);
     
@@ -1741,6 +1756,126 @@ ${welcomeContent}
   getAgentRuntime(sessionId?: string): AgentRuntime | null {
     const currentSessionId = sessionId || this.defaultSessionId;
     return this.agentRuntimes.get(currentSessionId) || null;
+  }
+
+  /**
+   * 执行系统命令（不通过 Agent）
+   * 
+   * @param commandName - 命令名称
+   * @param commandArgs - 命令参数（可选）
+   * @param sessionId - 会话 ID
+   */
+  private async executeSystemCommand(commandName: string, commandArgs: string | undefined, sessionId: string): Promise<void> {
+    const messageId = generateMessageId();
+    
+    try {
+      // 🔥 不需要发送用户消息到前端，因为前端已经显示过了
+      // 前端在 handleSendMessage 中已经添加了用户消息到 UI
+      
+      // 执行命令
+      let resultText = '';
+      
+      switch (commandName.toLowerCase()) {
+        case 'new':
+          resultText = await this.handleNewCommand(sessionId);
+          break;
+          
+        case 'memory':
+          resultText = await this.handleMemoryCommand(sessionId);
+          break;
+          
+        default:
+          resultText = `❌ 未知指令: /${commandName}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /memory - 查看和管理记忆`;
+      }
+
+      // 发送命令执行结果到前端
+      sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+        messageId,
+        content: resultText,
+        done: true,
+        sessionId,
+      });
+
+    } catch (error) {
+      console.error(`[Gateway] ❌ 执行系统命令失败: /${commandName}`, error);
+      
+      // 发送错误消息到前端
+      this.sendError(`执行命令失败: ${getErrorMessage(error)}`, sessionId);
+    }
+  }
+
+  /**
+   * 处理 /new 命令 - 清空会话
+   */
+  private async handleNewCommand(sessionId: string): Promise<string> {
+    try {
+      console.log(`[Gateway] 执行 /new 指令，清空会话: ${sessionId}`);
+
+      // 1. 清空 session 历史文件
+      if (this.sessionManager) {
+        await this.sessionManager.clearSession(sessionId);
+        console.log(`[Gateway] ✅ 会话历史已清空: ${sessionId}`);
+      }
+
+      // 2. 使用统一的重置逻辑（销毁但不重新创建 Runtime）
+      await this.resetSessionRuntime(sessionId, {
+        reason: '/new 指令清空会话',
+        recreate: false  // 仅清理，不重新创建（用户下次发消息时会自动创建）
+      });
+      console.log(`[Gateway] ✅ AgentRuntime 已重置，上下文已清除`);
+
+      // 3. 通知前端清空 UI
+      sendToWindow(this.mainWindow, 'command:clear-chat', { sessionId });
+      console.log(`[Gateway] ✅ 已通知前端清空 UI`);
+
+      return '✅ 已清空会话历史，开始新对话';
+    } catch (error) {
+      console.error('[Gateway] ❌ 执行 /new 指令失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 处理 /memory 命令 - 查看和管理记忆
+   */
+  private async handleMemoryCommand(sessionId: string): Promise<string> {
+    try {
+      console.log(`[Gateway] 执行 /memory 指令: ${sessionId}`);
+
+      // 发送命令执行成功的消息
+      const successMessage = '✅ 正在查询记忆系统...';
+      
+      // 🔥 自动发送一条消息给 Agent，让 Agent 显示记忆并提示用户
+      const agentPrompt = '显示当前的记忆是什么，提示用户如何更新记忆';
+      
+      // 延迟发送，确保命令结果先显示
+      setTimeout(async () => {
+        try {
+          // 获取或创建 Runtime
+          const runtime = this.getOrCreateRuntime(sessionId);
+          
+          // 发送用户消息到前端
+          sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+            messageId: generateUserMessageId(),
+            content: agentPrompt,
+            done: true,
+            role: 'user',
+            sessionId,
+          });
+
+          // 发送到 Agent 处理
+          await this.sendAIResponse(runtime, agentPrompt, sessionId);
+        } catch (error) {
+          console.error('[Gateway] ❌ 自动发送记忆查询失败:', error);
+          this.sendError(`查询记忆失败: ${getErrorMessage(error)}`, sessionId);
+        }
+      }, 100);
+
+      return successMessage;
+    } catch (error) {
+      console.error('[Gateway] ❌ 执行 /memory 指令失败:', error);
+      throw error;
+    }
   }
 }
 
