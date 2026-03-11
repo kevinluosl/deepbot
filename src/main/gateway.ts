@@ -468,7 +468,7 @@ export class Gateway {
       const [, commandName, commandArgs] = commandMatch;
       
       // 支持的命令列表
-      const supportedCommands = ['new', 'memory'];
+      const supportedCommands = ['new', 'memory', 'history'];
       
       if (supportedCommands.includes(commandName.toLowerCase())) {
         console.log(`[Gateway] 🎯 检测到系统命令: /${commandName}，直接执行`);
@@ -1784,8 +1784,12 @@ ${welcomeContent}
           resultText = await this.handleMemoryCommand(sessionId);
           break;
           
+        case 'history':
+          resultText = await this.handleHistoryCommand(sessionId);
+          break;
+          
         default:
-          resultText = `❌ 未知指令: /${commandName}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /memory - 查看和管理记忆`;
+          resultText = `❌ 未知指令: /${commandName}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /memory - 查看和管理记忆\n- /history - 查看对话历史统计`;
       }
 
       // 发送命令执行结果到前端
@@ -1874,6 +1878,63 @@ ${welcomeContent}
       return successMessage;
     } catch (error) {
       console.error('[Gateway] ❌ 执行 /memory 指令失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 处理 /history 命令 - 查看对话历史统计
+   */
+  private async handleHistoryCommand(sessionId: string): Promise<string> {
+    try {
+      console.log(`[Gateway] 执行 /history 指令: ${sessionId}`);
+
+      // 发送命令执行成功的消息
+      const successMessage = '✅ 正在分析对话历史...';
+      
+      // 获取 session 文件路径
+      if (!this.sessionManager) {
+        return '❌ SessionManager 未初始化';
+      }
+      
+      const sessionFilePath = this.sessionManager.getSessionFilePath(sessionId);
+      
+      // 🔥 自动发送一条消息给 Agent，让 Agent 分析历史
+      const agentPrompt = `读取我的对话历史文件并分析：${sessionFilePath}
+
+请回答以下问题：
+1. 一共进行了多少轮对话？（1 轮 = 1 条用户消息 + 1 条 AI 回复）
+2. 消耗了多少 token？（估算所有消息的 token 总数）
+3. 对话的主要话题是什么？
+
+使用 file_read 工具读取文件内容后进行分析。`;
+      
+      // 延迟发送，确保命令结果先显示
+      setTimeout(async () => {
+        try {
+          // 获取或创建 Runtime
+          const runtime = this.getOrCreateRuntime(sessionId);
+          
+          // 发送用户消息到前端
+          sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+            messageId: generateUserMessageId(),
+            content: agentPrompt,
+            done: true,
+            role: 'user',
+            sessionId,
+          });
+
+          // 发送到 Agent 处理
+          await this.sendAIResponse(runtime, agentPrompt, sessionId);
+        } catch (error) {
+          console.error('[Gateway] ❌ 自动发送历史分析失败:', error);
+          this.sendError(`分析历史失败: ${getErrorMessage(error)}`, sessionId);
+        }
+      }, 100);
+
+      return successMessage;
+    } catch (error) {
+      console.error('[Gateway] ❌ 执行 /history 指令失败:', error);
       throw error;
     }
   }

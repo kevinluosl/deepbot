@@ -49,6 +49,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   const availableCommands = [
     { name: 'new', description: '清空当前会话历史，开始新对话' },
     { name: 'memory', description: '查看和管理记忆' },
+    { name: 'history', description: '查看对话历史统计' },
   ];
 
   // 🔥 暴露 focus 方法给父组件

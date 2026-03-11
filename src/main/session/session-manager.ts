@@ -169,5 +169,17 @@ export class SessionManager {
   getStore(): SessionStore {
     return this.sessionStore;
   }
+  
+  /**
+   * 获取 session 文件路径
+   */
+  getSessionFilePath(tabId: string): string {
+    // SessionStore 的 sessionDir 是私有的，我们需要通过 getStore 访问
+    // 但是 getSessionFilePath 也是私有的，所以我们直接构造路径
+    const { join } = require('path');
+    // 从 sessionStore 获取 sessionDir（通过反射访问私有属性）
+    const sessionDir = (this.sessionStore as any).sessionDir;
+    return join(sessionDir, `${tabId}.jsonl`);
+  }
 }
 
