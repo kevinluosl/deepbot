@@ -441,7 +441,6 @@ const SkillCard: React.FC<SkillCardProps> = ({
             <span>v{skill.version}</span>
             {skill.author && <span>• {skill.author}</span>}
             {skill.stars !== undefined && skill.stars > 0 && <span>• ⭐ {skill.stars}</span>}
-            {skill.usageCount !== undefined && <span>• 使用 {skill.usageCount} 次</span>}
           </div>
           {skill.tags && skill.tags.length > 0 && (
             <div className="flex gap-2 mt-2">
