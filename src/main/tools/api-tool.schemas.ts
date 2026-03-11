@@ -150,3 +150,9 @@ export const SetNameConfigSchema = Type.Object({
     maxLength: 10,
   })),
 });
+
+/**
+ * 获取 Session 文件路径 Schema
+ */
+export const GetSessionFilePathSchema = Type.Object({});
+

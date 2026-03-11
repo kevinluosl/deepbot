@@ -706,3 +706,70 @@ export async function handleSetNameConfig(
     };
   }
 }
+
+// ==================== 获取 Session 文件路径 ====================
+
+/**
+ * 获取当前 Tab 的 Session 文件路径
+ */
+export async function handleGetSessionFilePath(
+  sessionId: string,
+  signal?: AbortSignal
+): Promise<ToolResult> {
+  try {
+    console.log('[API Tool] 📋 获取 Session 文件路径:', sessionId);
+    
+    // 检查是否被取消
+    if (signal?.aborted) {
+      const err = new Error('获取 Session 文件路径操作被取消');
+      err.name = 'AbortError';
+      throw err;
+    }
+    
+    // 通过 Gateway 获取 SessionManager
+    const { getGatewayInstance } = await import('../gateway');
+    const gateway = getGatewayInstance();
+    
+    if (!gateway) {
+      throw new Error('Gateway 实例未初始化');
+    }
+    
+    // 获取 Session 文件路径
+    const sessionManager = (gateway as any).sessionManager;
+    if (!sessionManager) {
+      throw new Error('SessionManager 未初始化');
+    }
+    
+    const filePath = sessionManager.getSessionFilePath(sessionId);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `✅ 当前 Tab 的 Session 文件路径：\n${filePath}`,
+        },
+      ],
+      details: {
+        success: true,
+        sessionId,
+        filePath,
+      },
+    };
+  } catch (error) {
+    console.error('[API Tool] ❌ 获取 Session 文件路径失败:', error);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ 获取 Session 文件路径失败: ${getErrorMessage(error)}`,
+        },
+      ],
+      details: {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      isError: true,
+    };
+  }
+}

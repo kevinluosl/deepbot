@@ -1144,6 +1144,7 @@ node script.js
 - `api_set_model_config` - 设置模型配置
 - `api_set_image_generation_config` - 设置图片生成工具配置
 - `api_set_web_search_config` - 设置 Web 搜索工具配置
+- `api_get_session_file_path` - 获取当前 Tab 的 Session 文件路径
 
 ### 核心原则
 1. 使用前先查询配置（使用 `api_get_config`）
@@ -1158,6 +1159,7 @@ node script.js
 - ✅ 查询模型配置：`{ "configType": "model" }`
 - ✅ 查询图片生成工具配置：`{ "configType": "image-generation" }`
 - ✅ 查询 Web 搜索工具配置：`{ "configType": "web-search" }`
+- ✅ 获取当前 Tab 的 Session 文件路径：使用 `api_get_session_file_path`
 
 #### 更新配置
 - ✅ 更新工作目录：使用 `api_set_workspace_config`
@@ -1207,6 +1209,11 @@ node script.js
   "provider": "qwen",
   "model": "qwen-max",
   "apiKey": "sk-xxx"
+}
+
+// 7. 获取当前 Tab 的 Session 文件路径
+{
+  "tool": "api_get_session_file_path"
 }
 ```
 

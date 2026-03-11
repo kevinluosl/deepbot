@@ -115,6 +115,17 @@ export const apiToolPlugin: ToolPlugin = {
           return handlers.handleSetNameConfig(sessionId, args, signal);
         },
       },
+      
+      // 获取 Session 文件路径
+      {
+        name: TOOL_NAMES.API_GET_SESSION_FILE_PATH,
+        label: '获取 Session 文件路径',
+        description: '获取当前 Tab 的 Session 文件路径，用于读取和分析对话历史',
+        parameters: schemas.GetSessionFilePathSchema,
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          return handlers.handleGetSessionFilePath(sessionId, signal);
+        },
+      },
     ];
   },
 };
