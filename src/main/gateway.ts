@@ -90,10 +90,7 @@ export class Gateway {
       console.error('[Gateway] ❌ 自动启动连接器失败:', error);
     });
     
-    // 🔥 异步预热 AI 连接（不阻塞初始化）
-    this.warmupAIConnection().catch(error => {
-      console.error('[Gateway] ❌ AI 连接预热失败:', error);
-    });
+    // AI 连接将在首次调用时自动建立和缓存
   }
   
   /**
@@ -236,22 +233,7 @@ export class Gateway {
     }
   }
   
-  /**
-   * 预热 AI 连接
-   * 
-   * 在 Gateway 初始化时调用，提前建立 AI 连接
-   */
-  private async warmupAIConnection(): Promise<void> {
-    try {
-      // 延迟 1 秒后预热（避免阻塞启动）
-      await sleep(1000);
-      
-      const { warmupAIConnection } = await import('./utils/ai-client');
-      await warmupAIConnection();
-    } catch (error) {
-      console.warn('[Gateway] ⚠️ AI 连接预热失败（不影响使用）:', error);
-    }
-  }
+  // 预热功能已移除，AI 连接将在首次调用时自动建立和缓存
   
   /**
    * 自动启动已启用的连接器
@@ -304,10 +286,7 @@ export class Gateway {
     
     console.log('[Gateway] ✅ 模型配置已重新加载');
     
-    // 重新预热 AI 连接
-    this.warmupAIConnection().catch(error => {
-      console.error('[Gateway] ❌ AI 连接预热失败:', error);
-    });
+    // AI 连接缓存已清除，将在下次调用时重新建立
     
     // 🔥 检查是否需要发送欢迎消息（首次配置模型的场景）
     this.checkAndSendWelcomeMessage().catch(error => {

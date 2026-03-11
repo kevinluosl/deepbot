@@ -8,7 +8,6 @@
  * - 连接池：复用 Model 实例和 HTTP 连接
  * - 单例模式：缓存 pi-ai 模块导入
  * - HTTP Keep-Alive：保持连接复用
- * - 预热连接：启动时建立连接
  */
 
 import type { Model } from '@mariozechner/pi-ai';
@@ -65,11 +64,6 @@ let cachedModel: Model<'openai-completions' | 'google-generative-ai'> | null = n
 let lastConfigKey: string = '';
 
 /**
- * 连接是否已预热
- */
-let isWarmedUp: boolean = false;
-
-/**
  * 生成配置 Key（用于检测配置变更）
  */
 function generateConfigKey(config: any, options: AICallOptions): string {
@@ -92,7 +86,6 @@ export function clearAICache(): void {
   console.log('[AI Client] 🔄 清除 AI 连接缓存');
   cachedModel = null;
   lastConfigKey = '';
-  isWarmedUp = false;
 }
 
 /**
@@ -197,14 +190,6 @@ function getOrCreateModel(options: AICallOptions = {}): Model<'openai-completion
  * @param messages - 消息列表
  * @param options - 调用选项
  * @returns AI 响应
- * 
- * @example
- * ```typescript
- * const response = await callAI([
- *   { role: 'user', content: 'Hello!' }
- * ]);
- * console.log(response.content);
- * ```
  */
 export async function callAI(
   messages: AIMessage[],
@@ -372,55 +357,4 @@ export async function callAI(
 
     throw new Error(errorMessage);
   }
-}
-
-// ==================== 连接预热 ====================
-
-/**
- * 预热 AI 连接
- * 
- * 在应用启动时调用，提前建立连接，减少首次调用延迟
- * 
- * @returns 预热是否成功
- */
-export async function warmupAIConnection(): Promise<boolean> {
-  if (isWarmedUp) {
-    console.log('[AI Client] ✅ AI 连接已预热，跳过');
-    return true;
-  }
-
-  try {
-    console.log('[AI Client] 🔥 开始预热 AI 连接...');
-
-    const startTime = Date.now();
-
-    // 发送一个极简请求来建立连接（使用快速模型）
-    await callAI([
-      { role: 'user', content: 'Hi' }
-    ], {
-      temperature: 0,
-      maxTokens: 10,
-      useFastModel: true,
-    });
-
-    const duration = Date.now() - startTime;
-
-    isWarmedUp = true;
-    console.log(`[AI Client] ✅ AI 连接预热完成 (耗时: ${duration}ms)`);
-
-    return true;
-  } catch (error) {
-    // 预热失败不影响后续使用，只记录警告
-    console.error('[AI Client] ❌ AI 连接预热失败:', error instanceof Error ? error.message : '未知错误');
-    return false;
-  }
-}
-
-/**
- * 检查连接是否已预热
- * 
- * @returns 是否已预热
- */
-export function isAIConnectionWarmedUp(): boolean {
-  return isWarmedUp;
 }
