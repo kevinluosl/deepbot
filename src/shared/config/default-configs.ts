@@ -78,11 +78,6 @@ export const WEB_SEARCH_PROVIDER_PRESETS = {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     defaultModelId: 'gemini-3-flash-preview',
   },
-  custom: {
-    name: '自定义',
-    baseUrl: '',
-    defaultModelId: '',
-  },
 } as const;
 
 /**

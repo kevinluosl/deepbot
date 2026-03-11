@@ -10,7 +10,7 @@ import {
 } from '../../../shared/config/default-configs';
 
 interface WebSearchToolConfig {
-  provider: 'qwen' | 'gemini' | 'custom';  // 提供商类型
+  provider: 'qwen' | 'gemini';  // 提供商类型（仅支持 Qwen 和 Gemini）
   model: string;
   apiUrl: string;
   apiKey: string;
@@ -51,7 +51,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   };
 
   // 当提供商改变时，更新默认 API 地址和模型
-  const handleProviderChange = (newProvider: 'qwen' | 'gemini' | 'custom') => {
+  const handleProviderChange = (newProvider: 'qwen' | 'gemini') => {
     const preset = WEB_SEARCH_PROVIDER_PRESETS[newProvider];
 
     setConfig({
@@ -140,15 +140,14 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
         </label>
         <select
           value={config.provider}
-          onChange={(e) => handleProviderChange(e.target.value as 'qwen' | 'gemini' | 'custom')}
+          onChange={(e) => handleProviderChange(e.target.value as 'qwen' | 'gemini')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="qwen">Qwen</option>
           <option value="gemini">Google Gemini</option>
-          <option value="custom">自定义</option>
         </select>
         <p className="mt-1 text-xs text-gray-500">
-          选择预设提供商或自定义配置
+          选择支持网络搜索的 AI 提供商
         </p>
       </div>
 
@@ -165,9 +164,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          {config.provider === 'custom' 
-            ? '输入兼容 OpenAI API 格式的地址' 
-            : '预设提供商的 API 地址（可修改）'}
+          预设提供商的 API 地址（可修改）
         </p>
       </div>
 
@@ -183,16 +180,13 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
           placeholder={
             config.provider === 'qwen' 
               ? 'qwen3.5-plus' 
-              : config.provider === 'gemini' 
-                ? 'gemini-3-flash-preview' 
-                : 'model-id'
+              : 'gemini-3-flash-preview'
           }
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
           {config.provider === 'qwen' && '默认: qwen3.5-plus（可选: qwen-plus, qwen-turbo, qwen-max 等）'}
           {config.provider === 'gemini' && '默认: gemini-3-flash-preview（可选: gemini-2.5-flash, gemini-2.5-pro 等）'}
-          {config.provider === 'custom' && '输入模型 ID'}
         </p>
       </div>
 

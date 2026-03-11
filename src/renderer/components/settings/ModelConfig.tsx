@@ -83,6 +83,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       modelId2: preset.defaultModelId2 || undefined,  // 设置快速模型默认值
       modelName: preset.defaultModelId,
       apiType: preset.apiType,
+      contextWindow: undefined,  // 清空上下文窗口，让系统自动推断
     });
   };
 
