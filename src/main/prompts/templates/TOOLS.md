@@ -1280,7 +1280,7 @@ node script.js
 // 5. 更新图片生成工具配置
 {
   "tool": "api_set_image_generation_config",
-  "model": "wanx-v1",
+  "model": "qwen-image-2.0-pro",
   "apiKey": "sk-xxx"
 }
 

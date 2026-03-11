@@ -17,7 +17,7 @@ interface ToolConfigProps {
 }
 
 interface ImageGenerationConfig {
-  provider: 'gemini' | 'qwen' | 'custom';
+  provider: 'gemini' | 'qwen';
   model: string;
   apiUrl: string;
   apiKey: string;
@@ -50,12 +50,12 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
       const config = await window.deepbot.getImageGenerationToolConfig();
       if (config) {
         // 兼容旧配置格式，添加默认 provider 字段
-        let provider: 'gemini' | 'qwen' | 'custom' = 'gemini';
+        let provider: 'gemini' | 'qwen' = 'gemini';
         
         // 根据模型名称或已有的 provider 字段判断提供商
         if ((config as any).provider) {
           provider = (config as any).provider;
-        } else if (config.model && (config.model.includes('wanx') || config.model.includes('wan'))) {
+        } else if (config.model && config.model.includes('qwen-image')) {
           provider = 'qwen';
         }
         
@@ -80,7 +80,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   };
 
   // 当提供商改变时，更新默认 API 地址和模型
-  const handleImageProviderChange = (newProvider: 'gemini' | 'qwen' | 'custom') => {
+  const handleImageProviderChange = (newProvider: 'gemini' | 'qwen') => {
     const preset = IMAGE_GENERATION_PROVIDER_PRESETS[newProvider];
 
     setImageGenConfig({
@@ -197,15 +197,14 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             </label>
             <select
               value={imageGenConfig.provider}
-              onChange={(e) => handleImageProviderChange(e.target.value as 'gemini' | 'qwen' | 'custom')}
+              onChange={(e) => handleImageProviderChange(e.target.value as 'gemini' | 'qwen')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="gemini">Google Gemini</option>
               <option value="qwen">通义千问 Qwen-Image</option>
-              <option value="custom">自定义</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              选择预设提供商或自定义配置
+              选择预设提供商
             </p>
           </div>
 
@@ -222,9 +221,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {imageGenConfig.provider === 'custom' 
-                ? '输入兼容 Gemini API 格式的地址' 
-                : imageGenConfig.provider === 'qwen'
+              {imageGenConfig.provider === 'qwen'
                 ? '通义千问 Qwen-Image 图片生成 API 地址'
                 : '预设提供商的 API 地址（可修改）'}
             </p>
@@ -242,16 +239,13 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               placeholder={
                 imageGenConfig.provider === 'gemini' 
                   ? 'gemini-3-pro-image-preview' 
-                  : imageGenConfig.provider === 'qwen'
-                  ? 'qwen-image-2.0-pro'
-                  : 'model-id'
+                  : 'qwen-image-2.0-pro'
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500">
               {imageGenConfig.provider === 'gemini' && '默认: gemini-3-pro-image-preview（可选: gemini-2.5-flash 等）'}
               {imageGenConfig.provider === 'qwen' && '推荐: qwen-image-2.0-pro（可选: qwen-image-2.0, qwen-image-max, qwen-image-plus）'}
-              {imageGenConfig.provider === 'custom' && '输入模型 ID'}
             </p>
           </div>
 
@@ -270,7 +264,6 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             <p className="mt-1 text-xs text-gray-500">
               {imageGenConfig.provider === 'gemini' && '用于访问 Gemini API 的密钥'}
               {imageGenConfig.provider === 'qwen' && '用于访问通义千问 API 的密钥（DashScope API Key）'}
-              {imageGenConfig.provider === 'custom' && '用于访问自定义 API 的密钥'}
             </p>
           </div>
 

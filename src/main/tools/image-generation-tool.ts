@@ -52,7 +52,7 @@ function getToolConfig(configStore: SystemConfigStore): {
   
   // 根据模型名称判断提供商
   let provider: 'gemini' | 'qwen' = 'gemini';
-  if (dbConfig.model.includes('qwen-image') || dbConfig.model.includes('wan')) {
+  if (dbConfig.model.includes('qwen-image')) {
     provider = 'qwen';
   }
   
@@ -179,7 +179,7 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
   return {
     name: TOOL_NAMES.IMAGE_GENERATION,
     label: 'Image Generation',
-    description: '多提供商图片生成工具。支持：1) Gemini 3 Pro Image 生成和解析图片 2) Qwen 万相2.6/万相V1 生成图片 3) 使用参考图片（最多5张）生成图片。根据配置的模型自动选择提供商。',
+    description: '多提供商图片生成工具。支持：1) Gemini 3 Pro Image 生成和解析图片 2) Qwen-Image 系列模型生成图片 3) 使用参考图片（最多5张）生成图片。根据配置的模型自动选择提供商。',
     parameters: ImageGenerationSchema,
     execute: async (_toolCallId: string, args: unknown, signal?: AbortSignal) => {
       try {
