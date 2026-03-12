@@ -42,17 +42,24 @@ let isQuitting = false; // 🔥 是否正在退出（用于区分关闭窗口和
  * 创建系统托盘
  */
 function createTray() {
-  // 🔥 加载托盘图标
+  // 🔥 根据平台选择不同的托盘图标
+  let iconFileName = 's-logo.png'; // 默认图标
+  
+  if (process.platform === 'win32') {
+    iconFileName = 's-logo-win.png'; // Windows 专用图标
+  } else if (process.platform === 'darwin') {
+    iconFileName = 's-logo-mac.png'; // macOS 专用图标
+  }
+  
   const iconPath = process.env.VITE_DEV_SERVER_URL
-    ? path.join(__dirname, '../../src/renderer/assets/s-logo.png')
-    : path.join(process.resourcesPath, 'app.asar/dist-electron/../src/renderer/assets/s-logo.png');
+    ? path.join(__dirname, `../../src/renderer/assets/${iconFileName}`)
+    : path.join(process.resourcesPath, `app/src/renderer/assets/${iconFileName}`);
   
-  console.log('[Tray] 托盘图标路径:', iconPath);
-  
-  // 🔥 创建托盘图标（macOS 需要调整大小）
+  // 🔥 创建托盘图标
   const icon = nativeImage.createFromPath(iconPath);
+  
   if (process.platform === 'darwin') {
-    // macOS 托盘图标建议 16x16 或 32x32
+    // macOS 托盘图标设置
     icon.setTemplateImage(true); // 使用模板图像（自动适配深色/浅色模式）
   }
   
@@ -109,10 +116,24 @@ function createTray() {
  * 创建主窗口
  */
 function createWindow() {
+  // 🔥 根据平台选择不同的窗口图标
+  let iconFileName = 's-logo.png'; // 默认图标
+  
+  if (process.platform === 'win32') {
+    iconFileName = 's-logo-win.png'; // Windows 专用图标
+  } else if (process.platform === 'darwin') {
+    iconFileName = 's-logo-mac.png'; // macOS 专用图标
+  }
+  
+  const windowIconPath = process.env.VITE_DEV_SERVER_URL
+    ? path.join(__dirname, `../../src/renderer/assets/${iconFileName}`)
+    : path.join(process.resourcesPath, `app/src/renderer/assets/${iconFileName}`);
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     title: 'DeepBot Terminal', // 🔥 设置窗口标题
+    icon: windowIconPath, // 🔥 设置窗口图标
     backgroundColor: '#0a0e1a', // 🔥 设置背景色（深蓝黑色）
     titleBarStyle: 'hiddenInset', // 🔥 macOS 隐藏标题栏（保留交通灯按钮）
     trafficLightPosition: { x: 15, y: 15 }, // 🔥 macOS 交通灯位置
