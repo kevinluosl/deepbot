@@ -215,18 +215,32 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
         }
         
         // 🔥 强制应用合并后的 PATH
-        const env = { ...process.env, PATH: shellPath };
+        const env: Record<string, string> = { ...process.env, PATH: shellPath };
+        
+        // 🔥 Windows 中文编码处理：设置代码页为 UTF-8
+        if (process.platform === 'win32') {
+          env.CHCP = '65001'; // UTF-8 代码页
+        }
         
         console.log(`[Exec Tool] 🔧 operations.exec 被调用`);
         console.log(`[Exec Tool] 📝 命令: ${command}`);
         console.log(`[Exec Tool] 📝 工作目录: ${cwd}`);
         console.log(`[Exec Tool] 📝 PATH 前 3 个: ${env.PATH?.split(':').slice(0, 3).join(':')}`);
-        
+        if (process.platform === 'win32') {
+          console.log(`[Exec Tool] 🔤 Windows 编码: UTF-8 (CHCP=65001)`);
+        }
         // 使用 Node.js spawn 执行命令
         const { spawn } = require('node:child_process');
         
+        // 🔥 Windows 中文编码处理：在命令前添加 chcp 65001
+        let finalCommand = command;
+        if (process.platform === 'win32') {
+          // 在 Windows 上，先设置代码页为 UTF-8，然后执行原命令
+          finalCommand = `chcp 65001 >nul 2>&1 && ${command}`;
+        }
+        
         return new Promise((resolve) => {
-          const child = spawn(command, [], {
+          const child = spawn(finalCommand, [], {
             cwd,
             env,
             shell: true,
@@ -236,11 +250,49 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
           
           // 监听输出
           child.stdout?.on('data', (data: Buffer) => {
-            options.onData(data);
+            // 🔥 Windows 中文编码处理
+            let output: string;
+            if (process.platform === 'win32') {
+              // Windows 使用 GBK 编码，需要转换为 UTF-8
+              try {
+                // 尝试使用 iconv-lite 转换编码
+                const iconv = require('iconv-lite');
+                output = iconv.decode(data, 'cp936'); // cp936 是 GBK 编码
+              } catch (error) {
+                // 如果 iconv-lite 不可用，使用默认处理
+                console.warn('[Exec Tool] ⚠️ iconv-lite 不可用，使用默认编码处理');
+                output = data.toString('utf8');
+              }
+            } else {
+              // Unix/Linux/macOS 使用 UTF-8
+              output = data.toString('utf8');
+            }
+            
+            // 将字符串转换回 Buffer 传递给 onData
+            options.onData(Buffer.from(output, 'utf8'));
           });
           
           child.stderr?.on('data', (data: Buffer) => {
-            options.onData(data);
+            // 🔥 Windows 中文编码处理
+            let output: string;
+            if (process.platform === 'win32') {
+              // Windows 使用 GBK 编码，需要转换为 UTF-8
+              try {
+                // 尝试使用 iconv-lite 转换编码
+                const iconv = require('iconv-lite');
+                output = iconv.decode(data, 'cp936'); // cp936 是 GBK 编码
+              } catch (error) {
+                // 如果 iconv-lite 不可用，使用默认处理
+                console.warn('[Exec Tool] ⚠️ iconv-lite 不可用，使用默认编码处理');
+                output = data.toString('utf8');
+              }
+            } else {
+              // Unix/Linux/macOS 使用 UTF-8
+              output = data.toString('utf8');
+            }
+            
+            // 将字符串转换回 Buffer 传递给 onData
+            options.onData(Buffer.from(output, 'utf8'));
           });
           
           // 监听取消信号
