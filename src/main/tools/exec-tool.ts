@@ -86,6 +86,80 @@ const DANGEROUS_PATTERNS = [
  * @throws 如果包含不安全路径会抛出异常
  */
 function checkCommandPathSecurity(command: string): void {
+  // 🔥 系统路径白名单（这些是安全的系统路径）
+  const SYSTEM_PATH_WHITELIST = [
+    // Unix/Linux/macOS 标准设备文件（精确匹配）
+    '/dev/null',
+    '/dev/zero',
+    '/dev/stdin',
+    '/dev/stdout',
+    '/dev/stderr',
+    '/dev/urandom',
+    '/dev/random',
+    '/dev/tty',
+    '/dev/full',
+    '/dev/ptmx',
+    
+    // Windows 设备文件（精确匹配）
+    'NUL',           // Windows 空设备
+    'nul',           // Windows 空设备（小写）
+    'CON',           // Windows 控制台
+    'con',           // Windows 控制台（小写）
+    'AUX',           // Windows 辅助设备
+    'aux',           // Windows 辅助设备（小写）
+    'PRN',           // Windows 打印机
+    'prn',           // Windows 打印机（小写）
+  ];
+  
+  // 🔥 系统目录前缀白名单（前缀匹配）
+  const SYSTEM_DIR_PREFIX_WHITELIST = [
+    // Unix/Linux 临时目录
+    '/tmp/',
+    '/var/tmp/',
+    '/var/log/',      // 日志目录（只读）
+    '/var/run/',      // 运行时数据
+    
+    // macOS 特有
+    '/private/tmp/',
+    '/private/var/tmp/',
+    '/private/var/log/',
+    
+    // Linux 系统信息（只读）
+    '/proc/',         // 进程信息
+    '/sys/',          // 系统信息
+    '/run/',          // 运行时数据
+    
+    // Windows 临时目录（需要处理大小写）
+    'C:\\Windows\\Temp\\',
+    'C:\\WINDOWS\\TEMP\\',
+    'c:\\windows\\temp\\',
+    'C:\\Temp\\',
+    'C:\\TEMP\\',
+    'c:\\temp\\',
+    
+    // Windows 用户临时目录（通过环境变量）
+    // 注意：这些路径在实际使用时会被展开，这里只是示例
+  ];
+  
+  // 🔥 安全的环境变量白名单（用于临时目录）
+  const SAFE_ENV_VARS = ['TMPDIR', 'TEMP', 'TMP'];
+  
+  // 🔥 动态添加环境变量指向的临时目录到白名单
+  const envTempDirs: string[] = [];
+  for (const envVar of SAFE_ENV_VARS) {
+    const envValue = process.env[envVar];
+    if (envValue) {
+      // 确保路径以 / 或 \ 结尾
+      const normalizedPath = envValue.endsWith('/') || envValue.endsWith('\\') 
+        ? envValue 
+        : envValue + (process.platform === 'win32' ? '\\' : '/');
+      envTempDirs.push(normalizedPath);
+    }
+  }
+  
+  // 合并所有前缀白名单
+  const allPrefixWhitelist = [...SYSTEM_DIR_PREFIX_WHITELIST, ...envTempDirs];
+  
   // 提取命令中可能的路径参数
   const pathPatterns = [
     // cd 命令：cd /path/to/dir
@@ -136,6 +210,17 @@ function checkCommandPathSecurity(command: string): void {
       
       // 跳过纯文件名（不包含路径分隔符）
       if (!pathToCheck.includes('/') && !pathToCheck.includes('\\') && !pathToCheck.startsWith('~')) {
+        continue;
+      }
+      
+      // 🔥 跳过系统路径白名单
+      // 1. 精确匹配
+      if (SYSTEM_PATH_WHITELIST.includes(pathToCheck)) {
+        continue;
+      }
+      
+      // 2. 前缀匹配（用于目录）
+      if (allPrefixWhitelist.some(prefix => pathToCheck.startsWith(prefix))) {
         continue;
       }
       
