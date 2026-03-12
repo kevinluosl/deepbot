@@ -32,6 +32,9 @@ export const TIMEOUTS = {
   // 环境检查
   COMMAND_EXECUTION_TIMEOUT: 5 * 1000,         // 5 秒
   
+  // Exec 工具
+  EXEC_TOOL_TIMEOUT: 120 * 1000,               // 120 秒（参考 Clawdbot）
+  
   // 图片生成
   IMAGE_GENERATION_TIMEOUT: 60 * 1000,         // 60 秒
   

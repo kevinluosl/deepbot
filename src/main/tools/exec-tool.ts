@@ -3,7 +3,7 @@
  * 
  * 职责：
  * - 执行 shell 命令
- * - 超时控制
+ * - 统一超时控制（120秒）
  * - 危险命令拦截
  * - 输出截断（避免输出过大）
  * 
@@ -13,6 +13,11 @@
  * 技术选型：
  * - 使用 pi-coding-agent 提供的 createBashTool
  * - 在外面包装安全检查和危险命令拦截
+ * - 使用统一的超时配置（TIMEOUTS.EXEC_TOOL_TIMEOUT）
+ * 
+ * 参数：
+ * - command: 要执行的命令（必需）
+ * - 不再需要 timeout 参数，使用统一配置
  * 
  * @example
  * ```typescript
@@ -24,6 +29,7 @@
 import type { AgentTool } from '@mariozechner/pi-agent-core';
 import { getShellPathFromLoginShell, applyShellPath } from './shell-env';
 import { isBlockingInteractiveCommand, getBlockingCommandSuggestion } from './exec-blocking-check';
+import { TIMEOUTS } from '../config/timeouts';
 
 /**
  * 危险命令列表（黑名单）
@@ -112,14 +118,9 @@ function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
       const record = params && typeof params === 'object' ? params as Record<string, unknown> : undefined;
       const command = record?.command;
       
-      // 🔥 添加执行日志
-      console.log(`[Exec Tool] 🚀 执行命令: ${command}`);
-      console.log(`[Exec Tool] 📋 Tool Call ID: ${toolCallId}`);
-      
       // 安全检查：验证命令
       if (typeof command === 'string' && command.trim()) {
         if (isDangerousCommand(command)) {
-          console.error(`[Exec Tool] ❌ 危险命令被拦截: ${command}`);
           throw new Error(`危险命令被拦截: ${command}`);
         }
       }
@@ -130,11 +131,6 @@ function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
         const env = { ...process.env } as Record<string, string>;
         applyShellPath(env, shellPath);
         record.env = env;
-        console.log(`[Exec Tool] 📝 已应用合并后的 PATH`);
-        console.log(`[Exec Tool] 🔍 命令执行环境 PATH 前 5 个路径:`);
-        env.PATH?.split(':').slice(0, 5).forEach((p, i) => {
-          console.log(`  ${i + 1}. ${p}`);
-        });
       }
       
       // 执行原始工具
@@ -150,17 +146,22 @@ function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
         if (textContent && typeof textContent.text === 'string') {
           const output = textContent.text.trim();
           
-          // 如果输出为空，添加成功提示
+          // 🔥 修复：只有在真正没有输出且命令成功时才添加成功提示
+          // 检查是否有实际的输出内容（不仅仅是空白字符）
           if (output === '' || output === '(no output)') {
-            textContent.text = '✅ 命令执行成功（无输出）';
-            console.log(`[Exec Tool] 📝 空输出已替换为成功提示`);
+            // 检查是否有错误信息（通过检查 result 中是否有错误相关的内容）
+            const hasError = content.some(c => 
+              c.type === 'text' && 
+              typeof c.text === 'string' && 
+              (c.text.includes('error:') || c.text.includes('Error:') || c.text.includes('ERROR:'))
+            );
+            
+            if (!hasError) {
+              textContent.text = '✅ 命令执行成功（无输出）';
+            }
           }
         }
       }
-      
-      // 🔥 添加执行结果日志
-      console.log(`[Exec Tool] ✅ 命令执行完成`);
-      console.log(`[Exec Tool] 📊 结果类型: ${typeof result}`);
       
       return result;
     },
@@ -193,15 +194,6 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
     timeoutMs: 15_000,
   });
   
-  // 🔥 调试日志：输出合并后的 PATH
-  console.info('[Exec Tool] 🔍 合并后的 PATH:');
-  console.info(`  PATH 长度: ${shellPath.length} 字符`);
-  console.info(`  PATH 包含: ${shellPath.split(':').length} 个路径`);
-  console.info(`  前 10 个路径:`);
-  shellPath.split(':').slice(0, 10).forEach((p, i) => {
-    console.info(`    ${i + 1}. ${p}`);
-  });
-  
   // 创建基础工具（使用 pi-coding-agent）
   // 🔥 使用 operations 自定义命令执行，添加阻塞命令检查
   const bashTool = createBashTool(workspaceDir, {
@@ -210,7 +202,6 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
         // 🔥 检查是否是阻塞的交互式命令
         if (isBlockingInteractiveCommand(command)) {
           const suggestion = getBlockingCommandSuggestion(command);
-          console.error(`[Exec Tool] ❌ ${suggestion}`);
           throw new Error(suggestion);
         }
         
@@ -222,13 +213,6 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
           env.CHCP = '65001'; // UTF-8 代码页
         }
         
-        console.log(`[Exec Tool] 🔧 operations.exec 被调用`);
-        console.log(`[Exec Tool] 📝 命令: ${command}`);
-        console.log(`[Exec Tool] 📝 工作目录: ${cwd}`);
-        console.log(`[Exec Tool] 📝 PATH 前 3 个: ${env.PATH?.split(':').slice(0, 3).join(':')}`);
-        if (process.platform === 'win32') {
-          console.log(`[Exec Tool] 🔤 Windows 编码: UTF-8 (CHCP=65001)`);
-        }
         // 使用 Node.js spawn 执行命令
         const { spawn } = require('node:child_process');
         
@@ -239,13 +223,30 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
           finalCommand = `chcp 65001 >nul 2>&1 && ${command}`;
         }
         
+        // 🔥 使用统一的超时配置
+        const timeoutMs = TIMEOUTS.EXEC_TOOL_TIMEOUT;
+        
         return new Promise((resolve) => {
+          // 使用 Node.js spawn 执行命令
+          const { spawn } = require('node:child_process');
+          
+          // 🔥 Windows 中文编码处理：在命令前添加 chcp 65001
+          let finalCommand = command;
+          if (process.platform === 'win32') {
+            // 在 Windows 上，先设置代码页为 UTF-8，然后执行原命令
+            finalCommand = `chcp 65001 >nul 2>&1 && ${command}`;
+          }
+          
           const child = spawn(finalCommand, [], {
             cwd,
             env,
             shell: true,
             stdio: ['ignore', 'pipe', 'pipe'],
-            timeout: options.timeout,
+            timeout: timeoutMs, // 🔥 使用统一的超时配置
+          });
+          
+          child.on('error', (error: Error) => {
+            resolve({ exitCode: null });
           });
           
           // 监听输出
@@ -260,7 +261,6 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
                 output = iconv.decode(data, 'cp936'); // cp936 是 GBK 编码
               } catch (error) {
                 // 如果 iconv-lite 不可用，使用默认处理
-                console.warn('[Exec Tool] ⚠️ iconv-lite 不可用，使用默认编码处理');
                 output = data.toString('utf8');
               }
             } else {
@@ -283,7 +283,6 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
                 output = iconv.decode(data, 'cp936'); // cp936 是 GBK 编码
               } catch (error) {
                 // 如果 iconv-lite 不可用，使用默认处理
-                console.warn('[Exec Tool] ⚠️ iconv-lite 不可用，使用默认编码处理');
                 output = data.toString('utf8');
               }
             } else {
@@ -303,11 +302,11 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
           }
           
           // 监听退出
-          child.on('close', (code: number | null) => {
+          child.on('close', (code: number | null, signal: string | null) => {
             resolve({ exitCode: code });
           });
           
-          child.on('error', () => {
+          child.on('error', (error: Error) => {
             resolve({ exitCode: null });
           });
         });
@@ -317,11 +316,6 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
   
   // 包装安全检查和 PATH 处理
   const secureBashTool = wrapToolWithSecurity(bashTool, shellPath);
-  
-  console.info(`[Exec Tool] ✅ Exec Tool 创建完成`);
-  console.info(`  工作区: ${workspaceDir}`);
-  console.info(`  工具: bash`);
-  console.info(`  PATH 已合并: shell PATH + 后备路径`);
   
   return [secureBashTool];
 }

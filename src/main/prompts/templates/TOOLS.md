@@ -28,8 +28,8 @@ sudo apt update
 sudo apt install python3 python3-pip
 
 # 验证安装
-python3 --version
-pip3 --version
+python --version
+pip --version
 ```
 
 Windows:
@@ -47,13 +47,9 @@ winget install Python.Python.3
 **验证安装**:
 ```bash
 # 检查 Python 版本
-python3 --version
-# 或
 python --version
 
 # 检查 pip 版本
-pip3 --version
-# 或
 pip --version
 ```
 
@@ -454,14 +450,14 @@ google-chrome --remote-debugging-port=9222
    ```json
    {
      "tool": "exec",
-     "command": "pip3 install package-name"
+     "command": "pip install package-name"
    }
    ```
    或者如果有 requirements.txt：
    ```json
    {
      "tool": "exec", 
-     "command": "pip3 install -r requirements.txt"
+     "command": "pip install -r requirements.txt"
    }
    ```
 
@@ -496,7 +492,7 @@ google-chrome --remote-debugging-port=9222
 步骤 3: 执行安装
 {
   "tool": "exec",
-  "command": "pip3 install markitdown"
+  "command": "pip install markitdown"
 }
 ```
 
@@ -605,7 +601,7 @@ google-chrome --remote-debugging-port=9222
 
 // 4. 执行（使用从 readme 中提取的命令）
 {
-  "command": "cd <defaultSkillDir>/video-transcript-downloader && python3 scripts/download.py --url 'https://youtube.com/watch?v=xxx'"
+  "command": "cd <defaultSkillDir>/video-transcript-downloader && python scripts/download.py --url 'https://youtube.com/watch?v=xxx'"
 }
 ```
 
@@ -659,7 +655,7 @@ google-chrome --remote-debugging-port=9222
 - **完整路径**：如 `<defaultSkillDir>/skill-name/scripts/main.py`（使用 `api_get_config` 查询 defaultSkillDir）
 - **脚本名称**：精确匹配 readme 中的文件名（不要猜测或修改）
 - **参数格式**：精确使用 readme 中的参数名（如 `--input` 不是 `--file`）
-- **执行方式**：如 `python3`、`node`、`bash`（根据 readme 说明）
+- **执行方式**：如 `python`、`node`、`bash`（根据 readme 说明）
 
 **步骤 5：使用 `bash` 工具执行命令**
 ```json
@@ -692,7 +688,7 @@ google-chrome --remote-debugging-port=9222
 - **完整路径**：如 `<defaultSkillDir>/skill-name/scripts/main.py`（使用 `api_get_config` 查询 defaultSkillDir）
 - **脚本名称**：精确匹配 readme 中的文件名（不要猜测或修改）
 - **参数格式**：精确使用 readme 中的参数名（如 `--input` 不是 `--file`）
-- **执行方式**：如 `python3`、`node`、`bash`（根据 readme 说明）
+- **执行方式**：如 `python`、`node`、`bash`（根据 readme 说明）
 
 ### ✅ 正确示例（完整流程）
 
@@ -707,7 +703,7 @@ google-chrome --remote-debugging-port=9222
 
 // 步骤 2: 阅读返回的 SKILL.md 内容
 // readme 字段示例：
-// "使用方法：python3 scripts/process.py --input <输入文件> --output <输出文件>"
+// "使用方法：python scripts/process.py --input <输入文件> --output <输出文件>"
 // configuration 字段示例：
 // "需要配置：OPENAI_API_KEY 环境变量"
 
@@ -720,11 +716,11 @@ google-chrome --remote-debugging-port=9222
 }
 
 // 步骤 4: 从 readme 提取执行命令
-// 提取到：python3 scripts/process.py --input "input.jpg" --output "output.jpg"
+// 提取到：python scripts/process.py --input "input.jpg" --output "output.jpg"
 
 // 步骤 5: 执行命令
 {
-  "command": "cd ~/.agents/skills/image-processor && python3 scripts/process.py --input 'input.jpg' --output 'output.jpg'"
+  "command": "cd ~/.agents/skills/image-processor && python scripts/process.py --input 'input.jpg' --output 'output.jpg'"
 }
 ```
 
@@ -744,7 +740,7 @@ google-chrome --remote-debugging-port=9222
 
 // 步骤 5: 使用实际路径执行
 {
-  "command": "cd ~/my-custom-skills/custom-skill && python3 main.py --arg value"
+  "command": "cd ~/my-custom-skills/custom-skill && python main.py --arg value"
 }
 ```
 
@@ -753,7 +749,7 @@ google-chrome --remote-debugging-port=9222
 ```json
 // ❌ 错误 1: 没有先调用 info，直接猜测执行命令
 {
-  "command": "python3 ~/.agents/skills/example-skill/main.py ..."
+  "command": "python ~/.agents/skills/example-skill/main.py ..."
 }
 // 问题：文件名可能错误！SKILL.md 中可能是 process.py 或 run.py
 
@@ -764,13 +760,13 @@ google-chrome --remote-debugging-port=9222
 }
 // 然后直接执行：
 {
-  "command": "python3 ~/.agents/skills/example-skill/scripts/run.py ..."
+  "command": "python ~/.agents/skills/example-skill/scripts/run.py ..."
 }
 // 问题：readme 中明明写的是 process.py，不是 run.py！
 
 // ❌ 错误 3: 参数名自己编造
 {
-  "command": "python3 ~/.agents/skills/example-skill/scripts/process.py --file input.txt --out output.txt"
+  "command": "python ~/.agents/skills/example-skill/scripts/process.py --file input.txt --out output.txt"
 }
 // 问题：readme 中的参数是 --input 和 --output，不是 --file 和 --out！
 
@@ -781,13 +777,13 @@ google-chrome --remote-debugging-port=9222
 }
 // SKILL.md 中说明需要 OPENAI_API_KEY，但直接执行：
 {
-  "command": "cd ~/.agents/skills/openai-skill && python3 main.py"
+  "command": "cd ~/.agents/skills/openai-skill && python main.py"
 }
 // 问题：缺少必需的 API Key 配置，执行会失败！
 
 // ❌ 错误 5: 假设 Skill 在默认目录
 {
-  "command": "cd ~/.agents/skills/custom-skill && python3 main.py"
+  "command": "cd ~/.agents/skills/custom-skill && python main.py"
 }
 // 问题：用户可能安装在 ~/my-skills/custom-skill/，路径错误！
 ```
@@ -1191,25 +1187,30 @@ google-chrome --remote-debugging-port=9222
 ### Python 执行规则（重要）
 
 **执行优先级**：
-1. **优先使用系统 Python**：使用系统安装的 Python 3
-2. **降级到 python 命令**：如果 python3 不可用，尝试 python 命令
+1. **优先使用 python 命令**：现代 Python 环境推荐使用 `python`
+2. **智能环境检测**：如果 `python` 失败，自动检测并使用正确的 Python 环境（如 `python3`、虚拟环境等）
 
-**执行 Python 脚本的标准流程**：
+**执行 Python 脚本的智能策略**：
 ```bash
-# 1. 优先：使用 python3（推荐）
-python3 script.py
-
-# 2. 降级：使用 python（仅当 python3 不可用时）
+# 1. 优先：使用 python（推荐）
 python script.py
+
+# 2. 如果失败，智能检测环境：
+# - 检查 python3 是否可用
+# - 检查虚拟环境
+# - 检查 conda 环境
+# - 使用 which python 查找正确路径
 ```
 
 **安装 Python 包的标准流程**：
 ```bash
-# 1. 优先：使用 pip3（推荐）
-pip3 install package-name
-
-# 2. 降级：使用 pip（仅当 pip3 不可用时）
+# 1. 优先：使用 pip（推荐）
 pip install package-name
+
+# 2. 如果失败，智能检测环境：
+# - 检查 pip3 是否可用
+# - 检查虚拟环境中的 pip
+# - 使用 which pip 查找正确路径
 ```
 
 ### 使用场景
@@ -1224,20 +1225,18 @@ pip install package-name
 
 **执行 Python 脚本（推荐方式）**：
 ```bash
-# 优先：使用 python3
-python3 script.py
-
-# 降级：使用 python（仅当 python3 不可用时）
+# 优先：使用 python
 python script.py
+
+# 如果失败，智能检测环境（如 python3、虚拟环境等）
 ```
 
 **安装 Python 包（推荐方式）**：
 ```bash
-# 优先：使用 pip3
-pip3 install requests
-
-# 降级：使用 pip（仅当 pip3 不可用时）
+# 优先：使用 pip
 pip install requests
+
+# 如果失败，智能检测环境（如 pip3、虚拟环境等）
 ```
 
 **执行 Node.js 脚本**：
@@ -1247,7 +1246,7 @@ node script.js
 
 ### 安全规则
 - ❌ 禁止：`rm -rf /`、`mkfs`、`shutdown`
-- ✅ 允许：`ls`、`cat`、`python3`、`cp`、`mkdir`
+- ✅ 允许：`ls`、`cat`、`python`、`cp`、`mkdir`
 
 
 **如果用户未安装 Python**：
