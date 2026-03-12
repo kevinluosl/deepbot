@@ -22,6 +22,10 @@ export class MessageHandler {
   private executionSteps: ExecutionStep[] = []; // 当前消息的执行步骤
   private onExecutionStepUpdate?: (steps: ExecutionStep[]) => void; // 执行步骤更新回调
   private onAbortControllerCreated?: (controller: AbortController) => void; // AbortController 创建回调
+  
+  // Thinking 状态管理
+  private isInThinking: boolean = false; // 是否正在 thinking 状态
+  private thinkingBuffer: string = ''; // thinking 内容缓冲区
 
   constructor(agent: Agent | null) {
     this.agent = agent;
@@ -55,6 +59,7 @@ export class MessageHandler {
    */
   private addExecutionStep(step: ExecutionStep): void {
     this.executionSteps.push(step);
+    console.log(`📋 添加执行步骤: ${step.toolLabel || step.toolName} (${step.status})`);
     this.onExecutionStepUpdate?.(this.executionSteps);
   }
 
@@ -68,8 +73,32 @@ export class MessageHandler {
       if (updates.status) {
         step.duration = Date.now() - step.timestamp;
       }
+      console.log(`📋 更新执行步骤: ${step.toolLabel || step.toolName} (${step.status})`);
       this.onExecutionStepUpdate?.(this.executionSteps);
     }
+  }
+
+  /**
+   * 完成 thinking 过程
+   */
+  private completeThinking(thinkingContent: string, currentToolStepId: string | null): void {
+    console.log('✅ Thinking 完成 (文本解析模拟)');
+    if (currentToolStepId) {
+      this.updateExecutionStep(currentToolStepId, {
+        result: thinkingContent,
+        status: 'success',
+      });
+    }
+    this.isInThinking = false;
+    this.thinkingBuffer = '';
+  }
+
+  /**
+   * 重置 thinking 状态
+   */
+  private resetThinkingState(): void {
+    this.isInThinking = false;
+    this.thinkingBuffer = '';
   }
 
   /**
@@ -86,6 +115,9 @@ export class MessageHandler {
     if (!keepExecutionSteps) {
       this.executionSteps = [];
     }
+
+    // 重置 thinking 状态
+    this.resetThinkingState();
 
     // 🔥 重置用户停止标志
     this.userAborted = false;
@@ -147,12 +179,90 @@ export class MessageHandler {
         // 只处理 message_update 事件中的 text_delta
         if (event.type === 'message_update' && event.assistantMessageEvent) {
           const assistantEvent = event.assistantMessageEvent;
+          
           if (assistantEvent.type === 'text_delta' && assistantEvent.delta) {
-            // 过滤掉 <think> 和 </think> 标签
-            const filteredDelta = assistantEvent.delta
-              .replace(/<think>/g, '')
-              .replace(/<\/think>/g, '');
-            fullResponse += filteredDelta;
+            // 实现基于文本解析的 thinking 模拟（因为 MiniMax 不支持原生 thinking 事件）
+            let rawDelta = assistantEvent.delta;
+            let filteredDelta = rawDelta;
+            
+            // 状态机：处理跨多个 delta 的 thinking 内容
+            if (!this.isInThinking) {
+              // 不在 thinking 状态，检查是否开始 thinking
+              const thinkStartIndex = rawDelta.indexOf('<think>');
+              if (thinkStartIndex !== -1) {
+                // 发现 thinking 开始标签
+                console.log('🧠 Thinking 开始 (文本解析模拟)');
+                this.isInThinking = true;
+                this.thinkingBuffer = '';
+                
+                // 创建 thinking 执行步骤
+                const stepId = generateStepId();
+                currentToolStepId = stepId;
+                this.addExecutionStep({
+                  id: stepId,
+                  toolName: 'thinking',
+                  toolLabel: '思考过程',
+                  status: 'running',
+                  timestamp: Date.now(),
+                });
+                
+                // 分离 thinking 前的内容和 thinking 内容
+                const beforeThinking = rawDelta.substring(0, thinkStartIndex);
+                const afterThinkStart = rawDelta.substring(thinkStartIndex + 7); // 跳过 '<think>'
+                
+                // thinking 前的内容加入主消息流
+                filteredDelta = beforeThinking;
+                
+                // thinking 内容加入缓冲区
+                this.thinkingBuffer += afterThinkStart;
+                
+                // 检查是否在同一个 delta 中就结束了
+                const thinkEndIndex = this.thinkingBuffer.indexOf('</think>');
+                if (thinkEndIndex !== -1) {
+                  // 在同一个 delta 中结束
+                  const thinkingContent = this.thinkingBuffer.substring(0, thinkEndIndex);
+                  const afterThinking = this.thinkingBuffer.substring(thinkEndIndex + 8); // 跳过 '</think>'
+                  
+                  // 完成 thinking
+                  this.completeThinking(thinkingContent, currentToolStepId);
+                  currentToolStepId = null;
+                  
+                  // 剩余内容加入主消息流
+                  filteredDelta += afterThinking;
+                }
+              }
+            } else {
+              // 正在 thinking 状态，所有内容都是 thinking 内容
+              this.thinkingBuffer += rawDelta;
+              filteredDelta = ''; // 不输出到主消息流
+              
+              // 检查是否结束 thinking
+              const thinkEndIndex = this.thinkingBuffer.indexOf('</think>');
+              if (thinkEndIndex !== -1) {
+                // 发现 thinking 结束标签
+                const thinkingContent = this.thinkingBuffer.substring(0, thinkEndIndex);
+                const afterThinking = this.thinkingBuffer.substring(thinkEndIndex + 8); // 跳过 '</think>'
+                
+                // 完成 thinking
+                this.completeThinking(thinkingContent, currentToolStepId);
+                currentToolStepId = null;
+                
+                // 剩余内容加入主消息流
+                filteredDelta = afterThinking;
+              } else {
+                // 更新 thinking 内容
+                const step = this.executionSteps.find(s => s.id === currentToolStepId);
+                if (step) {
+                  step.result = this.thinkingBuffer;
+                  this.onExecutionStepUpdate?.(this.executionSteps);
+                }
+              }
+            }
+            
+            // 输出过滤后的内容到主消息流
+            if (filteredDelta) {
+              fullResponse += filteredDelta;
+            }
           }
           return;
         }

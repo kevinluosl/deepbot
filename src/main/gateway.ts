@@ -803,6 +803,7 @@ export class Gateway {
       
       // 设置执行步骤更新回调
       runtime.setExecutionStepCallback((steps) => {
+        console.log(`📋 [Gateway] 发送执行步骤更新到前端: ${steps.length} 个步骤`);
         // 发送执行步骤更新到前端
         sendToWindow(this.mainWindow, IPC_CHANNELS.EXECUTION_STEP_UPDATE, {
           messageId,

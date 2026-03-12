@@ -577,6 +577,23 @@ export class AgentRuntime {
   }
 
   /**
+   * 从文本中移除 thinking 内容，只保留实际回复内容
+   */
+  private removeThinkingContent(text: string): string {
+    // 移除完整的 <think>...</think> 块
+    let filtered = text.replace(/<think>[\s\S]*?<\/think>/g, '');
+    
+    // 移除未闭合的 thinking 开始部分（从 <think> 到文本结尾）
+    filtered = filtered.replace(/<think>[\s\S]*$/g, '');
+    
+    // 移除未开始的 thinking 结束部分（从文本开始到 </think>）
+    filtered = filtered.replace(/^[\s\S]*?<\/think>/g, '');
+    
+    // 清理多余的空白字符
+    return filtered.trim();
+  }
+
+  /**
    * 使用 AI 判断响应的语义，决定是否需要继续执行
    * 
    * 直接调用大模型 API 进行语义判断，不使用关键字匹配
@@ -587,9 +604,6 @@ export class AgentRuntime {
    */
   private async detectUnfinishedIntent(response: string, hasToolCalls: boolean): Promise<boolean> {
     console.log('🔍 [detectUnfinishedIntent] 开始检测...');
-    console.log(`   hasToolCalls: ${hasToolCalls}`);
-    console.log(`   response 长度: ${response.length} 字符`);
-    console.log(`   response 最后 100 字符: ${response.slice(-100)}`);
     
     // 🔥 检查是否已被用户停止
     const abortController = this.messageHandler.getAbortController();
@@ -612,23 +626,22 @@ export class AgentRuntime {
           .join('\n');
         
         agentTextOnly = textParts.trim();
-        console.log(`   Agent 纯文本长度: ${agentTextOnly.length} 字符`);
-        console.log(`   Agent 纯文本最后 100 字符: ${agentTextOnly.slice(-100)}`);
       }
     }
     
     // 如果提取到了 Agent 的纯文本，使用它；否则使用原始 response
-    const textToAnalyze = agentTextOnly || response;
+    let textToAnalyze = agentTextOnly || response;
     
-    // 提取最后 400 字符作为判断依据（增加上下文）
+    // 🔥 移除 thinking 内容，只保留实际回复内容
+    textToAnalyze = this.removeThinkingContent(textToAnalyze);
+    
+    // 提取最后 200 字符作为判断依据
     const lastPart = textToAnalyze.slice(-200).trim();
     
     // 1. 检测重复响应
-    console.log('🔍 [detectUnfinishedIntent] 检查重复响应...');
     if (this.lastResponsePart && this.lastResponsePart === lastPart) {
       this.repeatCount++;
       console.log(`⚠️ [detectUnfinishedIntent] 检测到重复响应 (第 ${this.repeatCount} 次)，返回 false（停止继续）`);
-      console.log(`   重复内容: ${lastPart.substring(0, 50)}...`);
       return false;
     }
     
@@ -689,16 +702,16 @@ ${lastPart}
         return false;
       }
       
-      const answer = response.content.trim().toUpperCase();
+      const answer = this.removeThinkingContent(response.content.trim()).toUpperCase();
       
       const shouldContinue = answer.includes('YES');
       
       console.log(`🤖 [detectUnfinishedIntent] AI 判断结果: ${answer}`);
+      console.log(`   分析文本: ${lastPart.slice(-50)}`);
       console.log(`   shouldContinue: ${shouldContinue}`);
       
       if (shouldContinue) {
         console.log('🔍 [detectUnfinishedIntent] AI 判断：需要继续执行，返回 true');
-        console.log(`   判断依据: ${lastPart.substring(0, 50)}...`);
       } else {
         console.log('✅ [detectUnfinishedIntent] AI 判断：任务完成或等待用户输入，返回 false');
       }
