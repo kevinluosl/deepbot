@@ -312,41 +312,22 @@ export function QuickStart(_props: QuickStartProps) {
         </div>
       </div>
 
-      {/* 使用技巧 */}
-      <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '8px' }}>💡</span>
-          使用技巧
-        </h4>
-        <div style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
-          {[
-            { icon: '👥', text: '多 Tab 协作：每个 Tab 可以有独立的角色和记忆' },
-            { icon: '🧠', text: '长期记忆：告诉 AI "记住：..."，它会永久记住' },
-            { icon: '⏰', text: '定时任务：说"每天早上 9 点..."，AI 会自动创建' },
-            { icon: '🎯', text: '技能扩展：使用 Skill Manager 安装技能包' },
-            { icon: '🔒', text: '安全限制：所有操作都在工作目录白名单内' },
-            { icon: '📱', text: '外部通讯：配置飞书等平台，实现跨平台交互' },
-          ].map((tip, index) => (
-            <div 
-              key={index}
-              style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                color: 'var(--settings-text-dim)'
-              }}
-            >
-              <span style={{ marginRight: '8px', fontSize: '14px' }}>{tip.icon}</span>
-              <span>{tip.text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* 推荐工具和 Skill */}
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>⭐</span>
           推荐工具和 Skill
+          <span style={{ 
+            marginLeft: '8px', 
+            padding: '1px 6px', 
+            background: 'var(--settings-accent)', 
+            color: '#fff', 
+            borderRadius: '10px', 
+            fontSize: '11px',
+            fontWeight: '600'
+          }}>
+            3
+          </span>
         </h4>
         <div style={{ 
           padding: '12px',
@@ -399,6 +380,159 @@ export function QuickStart(_props: QuickStartProps) {
               </div>
             </div>
           </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>🌐</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>Agent-Reach - 互联网能力扩展</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              给 AI Agent 装上互联网的眼睛，一键获得全网信息访问能力
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>支持平台：</strong>
+              <div style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
+                <div>• Twitter/X、Reddit、YouTube</div>
+                <div>• B站、小红书、抖音</div>
+                <div>• GitHub、LinkedIn、微博</div>
+                <div>• 微信公众号、RSS 订阅</div>
+                <div>• 全网搜索、网页阅读</div>
+                <div>• 小宇宙播客</div>
+              </div>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>特色功能：</strong>
+              <div style={{ marginTop: '4px' }}>
+                • 💰 完全免费，所有工具开源<br/>
+                • 🔒 隐私安全，Cookie 只存本地<br/>
+                • 🔄 持续更新，自动追踪平台变化<br/>
+                • 🤖 兼容所有 Agent，一键安装
+              </div>
+            </div>
+            <div style={{ marginLeft: '28px', marginTop: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>安装方式：</strong>
+              <div style={{ 
+                marginTop: '4px',
+                padding: '8px',
+                background: 'rgba(0,0,0,0.1)',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '12px'
+              }}>
+                💬 告诉 DeepBot："帮我安装 Agent Reach：https://raw.githubusercontent.com/Panniantong/agent-reach/main/docs/install.md"
+              </div>
+              <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                或访问：<a 
+                  href="https://github.com/Panniantong/Agent-Reach" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--settings-accent)', textDecoration: 'none' }}
+                >
+                  github.com/Panniantong/Agent-Reach
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>🔌</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>MCPorter - MCP 协议工具包</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              TypeScript 运行时和 CLI 工具，让 AI Agent 轻松调用各种 MCP 服务器
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>核心功能：</strong>
+              <div style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
+                <div>• 零配置自动发现 MCP 服务器</div>
+                <div>• 一键生成 CLI 工具</div>
+                <div>• TypeScript 类型安全调用</div>
+                <div>• OAuth 和 stdio 传输支持</div>
+                <div>• 友好的组合式 API</div>
+                <div>• 临时连接和持久化配置</div>
+              </div>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>支持的 MCP 服务：</strong>
+              <div style={{ marginTop: '4px' }}>
+                • Linear、Vercel、Chrome DevTools<br/>
+                • Context7、Firecrawl、小红书<br/>
+                • 抖音、LinkedIn 等数十种服务<br/>
+                • 自动兼容 Cursor/Claude/VS Code 配置
+              </div>
+            </div>
+            <div style={{ marginLeft: '28px', marginTop: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>安装方式：</strong>
+              <div style={{ 
+                marginTop: '4px',
+                padding: '8px',
+                background: 'rgba(0,0,0,0.1)',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '12px'
+              }}>
+                💬 告诉 DeepBot："帮我安装 mcporter：npm install -g mcporter"
+              </div>
+              <div style={{ marginTop: '4px', fontSize: '12px' }}>
+                或访问：<a 
+                  href="https://github.com/steipete/mcporter" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--settings-accent)', textDecoration: 'none' }}
+                >
+                  github.com/steipete/mcporter
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 使用技巧 */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px' }}>💡</span>
+          使用技巧
+          <span style={{ 
+            marginLeft: '8px', 
+            padding: '1px 6px', 
+            background: 'var(--settings-accent)', 
+            color: '#fff', 
+            borderRadius: '10px', 
+            fontSize: '11px',
+            fontWeight: '600'
+          }}>
+            12
+          </span>
+        </h4>
+        <div style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
+          {[
+            { icon: '👥', text: '多 Tab 协作：每个 Tab 可以有独立的角色和记忆，支持跨 Tab 通信' },
+            { icon: '🧠', text: '长期记忆：告诉 AI "记住：..."，它会永久记住用户偏好和习惯' },
+            { icon: '⏰', text: '智能定时任务：说"每天早上 9 点..."，AI 会自动创建和管理定时任务' },
+            { icon: '🎯', text: '技能扩展系统：使用 Skill Manager 安装技能包，无限扩展 AI 能力' },
+            { icon: '🔒', text: '安全沙箱：所有操作都在工作目录白名单内，确保系统安全' },
+            { icon: '📱', text: '跨平台通讯：配置飞书等平台，实现 AI 与外部系统的无缝交互' },
+            { icon: '🎨', text: '自然语言交互：直接说出需求，无需记忆复杂命令' },
+            { icon: '🔄', text: '上下文理解：AI 会记住对话历史，支持连续对话' },
+            { icon: '📋', text: '批量操作：一次性处理多个文件或任务' },
+            { icon: '⚡', text: '快速迭代：AI 会根据反馈不断优化执行方案' },
+            { icon: '🔍', text: '错误诊断：遇到问题时，AI 会主动分析并提供解决方案' },
+            { icon: '🎪', text: '精确控制：使用具体的路径和参数获得准确结果' },
+          ].map((tip, index) => (
+            <div 
+              key={index}
+              style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                color: 'var(--settings-text-dim)'
+              }}
+            >
+              <span style={{ marginRight: '8px', fontSize: '14px' }}>{tip.icon}</span>
+              <span>{tip.text}</span>
+            </div>
+          ))}
         </div>
       </div>
 
