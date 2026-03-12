@@ -90,8 +90,8 @@
   /* animation: fadeIn 0.3s ease-in; */
 }
 
-/* 鼠标悬停高亮 */
-.terminal-line.hovered {
+/* 鼠标悬停高亮 - 使用 CSS :hover 避免影响文本选择 */
+.terminal-line:hover {
   background-color: rgba(122, 162, 247, 0.08);
 }
 

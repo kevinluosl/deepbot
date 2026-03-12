@@ -170,7 +170,6 @@ const arePropsEqual = (
 export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message, agentName = 'matrix', userName = 'user', isConnectorTab = false }) => {
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
   const isUser = message.role === 'user';
@@ -259,11 +258,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   };
 
   return (
-    <div 
-      className={`terminal-line ${isHovered ? 'hovered' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className="terminal-line">
       {/* 提示符和消息内容在同一行 */}
       <div className="terminal-message-line">
         <span className={`terminal-prompt ${promptClass}`}>{prompt}</span>
