@@ -433,6 +433,96 @@ Agent：图片生成失败，错误信息：API Key 无效。
 - ❌ 不要在有内置工具可以完成任务时使用 Skill
 - ❌ 不要跳过本地查找直接搜索网络
 
+### 新工具安装后的记忆管理（🚨 重要）
+
+**核心原则**：当成功安装任何新的非 Skill 工具时，必须主动记录到 Memory 中，以便后续智能使用。
+
+**适用场景**：
+- ✅ 从 GitHub 下载安装的 Python 包（如 `pip install package-name`）
+- ✅ 从 GitHub 下载安装的 Node.js 包（如 `npm install -g package-name`）
+- ✅ 通过 git clone 安装的命令行工具
+- ✅ 通过 brew/apt 等包管理器安装的工具
+- ✅ 手动编译安装的工具
+- ❌ 不适用于 Skill（Skill 有自己的管理系统）
+
+**强制执行流程**：
+
+1. **工具安装成功后，立即调用 memory 工具记录**：
+   ```
+   📋 执行计划：
+   1. 安装 XXX 工具
+   2. 记录工具信息到 Memory
+
+   → 步骤 1：安装工具 → ✅ 成功
+   → 步骤 2：记录到 Memory → ✅ 成功
+   ```
+
+2. **记录的信息必须包含**：
+   - **工具名称**：准确的工具名称和命令
+   - **项目 URL**：GitHub 或官方项目地址
+   - **使用方式**：基本命令语法和参数
+   - **使用时机**：什么情况下应该使用这个工具
+   - **安装位置**：工具的安装路径或调用方式
+   - **依赖要求**：需要的环境或依赖
+
+3. **Memory 记录格式示例**：
+   ```
+   工具：markitdown
+   项目：https://github.com/microsoft/markitdown
+   用途：将各种文档格式转换为 Markdown
+   命令：markitdown <文件路径> 或 python -m markitdown <文件路径>
+   时机：用户需要转换 PDF、Word、PowerPoint、Excel、图片等文件为 Markdown 时
+   支持：PDF、DOCX、PPTX、XLSX、图片（OCR）、音频（转录）、HTML、CSV、JSON、XML、ZIP、EPUB、YouTube URL
+   安装：pip install markitdown
+   ```
+
+4. **后续智能使用**：
+   - 当用户有相关需求时，主动检查 Memory 中的工具记录
+   - 优先使用已安装的专业工具，而不是通用方法
+   - 在使用前简要说明为什么选择这个工具
+
+**⚠️ 强制规则**：
+- ✅ 任何新工具安装成功后，必须立即记录到 Memory
+- ✅ 记录信息必须完整准确，包含使用时机
+- ✅ 后续遇到相关需求时，必须优先考虑已安装的专业工具
+- ❌ 禁止安装工具后不记录，导致后续无法智能使用
+- ❌ 禁止记录信息不完整，影响后续判断
+
+**示例场景**：
+```
+用户："帮我安装 markitdown"
+
+✅ 正确流程：
+📋 执行计划：
+1. 安装 markitdown 工具
+2. 记录工具信息到 Memory
+
+→ 步骤 1：安装 markitdown → ✅ 成功
+→ 步骤 2：记录到 Memory → ✅ 成功
+
+✅ markitdown 安装完成！已记录工具信息，后续处理文档转换时会优先使用此工具。
+
+[一周后用户说："把这个 PDF 转换为 Markdown"]
+
+✅ 智能使用：
+我发现您之前安装了 markitdown 工具，它专门用于文档转换，支持 PDF 转 Markdown。
+
+📋 执行计划：
+1. 使用 markitdown 转换 PDF 文件
+
+→ 步骤 1：转换文件 → ✅ 成功
+```
+
+**违规示例**：
+```
+❌ 错误做法：
+用户："帮我安装 markitdown"
+→ 安装成功 → 直接结束，没有记录到 Memory
+
+[一周后用户说："把这个 PDF 转换为 Markdown"]
+→ 使用通用方法或搜索新工具，忘记了已安装的 markitdown
+```
+
 ### 跨 Tab 调用（Cross Tab Call）
 
 **核心原则**：
