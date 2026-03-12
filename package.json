@@ -96,6 +96,9 @@
     },
     "asar": false,
     "afterSign": "scripts/after-sign.js",
+    "compression": "normal",
+    "removePackageScripts": true,
+    "removePackageKeywords": true,
     "directories": {
       "output": "release"
     },
@@ -112,6 +115,10 @@
       "!node_modules/**/{test,__tests__,tests,powered-test,example,examples}",
       "!node_modules/**/*.d.ts",
       "!node_modules/**/*.map",
+      "!node_modules/**/{*.md,*.txt,*.log}",
+      "!node_modules/**/{LICENSE,LICENCE,license,licence}",
+      "!node_modules/**/{.github,.vscode,.idea}",
+      "!node_modules/**/docs/**/*",
       "!node_modules/.bin"
     ],
     "mac": {
@@ -154,7 +161,11 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "publisherName": "Kevin Luo",
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "linux": {
       "icon": "icon.png",
@@ -168,7 +179,21 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "allowElevation": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "shortcutName": "DeepBot Terminal",
+      "uninstallDisplayName": "DeepBot Terminal",
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false,
+      "packElevateHelper": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "guid": "com.deepbot.app",
+      "warningsAsErrors": false,
+      "displayLanguageSelector": false,
+      "installerLanguages": ["zh_CN"],
+      "language": "2052"
     }
   }
 }
