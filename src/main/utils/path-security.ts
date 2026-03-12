@@ -94,10 +94,14 @@ export function assertPathAllowed(filePath: string): void {
     const expandedPath = expandHomePath(filePath);
     const resolvedPath = path.resolve(expandedPath);
     
+    // 🔥 获取用户主目录并展开 ~/.deepbot/ 为绝对路径
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
+    const deepbotDir = path.join(homeDir, '.deepbot');
+    
     throw new Error(
       `安全限制：只能访问配置的目录及其子目录内的文件\n` +
       `允许的目录：\n` +
-      `  - 默认工作目录: ~/.deepbot/\n` +
+      `  - 默认工作目录: ${deepbotDir}\n` +
       `  - 用户工作目录: ${settings.workspaceDir}\n` +
       `  - 脚本目录: ${settings.scriptDir}\n` +
       `  - Skill 目录: ${settings.skillDirs.join(', ')}\n` +
