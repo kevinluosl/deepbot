@@ -29,11 +29,18 @@ export function getAllowedDirectories(): string[] {
   const store = SystemConfigStore.getInstance();
   const settings = store.getWorkspaceSettings();
   
+  // 获取用户主目录
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
+  const deepbotDir = path.join(homeDir, '.deepbot');
+  
   return [
     path.resolve(settings.workspaceDir),
+    path.resolve(deepbotDir), // 🔥 添加 ~/.deepbot/ 目录
     path.resolve(settings.scriptDir),
     ...settings.skillDirs.map(dir => path.resolve(dir)),
     path.resolve(settings.imageDir),
+    path.resolve(settings.memoryDir),
+    path.resolve(settings.sessionDir),
   ];
 }
 
@@ -90,10 +97,13 @@ export function assertPathAllowed(filePath: string): void {
     throw new Error(
       `安全限制：只能访问配置的目录及其子目录内的文件\n` +
       `允许的目录：\n` +
-      `  - 工作目录: ${settings.workspaceDir}\n` +
+      `  - 默认工作目录: ~/.deepbot/\n` +
+      `  - 用户工作目录: ${settings.workspaceDir}\n` +
       `  - 脚本目录: ${settings.scriptDir}\n` +
       `  - Skill 目录: ${settings.skillDirs.join(', ')}\n` +
       `  - 图片目录: ${settings.imageDir}\n` +
+      `  - 记忆目录: ${settings.memoryDir}\n` +
+      `  - 会话目录: ${settings.sessionDir}\n` +
       `请求路径: ${resolvedPath}\n` +
       `提示：请在系统设置中配置工作目录`
     );

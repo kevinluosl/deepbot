@@ -30,6 +30,7 @@ import type { AgentTool } from '@mariozechner/pi-agent-core';
 import { getShellPathFromLoginShell, applyShellPath } from './shell-env';
 import { isBlockingInteractiveCommand, getBlockingCommandSuggestion } from './exec-blocking-check';
 import { TIMEOUTS } from '../config/timeouts';
+import { assertPathAllowed } from '../utils/path-security';
 
 /**
  * 危险命令列表（黑名单）
@@ -76,6 +77,79 @@ const DANGEROUS_PATTERNS = [
 ];
 
 /**
+ * 检查命令中的路径是否安全（严格模式）
+ * 
+ * 使用 assertPathAllowed 进行严格的路径安全检查，
+ * 如果发现不安全的路径会直接抛出异常终止执行
+ * 
+ * @param command - 要执行的命令
+ * @throws 如果包含不安全路径会抛出异常
+ */
+function checkCommandPathSecurity(command: string): void {
+  // 提取命令中可能的路径参数
+  const pathPatterns = [
+    // cd 命令：cd /path/to/dir
+    { pattern: /cd\s+([^\s&|;]+)/gi, name: 'cd' },
+    // 文件操作：cp, mv, rm, mkdir, rmdir, touch, cat, ls, find, grep 等
+    { pattern: /(cp|mv|rm|mkdir|rmdir|touch|cat|ls|find|grep)\s+([^\s&|;-][^\s&|;]*)/gi, name: 'file operations' },
+    // 重定向：> /path/to/file, >> /path/to/file
+    { pattern: /(>>?)\s*([^\s&|;]+)/gi, name: 'redirection' },
+    // Python/Node.js 脚本执行：python /path/to/script.py
+    { pattern: /(python|python3|node|npm|pip|pip3)\s+([^\s&|;-][^\s&|;]*)/gi, name: 'script execution' },
+    // 通用文件路径：任何以 / 或 ~ 开头的路径
+    { pattern: /\s([~/][^\s&|;]*)/gi, name: 'absolute paths' },
+  ];
+  
+  for (const { pattern, name } of pathPatterns) {
+    const matches = Array.from(command.matchAll(pattern));
+    
+    for (const match of matches) {
+      // 根据不同的模式提取路径
+      let pathToCheck: string;
+      
+      if (name === 'cd') {
+        pathToCheck = match[1]; // cd 命令的路径参数
+      } else if (name === 'file operations') {
+        pathToCheck = match[2]; // 文件操作的路径参数
+      } else if (name === 'redirection') {
+        pathToCheck = match[2]; // 重定向的文件路径
+      } else if (name === 'script execution') {
+        pathToCheck = match[2]; // 脚本文件路径
+      } else if (name === 'absolute paths') {
+        pathToCheck = match[1]; // 绝对路径
+      } else {
+        continue;
+      }
+      
+      // 清理路径（去掉引号等）
+      pathToCheck = pathToCheck.replace(/^['"]|['"]$/g, '').trim();
+      
+      // 跳过明显的参数（以 - 开头）
+      if (pathToCheck.startsWith('-')) {
+        continue;
+      }
+      
+      // 跳过空路径
+      if (!pathToCheck) {
+        continue;
+      }
+      
+      // 跳过纯文件名（不包含路径分隔符）
+      if (!pathToCheck.includes('/') && !pathToCheck.includes('\\') && !pathToCheck.startsWith('~')) {
+        continue;
+      }
+      
+      // 🔥 使用 assertPathAllowed 进行严格检查
+      // 如果路径不安全，会直接抛出异常
+      try {
+        assertPathAllowed(pathToCheck);
+      } catch (error) {
+        throw new Error(`命令安全检查失败：${error instanceof Error ? error.message : '未知错误'}\n命令：${command}\n不安全路径：${pathToCheck}`);
+      }
+    }
+  }
+}
+/**
  * 检查命令是否危险
  * 
  * @param command - 要执行的命令
@@ -120,9 +194,14 @@ function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
       
       // 安全检查：验证命令
       if (typeof command === 'string' && command.trim()) {
+        // 1. 危险命令检查
         if (isDangerousCommand(command)) {
           throw new Error(`危险命令被拦截: ${command}`);
         }
+        
+        // 2. 🔥 路径安全检查（严格模式）
+        // 使用 assertPathAllowed 检查命令中的所有路径
+        checkCommandPathSecurity(command);
       }
       
       // 🔥 应用 shell PATH 到环境变量
@@ -204,6 +283,16 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
           const suggestion = getBlockingCommandSuggestion(command);
           throw new Error(suggestion);
         }
+        
+        // 🔥 检查工作目录是否安全（严格模式）
+        try {
+          assertPathAllowed(cwd);
+        } catch (error) {
+          throw new Error(`工作目录安全检查失败：${error instanceof Error ? error.message : '未知错误'}\n工作目录：${cwd}`);
+        }
+        
+        // 🔥 检查命令中的路径是否安全（严格模式）
+        checkCommandPathSecurity(command);
         
         // 🔥 强制应用合并后的 PATH
         const env: Record<string, string> = { ...process.env, PATH: shellPath };
