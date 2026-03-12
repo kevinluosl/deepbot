@@ -699,23 +699,37 @@ export class MessageHandler {
       return false;
     }
     
+    // 🔥 优化：更精确的错误检测，减少误判
     const errorPatterns = [
-      /^Error:/i,  // 行首的 Error:
-      /\nError:/i, // 换行后的 Error:
-      /错误[:：]/,  // 中文错误
-      /permission denied/i,
+      // 1. 明确的错误标识（行首或换行后）
+      /^Error:/i,                    // 行首的 Error:
+      /\nError:/i,                   // 换行后的 Error:
+      /^错误[:：]/,                   // 行首的中文错误
+      /\n错误[:：]/,                  // 换行后的中文错误
+      
+      // 2. 系统级错误（通常是真正的错误）
+      /permission denied/i,          // 权限被拒绝
       /权限被拒绝/,
-      /command not found/i,
+      /command not found/i,          // 命令未找到
       /命令未找到/,
-      /module not found/i,
-      /模块未找到/,
-      /cannot find/i,
-      /找不到/,
-      /failed to/i,
-      /失败/,
-      /ENOENT/,
-      /EACCES/,
-      /exited with code [1-9]/i, // 命令退出码非 0
+      /ENOENT/,                      // 文件不存在错误码
+      /EACCES/,                      // 权限错误码
+      /EPERM/,                       // 操作不允许
+      
+      // 3. 命令执行失败（退出码非 0）
+      /exited with code [1-9]/i,     // 命令退出码非 0
+      
+      // 4. 抛出异常的明确标识
+      /^Traceback \(most recent call last\)/m,  // Python 异常
+      /^    at .+:\d+:\d+/m,                    // JavaScript 堆栈跟踪
+      /^Fatal error:/i,                         // 致命错误
+      /^Uncaught /i,                            // 未捕获的异常
+      
+      // 5. 安全检查失败（DeepBot 特有）
+      /^命令安全检查失败/,
+      /^工作目录安全检查失败/,
+      /^安全限制：/,
+      /^命令被拦截：/,
     ];
     
     return errorPatterns.some(pattern => pattern.test(resultText));

@@ -8,10 +8,12 @@
  * - 连接池：复用 Model 实例和 HTTP 连接
  * - 单例模式：缓存 pi-ai 模块导入
  * - HTTP Keep-Alive：保持连接复用
+ * - 统一处理 <think> 标签：自动过滤 AI 模型的推理过程
  */
 
 import type { Model } from '@mariozechner/pi-ai';
 import { getConfig } from '../config';
+import { stripThinkTags } from '../../shared/utils/text-utils';
 
 /**
  * AI 消息类型
@@ -328,6 +330,9 @@ export async function callAI(
     if (!responseText || responseText.trim().length === 0) {
       throw new Error('AI 返回空响应');
     }
+
+    // 🔥 统一处理：移除 <think> 标签（MiniMax、DeepSeek 等模型会返回推理过程）
+    responseText = stripThinkTags(responseText);
 
     // 返回响应
     return {

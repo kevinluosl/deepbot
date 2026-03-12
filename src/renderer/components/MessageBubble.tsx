@@ -423,7 +423,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                         </pre>
                       </div>
                     )}
-                    {step.result && (
+                    {/* 🔥 优化：有错误时只显示错误框，没有错误时才显示结果框 */}
+                    {step.error ? (
+                      <div className="terminal-execution-detail-section error">
+                        <div className="terminal-execution-detail-label">错误:</div>
+                        <pre className="terminal-execution-detail-content">
+                          {step.error}
+                        </pre>
+                      </div>
+                    ) : step.result ? (
                       <div className="terminal-execution-detail-section">
                         <div className="terminal-execution-detail-label">结果:</div>
                         <pre className="terminal-execution-detail-content">
@@ -432,15 +440,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                             : JSON.stringify(step.result, null, 2)}
                         </pre>
                       </div>
-                    )}
-                    {step.error && (
-                      <div className="terminal-execution-detail-section error">
-                        <div className="terminal-execution-detail-label">错误:</div>
-                        <pre className="terminal-execution-detail-content">
-                          {step.error}
-                        </pre>
-                      </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>

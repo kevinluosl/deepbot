@@ -162,9 +162,7 @@ ${skillList}
     let responseText = response.content;
     console.info(`[Skill Manager] AI 响应: ${responseText}`);
     
-    // 🔥 过滤掉 <think> 标签（MiniMax 等模型会返回推理过程）
-    responseText = responseText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-    console.info(`[Skill Manager] 过滤后的响应: ${responseText}`);
+    // 注意：<think> 标签已在 callAI 中统一处理，这里不需要再处理
     
     // 解析 AI 返回的索引
     const { safeJsonParse } = await import('../../../shared/utils/json-utils');
