@@ -1,7 +1,7 @@
 {
   "name": "deepbot",
   "version": "0.2.0",
-  "description": "DeepBot Terminal - 通用系统级 AI 助手",
+  "description": "DeepBot Terminal - 探索企业级场景的深度 AI 助手",
   "main": "dist-electron/main/index.js",
   "author": "Kevin Luo @ Deepglint",
   "license": "MIT",
