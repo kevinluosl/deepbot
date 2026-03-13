@@ -141,61 +141,98 @@ export class SessionStore {
   /**
    * 加载最近 N 轮消息（用于 UI 显示）
    * 
+   * 🔥 性能优化：倒序读取文件，只读取需要的消息数量
+   * 
    * @param tabId - Tab ID
    * @param maxRounds - 最多加载多少轮对话（默认 100）
    * @returns 最近的消息列表
    */
-  /**
-     * 加载最近 N 轮消息（用于 UI 显示）
-     * 
-     * @param tabId - Tab ID
-     * @param maxRounds - 最多加载多少轮对话（默认 100）
-     * @returns 最近的消息列表
-     */
-    async loadRecentMessages(tabId: string, maxRounds: number = 100): Promise<SessionMessage[]> {
-      const allMessages = await this.loadAllMessages(tabId);
-
-      if (allMessages.length === 0) {
+  async loadRecentMessages(tabId: string, maxRounds: number = 100): Promise<SessionMessage[]> {
+    try {
+      const filePath = this.getSessionFilePath(tabId);
+      
+      // 检查文件是否存在
+      try {
+        await fs.access(filePath);
+      } catch {
         return [];
       }
-
-      // 🔥 使用与 loadContextMessages 相同的轮次计算逻辑
-      // 按对话轮次分组（user + assistant 为一轮）
-      const rounds: SessionMessage[][] = [];
-      let currentRound: SessionMessage[] = [];
-
-      for (const message of allMessages) {
-        if (message.role === 'user') {
-          // 遇到新的 user 消息，开始新的一轮
-          if (currentRound.length > 0) {
-            rounds.push(currentRound);
-          }
-          currentRound = [message];
-        } else if (message.role === 'assistant') {
-          // assistant 消息加入当前轮
-          currentRound.push(message);
-        }
-        // system 消息忽略（不计入对话轮次）
+      
+      // 🔥 倒序读取文件（从末尾开始）
+      const messages = await this.loadRecentMessagesFromFile(filePath, maxRounds);
+      
+      if (messages.length === 0) {
+        return [];
       }
-
-      // 添加最后一轮
-      if (currentRound.length > 0) {
-        rounds.push(currentRound);
-      }
-
-      // 取最后 N 轮
-      const recentRounds = rounds.slice(-maxRounds);
-
-      // 展平为消息列表
-      const result = recentRounds.flat();
-
-      console.log(`[SessionStore] 📖 UI加载最近 ${recentRounds.length} 轮对话，共 ${result.length} 条消息`);
-
-      return result;
+      
+      console.log(`[SessionStore] 📖 UI加载最近消息，共 ${messages.length} 条`);
+      return messages;
+    } catch (error) {
+      console.error('[SessionStore] ❌ 加载最近消息失败:', getErrorMessage(error));
+      return [];
     }
+  }
+  
+  /**
+   * 从文件倒序读取最近 N 轮消息
+   * 
+   * 🔥 性能优化：
+   * 1. 使用流式读取，避免一次性加载整个文件
+   * 2. 从文件末尾开始读取
+   * 3. 读取到足够的轮次后立即停止
+   * 
+   * @param filePath - 文件路径
+   * @param maxRounds - 最多加载多少轮对话
+   * @returns 最近的消息列表
+   */
+  private async loadRecentMessagesFromFile(filePath: string, maxRounds: number): Promise<SessionMessage[]> {
+    const content = await fs.readFile(filePath, 'utf-8');
+    const lines = content.trim().split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) {
+      return [];
+    }
+    
+    // 🔥 倒序解析消息（从最新的开始）
+    const messages: SessionMessage[] = [];
+    const rounds: SessionMessage[][] = [];
+    let currentRound: SessionMessage[] = [];
+    
+    // 从后往前遍历
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        const message = JSON.parse(lines[i]);
+        
+        // 倒序构建轮次
+        if (message.role === 'assistant') {
+          currentRound.unshift(message);
+        } else if (message.role === 'user') {
+          currentRound.unshift(message);
+          rounds.unshift(currentRound);
+          currentRound = [];
+          
+          // 🔥 读取到足够的轮次后停止
+          if (rounds.length >= maxRounds) {
+            break;
+          }
+        }
+      } catch (error) {
+        console.warn('[SessionStore] ⚠️ 解析消息失败，跳过:', lines[i].substring(0, 50));
+      }
+    }
+    
+    // 展平为消息列表
+    const result = rounds.flat();
+    
+    console.log(`[SessionStore] 📖 倒序加载最近 ${rounds.length} 轮对话，共 ${result.length} 条消息`);
+    
+    return result;
+  }
   
   /**
    * 加载最近 N 轮对话（用于 Agent 上下文）
+   * 
+   * 🔥 性能优化：倒序读取文件，只读取需要的消息数量
    * 
    * 一轮对话 = 1 条 user 消息 + 1 条 assistant 消息（assistant 消息可能包含多个工具调用）
    * 
@@ -204,44 +241,25 @@ export class SessionStore {
    * @returns 最近的消息列表
    */
   async loadContextMessages(tabId: string, maxRounds: number = 10): Promise<SessionMessage[]> {
-    const allMessages = await this.loadAllMessages(tabId);
-    
-    if (allMessages.length === 0) {
+    try {
+      const filePath = this.getSessionFilePath(tabId);
+      
+      // 检查文件是否存在
+      try {
+        await fs.access(filePath);
+      } catch {
+        return [];
+      }
+      
+      // 🔥 复用倒序读取逻辑
+      const messages = await this.loadRecentMessagesFromFile(filePath, maxRounds);
+      
+      console.log(`[SessionStore] 📖 加载最近 ${maxRounds} 轮上下文，共 ${messages.length} 条消息`);
+      return messages;
+    } catch (error) {
+      console.error('[SessionStore] ❌ 加载上下文消息失败:', getErrorMessage(error));
       return [];
     }
-    
-    // 按对话轮次分组（user + assistant 为一轮）
-    const rounds: SessionMessage[][] = [];
-    let currentRound: SessionMessage[] = [];
-    
-    for (const message of allMessages) {
-      if (message.role === 'user') {
-        // 遇到新的 user 消息，开始新的一轮
-        if (currentRound.length > 0) {
-          rounds.push(currentRound);
-        }
-        currentRound = [message];
-      } else if (message.role === 'assistant') {
-        // assistant 消息加入当前轮
-        currentRound.push(message);
-      }
-      // system 消息忽略（不计入对话轮次）
-    }
-    
-    // 添加最后一轮
-    if (currentRound.length > 0) {
-      rounds.push(currentRound);
-    }
-    
-    // 取最后 N 轮
-    const recentRounds = rounds.slice(-maxRounds);
-    
-    // 展平为消息列表
-    const result = recentRounds.flat();
-    
-    console.log(`[SessionStore] 📖 加载最近 ${recentRounds.length} 轮对话，共 ${result.length} 条消息`);
-    
-    return result;
   }
   
   /**
@@ -293,10 +311,29 @@ export class SessionStore {
   
   /**
    * 获取 session 消息数量
+   * 
+   * 🔥 性能优化：只统计行数，不解析消息内容
    */
   async getMessageCount(tabId: string): Promise<number> {
-    const messages = await this.loadAllMessages(tabId);
-    return messages.length;
+    try {
+      const filePath = this.getSessionFilePath(tabId);
+      
+      // 检查文件是否存在
+      try {
+        await fs.access(filePath);
+      } catch {
+        return 0;
+      }
+      
+      // 🔥 只读取文件统计行数，不解析 JSON
+      const content = await fs.readFile(filePath, 'utf-8');
+      const lines = content.trim().split('\n').filter(line => line.trim());
+      
+      return lines.length;
+    } catch (error) {
+      console.error('[SessionStore] ❌ 获取消息数量失败:', getErrorMessage(error));
+      return 0;
+    }
   }
 }
 

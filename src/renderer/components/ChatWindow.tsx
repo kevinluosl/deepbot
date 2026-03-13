@@ -50,9 +50,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   const programScrollingRef = useRef(false); // 🔥 程序是否正在滚动（避免误判）
   const lastScrollHeightRef = useRef(0); // 🔥 记录上次滚动高度
   
+  // 🔥 分页加载优化：初始只显示最近 20 条消息
+  const [displayCount, setDisplayCount] = useState(20);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
   // 🔥 获取当前 Tab 类型
   const currentTab = tabs?.find(t => t.id === activeTabId);
   const isConnectorTab = currentTab?.type === 'connector';
+  
+  // 🔥 计算要显示的消息（从最新的开始）
+  const displayedMessages = messages.slice(-displayCount);
+  const hasMoreMessages = messages.length > displayCount;
 
   // 🔥 加载 Tab 的 Agent 名字（考虑继承）
   useEffect(() => {
@@ -173,6 +181,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
 
         const { scrollTop, scrollHeight, clientHeight } = container;
         const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10; // 10px 容差
+        const isAtTop = scrollTop < 100; // 距离顶部小于 100px
+
+        // 🔥 用户滚动到顶部，加载更多消息
+        if (isAtTop && hasMoreMessages && !isLoadingMore) {
+          loadMoreMessages();
+        }
 
         // 用户滚动到底部，恢复自动滚动
         if (isAtBottom && !autoScroll) {
@@ -192,7 +206,52 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
         clearTimeout(scrollEndTimer);
       }
     };
-  }, [autoScroll]);
+  }, [autoScroll, hasMoreMessages, isLoadingMore]);
+  
+  // 🔥 加载更多消息
+  const loadMoreMessages = () => {
+    if (isLoadingMore || !hasMoreMessages) return;
+    
+    setIsLoadingMore(true);
+    const container = messagesContainerRef.current;
+    const oldScrollHeight = container?.scrollHeight || 0;
+    
+    // 延迟加载，避免阻塞 UI
+    setTimeout(() => {
+      setDisplayCount(prev => Math.min(prev + 20, messages.length));
+      setIsLoadingMore(false);
+      
+      // 🔥 保持滚动位置（避免跳动）
+      setTimeout(() => {
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          container.scrollTop = newScrollHeight - oldScrollHeight;
+        }
+      }, 0);
+    }, 100);
+  };
+  
+  // 🔥 当消息列表变化时，重置显示数量（切换 Tab 或清空消息）
+  useEffect(() => {
+    setDisplayCount(20);
+    setAutoScroll(true); // 🔥 切换 Tab 时恢复自动滚动
+  }, [activeTabId]);
+  
+  // 🔥 当历史消息加载完成后，滚动到底部
+  useEffect(() => {
+    if (displayedMessages.length > 0 && autoScroll) {
+      // 延迟滚动，确保 DOM 已渲染
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          programScrollingRef.current = true;
+          messagesEndRef.current.scrollIntoView({ behavior: 'instant' }); // 🔥 首次加载使用 instant
+          setTimeout(() => {
+            programScrollingRef.current = false;
+          }, 100);
+        }
+      }, 50);
+    }
+  }, [displayedMessages.length, activeTabId]); // 🔥 依赖消息数量和 Tab ID
 
   // 🔥 自动滚动到底部 - 使用 MutationObserver 监听 DOM 变化
   useEffect(() => {
@@ -211,9 +270,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
         }, 800); // 增加到 800ms，确保 smooth 滚动完全完成
       }
     };
-
-    // 立即滚动一次
-    scrollToBottom();
 
     // 监听 DOM 变化（消息添加、内容更新）
     const observer = new MutationObserver(() => {
@@ -348,7 +404,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
         ) : (
           // 消息列表
           <>
-            {messages.map((message) => (
+            {/* 🔥 加载更多指示器 */}
+            {hasMoreMessages && (
+              <div className="terminal-line" style={{ textAlign: 'center', padding: '8px 0', opacity: 0.6 }}>
+                {isLoadingMore ? (
+                  <span className="terminal-message system">加载中...</span>
+                ) : (
+                  <span className="terminal-message system">
+                    ↑ 向上滚动加载更多 ({messages.length - displayCount} 条历史消息)
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {displayedMessages.map((message) => (
               <MessageBubble 
                 key={message.id} 
                 message={message} 

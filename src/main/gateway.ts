@@ -97,14 +97,20 @@ export class Gateway {
    * 加载 Tab 历史消息
    * 
    * @param tabId - Tab ID
+   * @param isActiveTab - 是否是当前激活的 Tab（激活的 Tab 立即加载，其他延迟加载）
    */
-  private async loadTabHistory(tabId: string): Promise<void> {
+  private async loadTabHistory(tabId: string, isActiveTab: boolean = false): Promise<void> {
     if (!this.sessionManager) {
       console.warn('[Gateway] SessionManager 未初始化，跳过加载历史消息');
       return;
     }
     
     try {
+      // 🔥 非激活 Tab 延迟加载（避免启动时卡顿）
+      if (!isActiveTab) {
+        await sleep(1000); // 延迟 1 秒
+      }
+      
       // 加载 UI 显示消息（最近 100 轮）
       const messages = await this.sessionManager.loadUIMessages(tabId);
       
@@ -214,8 +220,10 @@ export class Gateway {
           console.log(`[Gateway] ✅ 已恢复 Tab: ${tabId} (${tabConfig.title}, type: ${tabType})`);
           
           // 🔥 加载历史消息（异步，不阻塞）
+          // 只有 default Tab 立即加载，其他 Tab 延迟加载
           if (this.sessionManager) {
-            this.loadTabHistory(tabId).catch(error => {
+            const isActiveTab = tabId === 'default';
+            this.loadTabHistory(tabId, isActiveTab).catch(error => {
               console.error(`[Gateway] ❌ 加载 Tab 历史消息失败: ${tabId}`, error);
             });
           }
