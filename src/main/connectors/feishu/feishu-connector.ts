@@ -159,10 +159,9 @@ export class FeishuConnector implements Connector {
     // 关闭 WebSocket 连接
     if (this.wsClient) {
       try {
-        // 飞书 SDK 的 WSClient 可能没有公开的 stop 方法
-        // 但我们可以尝试调用 disconnect 或直接设置为 undefined
-        // 这会触发垃圾回收，关闭底层连接
         console.log('[FeishuConnector] 关闭 WebSocket 连接');
+        // 🔥 使用 close() 方法正确关闭 WebSocket 连接
+        this.wsClient.close({ force: true });
         this.wsClient = undefined;
       } catch (error) {
         console.error('[FeishuConnector] 关闭 WebSocket 失败:', error);

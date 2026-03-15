@@ -174,3 +174,93 @@ export const GetDateTimeSchema = Type.Object({
   })),
 });
 
+
+/**
+ * 设置飞书连接器配置 Schema
+ */
+export const SetFeishuConnectorConfigSchema = Type.Object({
+  appId: Type.String({
+    description: '飞书应用 ID（cli_xxx 格式）',
+  }),
+  
+  appSecret: Type.String({
+    description: '飞书应用密钥',
+  }),
+  
+  verificationToken: Type.Optional(Type.String({
+    description: '验证 Token（可选，用于事件验证）',
+  })),
+  
+  encryptKey: Type.Optional(Type.String({
+    description: '加密 Key（可选，用于消息加密）',
+  })),
+  
+  botName: Type.Optional(Type.String({
+    description: '机器人名称（可选，默认为"DeepBot"）',
+  })),
+  
+  dmPolicy: Type.Optional(Type.Union([
+    Type.Literal('open', { description: '开放模式：所有用户都可以私聊' }),
+    Type.Literal('pairing', { description: '配对模式：需要配对码才能私聊' }),
+    Type.Literal('allowlist', { description: '白名单模式：只有白名单用户可以私聊' }),
+  ], { default: 'pairing' })),
+  
+  groupPolicy: Type.Optional(Type.Union([
+    Type.Literal('open', { description: '开放模式：所有群组都可以使用' }),
+    Type.Literal('allowlist', { description: '白名单模式：只有白名单群组可以使用' }),
+    Type.Literal('disabled', { description: '禁用模式：禁止群组使用' }),
+  ], { default: 'open' })),
+  
+  requireMention: Type.Optional(Type.Boolean({
+    description: '是否需要 @ 机器人才能触发（默认：true）',
+    default: true,
+  })),
+  
+  allowFrom: Type.Optional(Type.Array(Type.String(), {
+    description: '白名单用户/群组 ID 列表（可选，格式：ou_xxx 或 oc_xxx）',
+  })),
+  
+  enabled: Type.Optional(Type.Boolean({
+    description: '是否启用飞书连接器（默认：false）',
+    default: false,
+  })),
+});
+
+/**
+ * 启用/禁用连接器 Schema
+ */
+export const SetConnectorEnabledSchema = Type.Object({
+  connectorId: Type.Literal('feishu', { description: '飞书连接器' }),
+  
+  enabled: Type.Boolean({
+    description: '是否启用连接器（true=启用，false=禁用）',
+  }),
+});
+
+/**
+ * 获取配对记录 Schema
+ */
+export const GetPairingRecordsSchema = Type.Object({
+  connectorId: Type.Optional(Type.Literal('feishu', { description: '飞书连接器（可选，不指定则返回所有连接器的配对记录）' })),
+});
+
+/**
+ * 审核配对请求 Schema
+ */
+export const ApprovePairingSchema = Type.Object({
+  pairingCode: Type.String({
+    description: '配对码（6位字母数字组合，如 MXNA5E）',
+    pattern: '^[A-Z0-9]{6}$',
+  }),
+});
+
+/**
+ * 拒绝配对请求 Schema
+ */
+export const RejectPairingSchema = Type.Object({
+  connectorId: Type.Literal('feishu', { description: '飞书连接器' }),
+  
+  userId: Type.String({
+    description: '用户 ID（飞书格式：ou_xxx）',
+  }),
+});

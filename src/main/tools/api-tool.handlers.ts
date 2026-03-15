@@ -62,6 +62,21 @@ export async function handleGetConfig(
       result.webSearch = store.getWebSearchToolConfig();
     }
     
+    // 🔥 添加 Connector 配置
+    if (params.configType === 'all') {
+      result.connectors = store.getAllConnectorConfigs();
+    }
+    
+    // 🔥 检查浏览器工具（Chrome 安装情况）
+    if (params.configType === 'all') {
+      result.browserTool = await checkBrowserToolStatus();
+    }
+    
+    // 🔥 检查邮件工具配置
+    if (params.configType === 'all') {
+      result.emailTool = await checkEmailToolConfig(result.workspace?.workspaceDir || '');
+    }
+    
     return {
       content: [
         {
@@ -89,6 +104,113 @@ export async function handleGetConfig(
         error: getErrorMessage(error),
       },
       isError: true,
+    };
+  }
+}
+
+/**
+ * 检查浏览器工具状态（Chrome 是否安装）
+ */
+async function checkBrowserToolStatus(): Promise<{
+  chromeInstalled: boolean;
+  chromePath?: string;
+  error?: string;
+}> {
+  try {
+    const { platform } = await import('os');
+    const { existsSync } = await import('fs');
+    
+    const platformName = platform();
+    let chromePath: string;
+    
+    // Chrome 默认安装路径
+    if (platformName === 'darwin') {
+      chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    } else if (platformName === 'win32') {
+      // Windows 常见路径
+      const possiblePaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      ];
+      chromePath = possiblePaths.find(p => existsSync(p)) || possiblePaths[0];
+    } else {
+      // Linux
+      chromePath = '/usr/bin/google-chrome';
+    }
+    
+    const installed = existsSync(chromePath);
+    
+    return {
+      chromeInstalled: installed,
+      chromePath: installed ? chromePath : undefined,
+      error: installed ? undefined : 'Chrome 浏览器未安装或不在默认路径',
+    };
+  } catch (error) {
+    return {
+      chromeInstalled: false,
+      error: getErrorMessage(error),
+    };
+  }
+}
+
+/**
+ * 检查邮件工具配置状态
+ */
+async function checkEmailToolConfig(workspaceDir: string): Promise<{
+  configured: boolean;
+  configPath?: string;
+  error?: string;
+}> {
+  try {
+    const { existsSync, readFileSync } = await import('fs');
+    const { join } = await import('path');
+    const { homedir } = await import('os');
+    const { safeJsonParse } = await import('../../shared/utils/json-utils');
+    
+    // 配置文件查找顺序：项目级别 > 用户级别
+    const configPaths = [
+      join(workspaceDir, '.deepbot', 'tools', 'email-tool', 'config.json'),
+      join(homedir(), '.deepbot', 'tools', 'email-tool', 'config.json'),
+    ];
+    
+    for (const configPath of configPaths) {
+      if (existsSync(configPath)) {
+        try {
+          const content = readFileSync(configPath, 'utf-8');
+          const config = safeJsonParse<any>(content, {});
+          
+          // 验证必填字段
+          if (!config.user || !config.password || !config.smtpServer) {
+            return {
+              configured: false,
+              configPath,
+              error: '配置文件存在但缺少必填字段（user、password、smtpServer）',
+            };
+          }
+          
+          return {
+            configured: true,
+            configPath,
+          };
+        } catch (error) {
+          return {
+            configured: false,
+            configPath,
+            error: `配置文件解析失败: ${getErrorMessage(error)}`,
+          };
+        }
+      }
+    }
+    
+    // 未找到配置文件
+    return {
+      configured: false,
+      error: '未找到邮件工具配置文件',
+    };
+  } catch (error) {
+    return {
+      configured: false,
+      error: getErrorMessage(error),
     };
   }
 }
@@ -887,6 +1009,400 @@ export async function handleGetDateTime(
         {
           type: 'text',
           text: `❌ 获取日期时间失败: ${getErrorMessage(error)}`,
+        },
+      ],
+      details: {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      isError: true,
+    };
+  }
+}
+
+
+// ==================== 飞书连接器配置 ====================
+
+/**
+ * 设置飞书连接器配置
+ */
+export async function handleSetFeishuConnectorConfig(
+  params: {
+    appId: string;
+    appSecret: string;
+    verificationToken?: string;
+    encryptKey?: string;
+    botName?: string;
+    dmPolicy?: 'open' | 'pairing' | 'allowlist';
+    groupPolicy?: 'open' | 'allowlist' | 'disabled';
+    requireMention?: boolean;
+    allowFrom?: string[];
+    enabled?: boolean;
+  },
+  signal?: AbortSignal
+): Promise<ToolResult> {
+  try {
+    console.log('[API Tool] 💾 设置飞书连接器配置');
+    
+    // 检查是否被取消
+    if (signal?.aborted) {
+      const err = new Error('设置配置操作被取消');
+      err.name = 'AbortError';
+      throw err;
+    }
+    
+    // 加载 SystemConfigStore
+    const { SystemConfigStore } = await import('../database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    
+    // 构建配置对象
+    const config = {
+      appId: params.appId,
+      appSecret: params.appSecret,
+      verificationToken: params.verificationToken || '',
+      encryptKey: params.encryptKey || '',
+      botName: params.botName || 'DeepBot',
+      dmPolicy: params.dmPolicy || 'pairing',
+      groupPolicy: params.groupPolicy || 'open',
+      requireMention: params.requireMention !== undefined ? params.requireMention : true,
+      allowFrom: params.allowFrom || [],
+    };
+    
+    const enabled = params.enabled !== undefined ? params.enabled : false;
+    
+    // 保存配置
+    store.saveConnectorConfig('feishu', '飞书', config, enabled);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: formatters.formatSetFeishuConnectorConfigResult(params, enabled),
+        },
+      ],
+      details: {
+        success: true,
+        config,
+        enabled,
+      },
+    };
+  } catch (error) {
+    console.error('[API Tool] ❌ 设置飞书连接器配置失败:', error);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ 设置飞书连接器配置失败: ${getErrorMessage(error)}`,
+        },
+      ],
+      details: {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      isError: true,
+    };
+  }
+}
+
+
+/**
+ * 启用/禁用连接器
+ */
+export async function handleSetConnectorEnabled(
+  params: {
+    connectorId: 'feishu';
+    enabled: boolean;
+  },
+  signal?: AbortSignal
+): Promise<ToolResult> {
+  try {
+    console.log('[API Tool] 🔄 设置连接器状态:', params.connectorId, params.enabled ? '启用' : '禁用');
+    
+    // 检查是否被取消
+    if (signal?.aborted) {
+      const err = new Error('设置连接器状态操作被取消');
+      err.name = 'AbortError';
+      throw err;
+    }
+    
+    // 加载 SystemConfigStore
+    const { SystemConfigStore } = await import('../database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    
+    // 检查连接器是否已配置
+    const connectorConfig = store.getConnectorConfig(params.connectorId);
+    if (!connectorConfig) {
+      throw new Error(`连接器 ${params.connectorId} 尚未配置，请先配置后再启用`);
+    }
+    
+    // 更新启用状态
+    store.setConnectorEnabled(params.connectorId, params.enabled);
+    
+    // 🔥 获取 Gateway 实例（统一处理，避免重复）
+    const { getGatewayInstance } = await import('../gateway');
+    const gateway = getGatewayInstance();
+    
+    if (!gateway) {
+      console.warn('[API Tool] ⚠️ Gateway 未初始化，连接器将在下次启动时生效');
+    } else {
+      try {
+        const connectorManager = gateway.getConnectorManager();
+        
+        if (params.enabled) {
+          console.log('[API Tool] 🚀 启动连接器:', params.connectorId);
+          await connectorManager.startConnector(params.connectorId as any);
+          console.log('[API Tool] ✅ 连接器已启动:', params.connectorId);
+        } else {
+          console.log('[API Tool] 🛑 停止连接器:', params.connectorId);
+          await connectorManager.stopConnector(params.connectorId as any);
+          console.log('[API Tool] ✅ 连接器已停止:', params.connectorId);
+        }
+      } catch (operationError) {
+        console.error(`[API Tool] ❌ ${params.enabled ? '启动' : '停止'}连接器失败:`, operationError);
+        if (params.enabled) {
+          console.warn('[API Tool] ⚠️ 连接器状态已更新，但启动失败。请重启应用或手动启动连接器');
+        }
+      }
+    }
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: formatters.formatSetConnectorEnabledResult(params),
+        },
+      ],
+      details: {
+        success: true,
+        connectorId: params.connectorId,
+        enabled: params.enabled,
+      },
+    };
+  } catch (error) {
+    console.error('[API Tool] ❌ 设置连接器状态失败:', error);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ 设置连接器状态失败: ${getErrorMessage(error)}`,
+        },
+      ],
+      details: {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      isError: true,
+    };
+  }
+}
+
+
+// ==================== 配对管理 ====================
+
+/**
+ * 获取配对记录
+ */
+export async function handleGetPairingRecords(
+  params: {
+    connectorId?: 'feishu';
+  },
+  signal?: AbortSignal
+): Promise<ToolResult> {
+  try {
+    console.log('[API Tool] 📋 获取配对记录:', params.connectorId || '所有连接器');
+    
+    // 检查是否被取消
+    if (signal?.aborted) {
+      const err = new Error('获取配对记录操作被取消');
+      err.name = 'AbortError';
+      throw err;
+    }
+    
+    // 加载 SystemConfigStore
+    const { SystemConfigStore } = await import('../database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    
+    // 获取配对记录
+    const records = store.getAllPairingRecords(params.connectorId);
+    
+    // 添加 connectorName 并转换时间格式
+    const connectorNames: Record<string, string> = {
+      feishu: '飞书',
+      wechat: '微信',
+    };
+    
+    const formattedRecords = records.map(record => ({
+      connectorId: record.connectorId,
+      connectorName: connectorNames[record.connectorId] || record.connectorId,
+      userId: record.userId,
+      pairingCode: record.pairingCode,
+      approved: record.approved,
+      createdAt: new Date(record.createdAt).toISOString(),
+      approvedAt: record.approvedAt ? new Date(record.approvedAt).toISOString() : undefined,
+    }));
+    
+    // 统计待审核数量
+    const pendingCount = formattedRecords.filter(r => !r.approved).length;
+    const approvedCount = formattedRecords.filter(r => r.approved).length;
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: formatters.formatGetPairingRecordsResult(formattedRecords, pendingCount, approvedCount),
+        },
+      ],
+      details: {
+        success: true,
+        records: formattedRecords,
+        pendingCount,
+        approvedCount,
+      },
+    };
+  } catch (error) {
+    console.error('[API Tool] ❌ 获取配对记录失败:', error);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ 获取配对记录失败: ${getErrorMessage(error)}`,
+        },
+      ],
+      details: {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      isError: true,
+    };
+  }
+}
+
+/**
+ * 审核配对请求
+ */
+export async function handleApprovePairing(
+  params: {
+    pairingCode: string;
+  },
+  signal?: AbortSignal
+): Promise<ToolResult> {
+  try {
+    console.log('[API Tool] ✅ 审核配对请求:', params.pairingCode);
+    
+    // 检查是否被取消
+    if (signal?.aborted) {
+      const err = new Error('审核配对操作被取消');
+      err.name = 'AbortError';
+      throw err;
+    }
+    
+    // 加载 SystemConfigStore
+    const { SystemConfigStore } = await import('../database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    
+    // 检查配对码是否存在
+    const record = store.getPairingRecordByCode(params.pairingCode);
+    if (!record) {
+      throw new Error(`配对码 ${params.pairingCode} 不存在或已过期`);
+    }
+    
+    if (record.approved) {
+      throw new Error(`配对码 ${params.pairingCode} 已经审核通过，无需重复审核`);
+    }
+    
+    // 批准配对
+    store.approvePairingRecord(params.pairingCode);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: formatters.formatApprovePairingResult(params.pairingCode, record),
+        },
+      ],
+      details: {
+        success: true,
+        pairingCode: params.pairingCode,
+        connectorId: record.connectorId,
+        userId: record.userId,
+      },
+    };
+  } catch (error) {
+    console.error('[API Tool] ❌ 审核配对失败:', error);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ 审核配对失败: ${getErrorMessage(error)}`,
+        },
+      ],
+      details: {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      isError: true,
+    };
+  }
+}
+
+/**
+ * 拒绝配对请求
+ */
+export async function handleRejectPairing(
+  params: {
+    connectorId: 'feishu';
+    userId: string;
+  },
+  signal?: AbortSignal
+): Promise<ToolResult> {
+  try {
+    console.log('[API Tool] ❌ 拒绝配对请求:', params.connectorId, params.userId);
+    
+    // 检查是否被取消
+    if (signal?.aborted) {
+      const err = new Error('拒绝配对操作被取消');
+      err.name = 'AbortError';
+      throw err;
+    }
+    
+    // 加载 SystemConfigStore
+    const { SystemConfigStore } = await import('../database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    
+    // 检查配对记录是否存在
+    const record = store.getPairingRecordByUser(params.connectorId, params.userId);
+    if (!record) {
+      throw new Error(`用户 ${params.userId} 在 ${params.connectorId} 连接器中没有配对记录`);
+    }
+    
+    // 删除配对记录（拒绝）
+    store.deletePairingRecord(params.connectorId, params.userId);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: formatters.formatRejectPairingResult(params.connectorId, params.userId),
+        },
+      ],
+      details: {
+        success: true,
+        connectorId: params.connectorId,
+        userId: params.userId,
+      },
+    };
+  } catch (error) {
+    console.error('[API Tool] ❌ 拒绝配对失败:', error);
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ 拒绝配对失败: ${getErrorMessage(error)}`,
         },
       ],
       details: {

@@ -34,19 +34,102 @@ export function formatGetConfigResult(result: any): string {
     message += `  • 上下文窗口: ${result.model.contextWindow ? result.model.contextWindow.toLocaleString() + ' tokens' : '未设置'}\n\n`;
   }
   
-  if (result.imageGeneration) {
+  // 🔥 图片生成工具配置 - 即使未配置也显示
+  if (result.imageGeneration !== undefined) {
     message += `🎨 图片生成工具配置：\n`;
-    message += `  • 模型: ${result.imageGeneration.model}\n`;
-    message += `  • API 地址: ${result.imageGeneration.apiUrl}\n`;
-    message += `  • API Key: ${result.imageGeneration.apiKey ? '已配置' : '未配置'}\n\n`;
+    if (result.imageGeneration) {
+      message += `  • 模型: ${result.imageGeneration.model}\n`;
+      message += `  • API 地址: ${result.imageGeneration.apiUrl}\n`;
+      message += `  • API Key: ${result.imageGeneration.apiKey ? '已配置' : '未配置'}\n\n`;
+    } else {
+      message += `  • 暂无配置\n\n`;
+    }
   }
   
-  if (result.webSearch) {
+  // 🔥 Web 搜索工具配置 - 即使未配置也显示
+  if (result.webSearch !== undefined) {
     message += `🔍 Web 搜索工具配置：\n`;
-    message += `  • 提供商: ${result.webSearch.provider}\n`;
-    message += `  • 模型: ${result.webSearch.model}\n`;
-    message += `  • API 地址: ${result.webSearch.apiUrl}\n`;
-    message += `  • API Key: ${result.webSearch.apiKey ? '已配置' : '未配置'}\n`;
+    if (result.webSearch) {
+      message += `  • 提供商: ${result.webSearch.provider}\n`;
+      message += `  • 模型: ${result.webSearch.model}\n`;
+      message += `  • API 地址: ${result.webSearch.apiUrl}\n`;
+      message += `  • API Key: ${result.webSearch.apiKey ? '已配置' : '未配置'}\n\n`;
+    } else {
+      message += `  • 暂无配置\n\n`;
+    }
+  }
+  
+  // 🔥 添加 Connector 配置显示
+  if (result.connectors !== undefined) {
+    message += `📡 外部通讯配置：\n`;
+    
+    // 定义所有支持的连接器（目前只有飞书）
+    const supportedConnectors = [
+      { id: 'feishu', name: '飞书' },
+    ];
+    
+    if (result.connectors && result.connectors.length > 0) {
+      // 创建已配置连接器的映射
+      const configuredMap = new Map<string, any>(
+        result.connectors.map((c: any) => [c.connectorId, c])
+      );
+      
+      // 显示所有支持的连接器
+      for (const connector of supportedConnectors) {
+        const config = configuredMap.get(connector.id);
+        
+        if (config) {
+          message += `  • ${connector.name} (${connector.id}):\n`;
+          message += `    - 状态: ${config.enabled ? '✅ 已启用' : '⏸️ 已禁用'}\n`;
+          message += `    - App ID: ${config.config?.appId ? '已配置' : '未配置'}\n`;
+          message += `    - App Secret: ${config.config?.appSecret ? '已配置' : '未配置'}\n`;
+        } else {
+          message += `  • ${connector.name} (${connector.id}): ❌ 未配置\n`;
+        }
+      }
+    } else {
+      // 没有任何配置，显示所有支持的连接器为未配置
+      for (const connector of supportedConnectors) {
+        message += `  • ${connector.name} (${connector.id}): ❌ 未配置\n`;
+      }
+    }
+    message += '\n';
+  }
+  
+  // 🔥 浏览器工具状态
+  if (result.browserTool !== undefined) {
+    message += `🌐 浏览器工具状态：\n`;
+    if (result.browserTool.chromeInstalled) {
+      message += `  • Chrome 浏览器: ✅ 已安装\n`;
+      if (result.browserTool.chromePath) {
+        message += `  • 安装路径: ${result.browserTool.chromePath}\n`;
+      }
+    } else {
+      message += `  • Chrome 浏览器: ❌ 未安装\n`;
+      if (result.browserTool.error) {
+        message += `  • 错误信息: ${result.browserTool.error}\n`;
+      }
+      message += `  • 提示: 浏览器工具需要安装 Google Chrome 浏览器\n`;
+    }
+    message += '\n';
+  }
+  
+  // 🔥 邮件工具配置状态
+  if (result.emailTool !== undefined) {
+    message += `📧 邮件工具配置：\n`;
+    if (result.emailTool.configured) {
+      message += `  • 配置状态: ✅ 已配置\n`;
+      if (result.emailTool.configPath) {
+        message += `  • 配置文件: ${result.emailTool.configPath}\n`;
+      }
+    } else {
+      message += `  • 配置状态: ❌ 未配置\n`;
+      if (result.emailTool.error) {
+        message += `  • 错误信息: ${result.emailTool.error}\n`;
+      }
+      message += `  • 提示: 需要创建配置文件 ~/.deepbot/tools/email-tool/config.json\n`;
+    }
+    message += '\n';
   }
   
   return message;
@@ -194,4 +277,156 @@ export function formatSetNameConfigResult(params: any, currentConfig: any, isGlo
   message += `\n✨ 配置已立即生效`;
   
   return message;
+}
+
+
+/**
+ * 格式化设置飞书连接器配置的结果消息
+ */
+export function formatSetFeishuConnectorConfigResult(params: any, enabled: boolean): string {
+  let message = `✅ 飞书连接器配置已更新\n\n`;
+  
+  message += `  • App ID: ${params.appId}\n`;
+  message += `  • App Secret: 已设置\n`;
+  
+  if (params.verificationToken) {
+    message += `  • Verification Token: 已设置\n`;
+  }
+  
+  if (params.encryptKey) {
+    message += `  • Encrypt Key: 已设置\n`;
+  }
+  
+  message += `  • 机器人名称: ${params.botName || 'DeepBot'}\n`;
+  message += `  • 私聊策略: ${params.dmPolicy || 'pairing'}\n`;
+  message += `  • 群组策略: ${params.groupPolicy || 'open'}\n`;
+  message += `  • 需要 @ 触发: ${params.requireMention !== false ? '是' : '否'}\n`;
+  
+  if (params.allowFrom && params.allowFrom.length > 0) {
+    message += `  • 白名单: ${params.allowFrom.length} 个用户/群组\n`;
+  }
+  
+  message += `  • 状态: ${enabled ? '✅ 已启用' : '⏸️ 已禁用'}\n`;
+  
+  message += `\n⚠️ 注意：配置已保存，${enabled ? '飞书连接器将在下次启动时生效' : '需要启用后才能使用'}`;
+  
+  return message;
+}
+
+
+/**
+ * 格式化启用/禁用连接器的结果消息
+ */
+export function formatSetConnectorEnabledResult(params: { connectorId: string; enabled: boolean }): string {
+  const connectorNames: Record<string, string> = {
+    feishu: '飞书',
+  };
+  
+  const connectorName = connectorNames[params.connectorId] || params.connectorId;
+  
+  if (params.enabled) {
+    return `✅ ${connectorName}连接器已启用并立即启动\n\n连接器已在后台运行，可以立即接收和处理消息`;
+  } else {
+    return `⏸️ ${connectorName}连接器已禁用并立即停止\n\n连接器已停止运行，不再接收和处理消息`;
+  }
+}
+
+
+/**
+ * 格式化获取配对记录的结果消息
+ */
+export function formatGetPairingRecordsResult(
+  records: Array<{
+    connectorId: string;
+    connectorName: string;
+    userId: string;
+    pairingCode: string;
+    approved: boolean;
+    createdAt: string;
+    approvedAt?: string;
+  }>,
+  pendingCount: number,
+  approvedCount: number
+): string {
+  let message = `✅ 配对记录查询成功\n\n`;
+  
+  message += `📊 统计信息：\n`;
+  message += `  • 待审核: ${pendingCount} 个\n`;
+  message += `  • 已审核: ${approvedCount} 个\n`;
+  message += `  • 总计: ${records.length} 个\n\n`;
+  
+  if (records.length === 0) {
+    message += `暂无配对记录`;
+    return message;
+  }
+  
+  // 按连接器分组
+  const groupedRecords: Record<string, typeof records> = {};
+  for (const record of records) {
+    if (!groupedRecords[record.connectorId]) {
+      groupedRecords[record.connectorId] = [];
+    }
+    groupedRecords[record.connectorId].push(record);
+  }
+  
+  // 显示每个连接器的配对记录
+  for (const [connectorId, connectorRecords] of Object.entries(groupedRecords)) {
+    const connectorName = connectorRecords[0].connectorName;
+    message += `📱 ${connectorName} (${connectorId})：\n`;
+    
+    for (const record of connectorRecords) {
+      const status = record.approved ? '✅ 已审核' : '⏳ 待审核';
+      const createdTime = new Date(record.createdAt).toLocaleString('zh-CN');
+      
+      message += `  • 用户: ${record.userId}\n`;
+      message += `    - 配对码: ${record.pairingCode}\n`;
+      message += `    - 状态: ${status}\n`;
+      message += `    - 创建时间: ${createdTime}\n`;
+      
+      if (record.approved && record.approvedAt) {
+        const approvedTime = new Date(record.approvedAt).toLocaleString('zh-CN');
+        message += `    - 审核时间: ${approvedTime}\n`;
+      }
+      
+      message += `\n`;
+    }
+  }
+  
+  return message;
+}
+
+/**
+ * 格式化审核配对的结果消息
+ */
+export function formatApprovePairingResult(
+  pairingCode: string,
+  record: { connectorId: string; userId: string }
+): string {
+  const connectorNames: Record<string, string> = {
+    feishu: '飞书',
+  };
+  
+  const connectorName = connectorNames[record.connectorId] || record.connectorId;
+  
+  return `✅ 配对请求已审核通过\n\n` +
+    `  • 配对码: ${pairingCode}\n` +
+    `  • 连接器: ${connectorName}\n` +
+    `  • 用户 ID: ${record.userId}\n\n` +
+    `⚠️ 注意：用户现在可以通过该连接器与 DeepBot 进行私聊`;
+}
+
+/**
+ * 格式化拒绝配对的结果消息
+ */
+export function formatRejectPairingResult(connectorId: string, userId: string): string {
+  const connectorNames: Record<string, string> = {
+    feishu: '飞书',
+  };
+  
+  const connectorName = connectorNames[connectorId] || connectorId;
+  
+  return `❌ 配对请求已拒绝\n\n` +
+    `  • 连接器: ${connectorName}\n` +
+    `  • 用户 ID: ${userId}\n\n` +
+    `⚠️ 注意：该用户的配对记录已删除，需要重新申请配对`;
 }

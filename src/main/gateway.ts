@@ -1658,8 +1658,7 @@ ${welcomeContent}
       
       // 为连接器会话添加系统提示，要求显示接收到的消息并真实调用工具
       const systemHint = `\n\n[系统提示: 这是外部通讯会话。
-1. 禁止假装调用工具，说了调用工具必须执行。
-2. 你可以使用 connector_send_image 和 connector_send_file 工具发送图片和文件]`;
+你可以使用 connector_send_image 和 connector_send_file 工具发送图片和文件]`;
       
       const contentForAgent = contentWithSource + systemHint;
       

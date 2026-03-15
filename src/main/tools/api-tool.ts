@@ -94,6 +94,61 @@ export const apiToolPlugin: ToolPlugin = {
         },
       },
       
+      // 设置飞书连接器配置
+      {
+        name: TOOL_NAMES.API_SET_FEISHU_CONNECTOR_CONFIG,
+        label: '设置飞书连接器配置',
+        description: '配置飞书连接器。设置 App ID、App Secret、安全策略等。配置后需要启用才能使用',
+        parameters: schemas.SetFeishuConnectorConfigSchema,
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          return handlers.handleSetFeishuConnectorConfig(args, signal);
+        },
+      },
+      
+      // 启用/禁用连接器
+      {
+        name: TOOL_NAMES.API_SET_CONNECTOR_ENABLED,
+        label: '启用/禁用连接器',
+        description: '启用或禁用外部通讯连接器（飞书、微信等）。需要先配置连接器才能启用',
+        parameters: schemas.SetConnectorEnabledSchema,
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          return handlers.handleSetConnectorEnabled(args, signal);
+        },
+      },
+      
+      // 获取配对记录
+      {
+        name: TOOL_NAMES.API_GET_PAIRING_RECORDS,
+        label: '获取配对记录',
+        description: '查询连接器的配对记录，包括待审核和已审核的配对请求。用于 pairing 模式下的用户管理',
+        parameters: schemas.GetPairingRecordsSchema,
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          return handlers.handleGetPairingRecords(args, signal);
+        },
+      },
+      
+      // 审核配对请求
+      {
+        name: TOOL_NAMES.API_APPROVE_PAIRING,
+        label: '审核配对请求',
+        description: '批准用户的配对请求。审核通过后，用户可以通过连接器与 DeepBot 进行私聊',
+        parameters: schemas.ApprovePairingSchema,
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          return handlers.handleApprovePairing(args, signal);
+        },
+      },
+      
+      // 拒绝配对请求
+      {
+        name: TOOL_NAMES.API_REJECT_PAIRING,
+        label: '拒绝配对请求',
+        description: '拒绝用户的配对请求。拒绝后，该用户的配对记录将被删除',
+        parameters: schemas.RejectPairingSchema,
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          return handlers.handleRejectPairing(args, signal);
+        },
+      },
+      
       // 获取名字配置
       {
         name: TOOL_NAMES.API_GET_NAME,
