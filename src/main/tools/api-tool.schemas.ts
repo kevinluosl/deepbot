@@ -59,6 +59,8 @@ export const SetModelConfigSchema = Type.Object({
   providerType: Type.Optional(Type.Union([
     Type.Literal('qwen', { description: '通义千问' }),
     Type.Literal('deepseek', { description: 'DeepSeek' }),
+    Type.Literal('gemini', { description: 'Google Gemini' }),
+    Type.Literal('minimax', { description: 'MiniMax' }),
     Type.Literal('custom', { description: '自定义提供商' }),
   ])),
   
