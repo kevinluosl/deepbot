@@ -40,6 +40,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const hasLoadedRef = React.useRef(false);
+  const [isFirstTimeConfig, setIsFirstTimeConfig] = useState(false); // 🔥 是否是第一次配置
 
   // 加载当前配置（防止 Strict Mode 重复执行）
   useEffect(() => {
@@ -63,9 +64,17 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           apiType: actualResult.config.apiType || 'openai-completions', // 默认为 OpenAI 兼容
         };
         setConfig(loadedConfig);
+        
+        // 🔥 检查是否是第一次配置（没有 API Key）
+        setIsFirstTimeConfig(!loadedConfig.apiKey);
+      } else {
+        // 🔥 没有配置，标记为第一次配置
+        setIsFirstTimeConfig(true);
       }
     } catch (error) {
       console.error('加载模型配置失败:', error);
+      // 🔥 加载失败也视为第一次配置
+      setIsFirstTimeConfig(true);
     }
   };
 
@@ -117,6 +126,13 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           type: 'success', 
           text: '✅ 保存成功！配置已生效' 
         });
+        
+        // 🔥 如果是第一次配置，延迟关闭窗口让用户看到初始化过程
+        if (isFirstTimeConfig) {
+          setTimeout(() => {
+            onClose();
+          }, 1000); // 延迟 1 秒关闭，让用户看到成功提示
+        }
       } else {
         setSaveMessage({ type: 'error', text: actualResult.error || '保存失败' });
       }
