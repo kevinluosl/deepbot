@@ -55,7 +55,7 @@ export function registerConnectorHandlers(): void {
         const allConnectors = connectorManager.getAllConnectors();
         const store = SystemConfigStore.getInstance();
         
-        const connectors = allConnectors.map((connector: any) => {
+        const connectors = allConnectors.map((connector) => {
           const configData = store.getConnectorConfig(connector.id);
           return {
             id: connector.id,

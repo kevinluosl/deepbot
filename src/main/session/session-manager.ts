@@ -190,35 +190,5 @@ export class SessionManager {
     const sessionDir = (this.sessionStore as any).sessionDir;
     return join(sessionDir, `${tabId}.jsonl`);
   }
-
-  /**
-   * 获取所有消息（用于 UI 显示）
-   */
-  async getMessages(tabId: string): Promise<Message[]> {
-    return await this.loadUIMessages(tabId);
-  }
-
-  /**
-   * 清空消息（别名方法）
-   */
-  async clearMessages(tabId: string): Promise<void> {
-    await this.clearSession(tabId);
-  }
-
-  /**
-   * 删除会话
-   */
-  async deleteSession(tabId: string): Promise<void> {
-    await this.clearSession(tabId);
-  }
-
-  /**
-   * 获取所有会话
-   */
-  async getAllSessions(): Promise<Array<{ id: string; title: string; messageCount: number }>> {
-    // 这里需要实现获取所有会话的逻辑
-    // 暂时返回空数组，后续可以扩展
-    return [];
-  }
 }
 

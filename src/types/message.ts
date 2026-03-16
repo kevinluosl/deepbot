@@ -51,9 +51,7 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: number;
-  sessionId?: string; // 会话 ID（可选，用于多会话支持）
   isStreaming?: boolean;
-  isError?: boolean; // 标记这是一个错误消息
   // Sub Agent 结果报告标记
   isSubAgentResult?: boolean; // 标记这是主 Agent 对 Sub Agent 结果的报告
   subAgentTask?: string; // Sub Agent 的任务描述

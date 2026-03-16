@@ -1030,10 +1030,7 @@ function registerIpcHandlers() {
     }
     
     try {
-      const tab = await gateway.createTab({ 
-        type: 'default',
-        title 
-      });
+      const tab = await gateway.createTab({ title });
       
       // 🔥 只返回可序列化的字段，避免 "An object could not be cloned" 错误
       return {
