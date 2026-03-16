@@ -11,6 +11,8 @@ export const IPC_CHANNELS = {
   MESSAGE_RESPONSE: 'message:response',
   MESSAGE_STREAM: 'message:stream',
   MESSAGE_ERROR: 'message:error',
+  MESSAGE_RECEIVED: 'message:received', // 消息接收通知
+  MESSAGES_LOADED: 'message:messages-loaded', // 消息加载通知
   STOP_GENERATION: 'message:stop', // 停止生成
   EXECUTION_STEP_UPDATE: 'message:execution-step-update', // 执行步骤更新
   CLEAR_ALL_MESSAGES: 'message:clear-all', // 清空所有消息
@@ -78,6 +80,7 @@ export const IPC_CHANNELS = {
   CLOSE_TAB: 'tab:close',
   GET_TABS: 'tab:get-all',
   SWITCH_TAB: 'tab:switch',
+  TABS_UPDATED: 'tab:tabs-updated', // Tab 列表更新通知
   TAB_CREATED: 'tab:created', // Tab 创建通知
   TAB_HISTORY_LOADED: 'tab:history-loaded', // Tab 历史消息加载通知
   TAB_MESSAGES_CLEARED: 'tab:messages-cleared', // Tab 消息清除通知
