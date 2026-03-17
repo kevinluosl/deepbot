@@ -189,7 +189,7 @@ export class GatewayConnectorHandler {
     }
 
     // 飞书专用工具提示（固定注入）
-    const feishuToolsHint = `\n\n[系统提示: 这是飞书通讯会话，除了系统的工具，你还可以使用以下专用工具:
+    const feishuToolsHint = `\n\n[系统提示: 这是飞书通讯会话，除了系统的工具，你还可以根据用户的需求使用以下专用工具:
 - connector_send_image: 发送图片给对方
 - connector_send_file: 发送文件给对方
 - feishu_doc_create: 创建飞书云文档（参数: title, folder_token?）
@@ -203,7 +203,8 @@ export class GatewayConnectorHandler {
 
 注意：
 1. feishu_doc_append 是追加正文内容，feishu_doc_add_comment 是添加评论，客户要求添加评论时使用后者
-2. 不用回复你有什么工具，需要的时候直接执行]`;
+2. 不用回复你有什么工具，需要的时候直接执行
+3. 如果用户没有明确要求创建文件，不要主动创建，直接回复结果]`;
 
     // 额外系统通知（由连接器按需注入，如首次管理员授权提示）
     const extraNotice = message.systemContext ? `\n\n${message.systemContext}` : '';

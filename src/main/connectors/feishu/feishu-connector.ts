@@ -173,50 +173,18 @@ export class FeishuConnector implements Connector {
   }
   
   async healthCheck(): Promise<HealthStatus> {
-    // 检查 WebSocket 连接状态
-    if (!this.wsClient) {
-      return {
-        status: 'unhealthy',
-        message: 'WebSocket 未连接',
-      };
-    }
-
-    // 尝试获取 token 验证连接是否正常
-    try {
-      const res = await this.client.auth.tenantAccessToken.internal({
-        data: {
-          app_id: this.connectorConfig.appId,
-          app_secret: this.connectorConfig.appSecret,
-        },
-      });
-
-      // 飞书 SDK 有时不抛异常，而是返回带错误码的对象，需要主动检查
-      const resAny = res as any;
-      if (resAny?.code !== undefined && resAny.code !== 0) {
-        return {
-          status: 'unhealthy',
-          message: `认证失败 (code: ${resAny.code}): ${resAny.msg || resAny.message || '未知错误'}`,
-        };
-      }
-
-      // token 存在才算真正健康
-      if (!resAny?.tenant_access_token) {
-        return {
-          status: 'unhealthy',
-          message: '未获取到 access token',
-        };
-      }
-
+    // 直接检查内部状态，不发 HTTP 请求，避免每次打开设置页都慢
+    if (this.isStarted && this.wsClient) {
       return {
         status: 'healthy',
         message: '连接正常',
       };
-    } catch (error) {
-      return {
-        status: 'unhealthy',
-        message: `认证失败: ${getErrorMessage(error)}`,
-      };
     }
+
+    return {
+      status: 'unhealthy',
+      message: this.wsClient ? '连接器未完全启动' : 'WebSocket 未连接',
+    };
   }
   
   // ========== 消息处理 ==========
@@ -564,8 +532,8 @@ export class FeishuConnector implements Connector {
 
       // 7. 安全检查
       if (!this.checkSecurity(feishuMessage)) {
-        // 如果是 pairing 模式，发送配对码
-        if (this.connectorConfig.dmPolicy === 'pairing' && feishuMessage.conversation.type === 'private') {
+        // 私聊未配对：发送配对码
+        if (feishuMessage.conversation.type === 'private') {
           const code = this.pairing!.generatePairingCode(feishuMessage.sender.id);
 
           // 检查是否被自动批准（首位用户）
@@ -972,31 +940,15 @@ export class FeishuConnector implements Connector {
   }
 
   private checkSecurity(message: FeishuIncomingMessage): boolean {
-    // 1. 检查 DM 策略
+    // 1. 检查 DM 策略（固定使用 pairing 模式）
     if (message.conversation.type === 'private') {
-      if (this.connectorConfig.dmPolicy === 'pairing') {
-        // 检查是否已配对
-        return this.pairing!.verifyPairingCode(message.sender.id);
-      }
-      if (this.connectorConfig.dmPolicy === 'allowlist') {
-        // 检查白名单
-        return this.connectorConfig.allowFrom?.includes(message.sender.id) ?? false;
-      }
+      // 检查是否已配对
+      return this.pairing!.verifyPairingCode(message.sender.id);
     }
     
-    // 2. 检查群组策略
+    // 2. 群组消息：暂时允许所有群消息
     if (message.conversation.type === 'group') {
-      if (this.connectorConfig.groupPolicy === 'disabled') {
-        return false;
-      }
-      if (this.connectorConfig.groupPolicy === 'allowlist') {
-        return this.connectorConfig.groupAllowFrom?.includes(message.conversation.id) ?? false;
-      }
-      // TODO: 检查是否需要 @提及
-      if (this.connectorConfig.requireMention) {
-        // 暂时允许所有群消息（后续实现 @提及检测）
-        return true;
-      }
+      return true;
     }
     
     return true;

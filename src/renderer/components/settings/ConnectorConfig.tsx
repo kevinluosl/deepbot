@@ -94,16 +94,21 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
           }
         }
 
-        // 健康检查在 loading 结束后异步执行，不阻塞页面渲染
+        // 健康检查：已有缓存状态则跳过，避免每次打开都重新检查
         for (const connector of actualResult.connectors) {
           if (connector.enabled) {
-            setConnectorHealthMap(prev => ({ ...prev, [connector.id]: 'checking' }));
-            window.deepbot.connectorHealthCheck(connector.id).then((healthResult: any) => {
-              const actualHealth = healthResult.data || healthResult;
-              const status = actualHealth.status === 'healthy' ? 'healthy' : 'unhealthy';
-              setConnectorHealthMap(prev => ({ ...prev, [connector.id]: status }));
-            }).catch(() => {
-              setConnectorHealthMap(prev => ({ ...prev, [connector.id]: 'unhealthy' }));
+            // 已有缓存状态则不重复检查
+            setConnectorHealthMap(prev => {
+              if (prev[connector.id]) return prev;
+              // 没有缓存，发起检查
+              window.deepbot.connectorHealthCheck(connector.id).then((healthResult: any) => {
+                const actualHealth = healthResult.data || healthResult;
+                const status = actualHealth.status === 'healthy' ? 'healthy' : 'unhealthy';
+                setConnectorHealthMap(p => ({ ...p, [connector.id]: status }));
+              }).catch(() => {
+                setConnectorHealthMap(p => ({ ...p, [connector.id]: 'unhealthy' }));
+              });
+              return { ...prev, [connector.id]: 'checking' };
             });
           }
         }
@@ -125,10 +130,8 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
         setFeishuConfig(actualResult.config);
       }
       
-      // 如果是 pairing 模式，加载 pairing 记录
-      if (actualResult.config?.dmPolicy === 'pairing') {
-        await loadPairingRecords(connectorId);
-      }
+      // pairing 记录始终加载（pairing 是固定功能）
+      await loadPairingRecords(connectorId);
     } catch (error) {
       console.error('加载连接器配置失败:', error);
     }
@@ -141,11 +144,19 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
       const actualResult = result.data || result;
       
-      if (actualResult.success && actualResult.records) {
-        setPairingRecords(actualResult.records);
+      console.log('[Pairing] 原始返回:', JSON.stringify(result));
+      console.log('[Pairing] 解析后:', JSON.stringify(actualResult));
+      
+      // records 可能是空数组，也要正常设置
+      if (actualResult.success) {
+        setPairingRecords(actualResult.records ?? []);
+      } else {
+        console.error('[Pairing] 获取失败:', actualResult.error);
+        setPairingRecords([]);
       }
     } catch (error) {
       console.error('加载 Pairing 记录失败:', error);
+      setPairingRecords([]);
     } finally {
       setLoadingPairing(false);
     }
