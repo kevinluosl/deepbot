@@ -1,6 +1,6 @@
 /**
  * Gateway Connector Handler - 连接器和系统命令处理
- * 
+ *
  * 职责：
  * - 处理连接器消息
  * - 发送响应到连接器
@@ -13,10 +13,14 @@ import { IPC_CHANNELS } from '../types/ipc';
 import { getErrorMessage } from '../shared/utils/error-handler';
 import { generateMessageId, generateUserMessageId } from '../shared/utils/id-generator';
 import { sendToWindow } from '../shared/utils/webcontents-utils';
+import { createLogger } from '../shared/utils/logger';
 import type { SessionManager } from './session/session-manager';
 import type { AgentRuntime } from './agent-runtime/index';
 import type { ConnectorManager } from './connectors/connector-manager';
 import type { GatewayTabManager } from './gateway-tab';
+import { setCurrentSenderIdForFeishuDocTool } from './tools/feishu-doc-tool';
+
+const logger = createLogger('ConnectorHandler');
 
 /**
  * Connector Handler 类
@@ -26,7 +30,7 @@ export class GatewayConnectorHandler {
   private connectorManager: ConnectorManager | null = null;
   private tabManager: GatewayTabManager | null = null;
   private sessionManager: SessionManager | null = null;
-  
+
   // 回调函数
   private handleSendMessageFn: ((content: string, sessionId?: string, displayContent?: string, clearHistory?: boolean, skipHistory?: boolean) => Promise<void>) | null = null;
   private getOrCreateRuntimeFn: ((sessionId: string) => AgentRuntime) | null = null;
@@ -34,9 +38,9 @@ export class GatewayConnectorHandler {
   private sendErrorFn: ((error: string, sessionId?: string) => void) | null = null;
   private resetSessionRuntimeFn: ((sessionId: string, options: { reason?: string; recreate?: boolean }) => Promise<AgentRuntime | null>) | null = null;
   private executeSystemCommandFn: ((commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<void>) | null = null;
-  
+
   constructor() {}
-  
+
   /**
    * 设置依赖
    */
@@ -63,24 +67,24 @@ export class GatewayConnectorHandler {
     this.resetSessionRuntimeFn = deps.resetSessionRuntime;
     this.executeSystemCommandFn = deps.executeSystemCommand;
   }
-  
+
   /**
    * 设置 SessionManager
    */
   setSessionManager(sessionManager: SessionManager | null): void {
     this.sessionManager = sessionManager;
   }
-  
+
   /**
    * 处理连接器消息
    */
   async handleConnectorMessage(message: GatewayMessage): Promise<void> {
     if (!this.tabManager || !this.handleSendMessageFn) {
-      console.error('[ConnectorHandler] 依赖未设置');
+      logger.error('依赖未设置');
       return;
     }
-    
-    console.log('[ConnectorHandler] 📨 收到连接器消息:', {
+
+    logger.info('📨 收到连接器消息:', {
       connectorId: message.source.connectorId,
       conversationId: message.source.conversationId,
       senderId: message.source.senderId,
@@ -90,12 +94,12 @@ export class GatewayConnectorHandler {
       imagePath: message.content.imagePath,
       filePath: message.content.filePath,
     });
-    
+
     try {
       // 查找或创建 Tab
       const conversationKey = `${message.source.connectorId}_${message.source.conversationId}`;
       let tab = this.tabManager.findTabByConversationKey(conversationKey);
-      
+
       if (!tab) {
         const title = message.source.connectorId;
         tab = await this.tabManager.createTab({
@@ -105,47 +109,37 @@ export class GatewayConnectorHandler {
           connectorId: message.source.connectorId,
           conversationId: message.source.conversationId,
         });
-        
-        console.log('[ConnectorHandler] 创建连接器 Tab:', {
-          tabId: tab.id,
-          title,
-          conversationKey,
-        });
+        logger.info('创建连接器 Tab:', { tabId: tab.id, title, conversationKey });
       }
-      
+
       // 保存 replyToMessageId 到 Tab（用于后续回复）
       if (message.replyToMessageId) {
         (tab as any).replyToMessageId = message.replyToMessageId;
-        console.log('[ConnectorHandler] 保存 replyToMessageId:', message.replyToMessageId);
+        logger.info('保存 replyToMessageId:', message.replyToMessageId);
       }
-      
+
       // 发送消息给 Agent 处理
       let content = message.content.text || '';
       let displayContent = '';
       const senderName = message.source.senderName || '用户';
-      
+
       // 检查是否是系统指令
       const systemCommandMatch = content.match(/^\/(\w+)(?:\s+(.*))?$/);
       if (systemCommandMatch) {
         const commandName = systemCommandMatch[1];
         const commandArgs = systemCommandMatch[2];
-        
-        console.log('[ConnectorHandler] 🔧 检测到系统指令:', {
-          command: commandName,
-          args: commandArgs,
-          tabId: tab.id,
-        });
-        
+        logger.info('🔧 检测到系统指令:', { command: commandName, args: commandArgs, tabId: tab.id });
+
         if (this.executeSystemCommandFn) {
           await this.executeSystemCommandFn(commandName, commandArgs, tab.id);
-          console.log('[ConnectorHandler] ✅ 系统指令已执行');
+          logger.info('✅ 系统指令已执行');
           return;
         } else {
-          console.error('[ConnectorHandler] ❌ executeSystemCommand 回调未设置');
+          logger.error('❌ executeSystemCommand 回调未设置');
           return;
         }
       }
-      
+
       // 处理图片消息
       if (message.content.type === 'image' && message.content.imagePath) {
         const imagePath = message.content.imagePath;
@@ -178,15 +172,13 @@ export class GatewayConnectorHandler {
       else {
         displayContent = content;
       }
-      
-      const contentWithSource = `[来自: ${senderName}]\n${content}`;
-      
+
       // 更新飞书文档工具的当前发送者 ID（用于创建文档后自动添加协作者）
-      const { setCurrentSenderIdForFeishuDocTool } = require('./tools/feishu-doc-tool');
       if (message.source.senderId) {
         setCurrentSenderIdForFeishuDocTool(message.source.senderId);
       }
 
+      const contentWithSource = `[来自: ${senderName}]\n${content}`;
       const systemHint = `\n\n[系统提示: 这是飞书通讯会话，除了系统的工具，你还可以使用以下专用工具:
 - connector_send_image: 发送图片给对方
 - connector_send_file: 发送文件给对方
@@ -195,101 +187,101 @@ export class GatewayConnectorHandler {
 - feishu_doc_get_blocks: 获取文档所有块列表，更新/删除块前先调用此工具获取 block_id（参数: document_id）
 - feishu_doc_append: 追加内容到文档末尾（参数: document_id, content）
 - feishu_doc_update_block: 更新指定块的文本内容（参数: document_id, block_id, content）
-- feishu_doc_delete_blocks: 删除文档中指定范围的块（参数: document_id, parent_block_id, start_index, end_index）
+- feishu_doc_delete_blocks: 删除文档中指定范围的块（参数: document_id, start_index, end_index，parent_block_id 可选默认同 document_id）
 - feishu_doc_delete_file: 永久删除整篇文档文件，不可恢复（参数: document_id）
 - feishu_doc_add_comment: 在文档中添加评论（参数: document_id, content）
 
 注意：
-1. feishu_doc_append和feishu_doc_add_comment的区别，客户要求添加评论时使用feishu_doc_add_comment
+1. feishu_doc_append 是追加正文内容，feishu_doc_add_comment 是添加评论，客户要求添加评论时使用后者
 2. 不用回复你有什么工具，需要的时候直接执行]`;
+
       const contentForAgent = contentWithSource + systemHint;
-      
-      console.log('[ConnectorHandler] 📤 准备发送给 Agent:', {
-        displayContent: displayContent.substring(0, 1000),
-        contentForAgent: contentForAgent.substring(0, 1000),
+
+      logger.info('📤 准备发送给 Agent:', {
+        displayContent: displayContent.substring(0, 200),
         tabId: tab.id,
       });
-      
+
       await this.handleSendMessageFn(contentForAgent, tab.id, displayContent);
-      console.log('[ConnectorHandler] ✅ 连接器消息已处理');
+      logger.info('✅ 连接器消息已处理');
     } catch (error) {
-      console.error('[ConnectorHandler] ❌ 处理连接器消息失败:', error);
+      logger.error('❌ 处理连接器消息失败:', error);
       throw error;
     }
   }
-  
+
   /**
    * 发送响应到连接器
    */
   async sendResponseToConnector(tabId: string, response: string): Promise<void> {
     if (!this.tabManager || !this.connectorManager) {
-      console.error('[ConnectorHandler] 依赖未设置');
+      logger.error('依赖未设置');
       return;
     }
-    
+
     const tab = this.tabManager.getTab(tabId);
     if (!tab || tab.type !== 'connector') {
-      console.log('[ConnectorHandler] Tab 不是连接器类型，跳过发送');
+      logger.info('Tab 不是连接器类型，跳过发送');
       return;
     }
-    
+
     if (!tab.connectorId || !tab.conversationId) {
-      console.error('[ConnectorHandler] Tab 缺少连接器信息');
+      logger.error('Tab 缺少连接器信息');
       return;
     }
-    
+
     // 获取 replyToMessageId（如果有）
     const replyToMessageId = (tab as any).replyToMessageId;
-    
-    console.log('[ConnectorHandler] 发送响应到连接器:', {
+
+    logger.info('发送响应到连接器:', {
       tabId,
       connectorId: tab.connectorId,
       conversationId: tab.conversationId,
       responseLength: response.length,
       replyToMessageId,
     });
-    
+
     try {
       await this.connectorManager.sendOutgoingMessage(
         tab.connectorId as any,
         tab.conversationId,
         response,
-        replyToMessageId  // 传递 replyToMessageId
+        replyToMessageId
       );
-      console.log('[ConnectorHandler] ✅ 响应已发送到连接器');
+      logger.info('✅ 响应已发送到连接器');
     } catch (error) {
-      console.error('[ConnectorHandler] ❌ 发送响应到连接器失败:', error);
+      logger.error('❌ 发送响应到连接器失败:', error);
       throw error;
     }
   }
-  
+
   /**
    * 执行系统命令
    */
   async executeSystemCommand(commandName: string, _commandArgs: string | undefined, sessionId: string): Promise<void> {
     if (!this.sendErrorFn) {
-      console.error('[ConnectorHandler] sendError 未设置');
+      logger.error('sendError 未设置');
       return;
     }
-    
+
     const messageId = generateMessageId();
-    
+
     try {
       let resultText = '';
-      
+
       switch (commandName.toLowerCase()) {
         case 'new':
           resultText = await this.handleNewCommand(sessionId);
           break;
-          
+
         case 'memory':
           resultText = await this.handleMemoryCommand(sessionId);
           break;
-          
+
         case 'history':
           resultText = await this.handleHistoryCommand(sessionId);
           break;
-          
+
         default:
           resultText = `❌ 未知指令: /${commandName}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /memory - 查看和管理记忆\n- /history - 查看对话历史统计`;
       }
@@ -300,13 +292,12 @@ export class GatewayConnectorHandler {
         done: true,
         sessionId,
       });
-
     } catch (error) {
-      console.error(`[ConnectorHandler] ❌ 执行系统命令失败: /${commandName}`, error);
+      logger.error(`❌ 执行系统命令失败: /${commandName}`, error);
       this.sendErrorFn(`执行命令失败: ${getErrorMessage(error)}`, sessionId);
     }
   }
-  
+
   /**
    * 处理 /new 命令
    */
@@ -314,34 +305,28 @@ export class GatewayConnectorHandler {
     if (!this.resetSessionRuntimeFn) {
       throw new Error('resetSessionRuntime 未设置');
     }
-    
-    try {
-      console.log(`[ConnectorHandler] 执行 /new 指令，清空会话: ${sessionId}`);
 
-      // 清空 session 历史文件
+    try {
+      logger.info(`执行 /new 指令，清空会话: ${sessionId}`);
+
       if (this.sessionManager) {
         await this.sessionManager.clearSession(sessionId);
-        console.log(`[ConnectorHandler] ✅ 会话历史已清空: ${sessionId}`);
+        logger.info(`✅ 会话历史已清空: ${sessionId}`);
       }
 
-      // 重置 Runtime
-      await this.resetSessionRuntimeFn(sessionId, {
-        reason: '/new 指令清空会话',
-        recreate: false
-      });
-      console.log(`[ConnectorHandler] ✅ AgentRuntime 已重置，上下文已清除`);
+      await this.resetSessionRuntimeFn(sessionId, { reason: '/new 指令清空会话', recreate: false });
+      logger.info('✅ AgentRuntime 已重置，上下文已清除');
 
-      // 通知前端清空 UI
       sendToWindow(this.mainWindow, 'command:clear-chat', { sessionId });
-      console.log(`[ConnectorHandler] ✅ 已通知前端清空 UI`);
+      logger.info('✅ 已通知前端清空 UI');
 
       return '✅ 已清空会话历史，开始新对话';
     } catch (error) {
-      console.error('[ConnectorHandler] ❌ 执行 /new 指令失败:', error);
+      logger.error('❌ 执行 /new 指令失败:', error);
       throw error;
     }
   }
-  
+
   /**
    * 处理 /memory 命令
    */
@@ -349,39 +334,31 @@ export class GatewayConnectorHandler {
     if (!this.getOrCreateRuntimeFn || !this.sendAIResponseFn || !this.sendErrorFn) {
       throw new Error('依赖未设置');
     }
-    
-    try {
-      console.log(`[ConnectorHandler] 执行 /memory 指令: ${sessionId}`);
 
-      const successMessage = '✅ 正在查询记忆系统...';
-      const agentPrompt = '显示当前的记忆是什么，提示用户如何更新记忆';
-      
-      setTimeout(async () => {
-        try {
-          const runtime = this.getOrCreateRuntimeFn!(sessionId);
-          
-          sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
-            messageId: generateUserMessageId(),
-            content: agentPrompt,
-            done: true,
-            role: 'user',
-            sessionId,
-          });
+    logger.info(`执行 /memory 指令: ${sessionId}`);
 
-          await this.sendAIResponseFn!(runtime, agentPrompt, sessionId);
-        } catch (error) {
-          console.error('[ConnectorHandler] ❌ 自动发送记忆查询失败:', error);
-          this.sendErrorFn!(`查询记忆失败: ${getErrorMessage(error)}`, sessionId);
-        }
-      }, 100);
+    const agentPrompt = '显示当前的记忆是什么，提示用户如何更新记忆';
 
-      return successMessage;
-    } catch (error) {
-      console.error('[ConnectorHandler] ❌ 执行 /memory 指令失败:', error);
-      throw error;
-    }
+    setTimeout(async () => {
+      try {
+        const runtime = this.getOrCreateRuntimeFn!(sessionId);
+        sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+          messageId: generateUserMessageId(),
+          content: agentPrompt,
+          done: true,
+          role: 'user',
+          sessionId,
+        });
+        await this.sendAIResponseFn!(runtime, agentPrompt, sessionId);
+      } catch (error) {
+        logger.error('❌ 自动发送记忆查询失败:', error);
+        this.sendErrorFn!(`查询记忆失败: ${getErrorMessage(error)}`, sessionId);
+      }
+    }, 100);
+
+    return '✅ 正在查询记忆系统...';
   }
-  
+
   /**
    * 处理 /history 命令
    */
@@ -389,18 +366,15 @@ export class GatewayConnectorHandler {
     if (!this.getOrCreateRuntimeFn || !this.sendAIResponseFn || !this.sendErrorFn) {
       throw new Error('依赖未设置');
     }
-    
-    try {
-      console.log(`[ConnectorHandler] 执行 /history 指令: ${sessionId}`);
 
-      const successMessage = '✅ 正在分析对话历史...';
-      
-      if (!this.sessionManager) {
-        return '❌ SessionManager 未初始化';
-      }
-      
-      const sessionFilePath = this.sessionManager.getSessionFilePath(sessionId);
-      const agentPrompt = `读取我的对话历史文件并分析：${sessionFilePath}
+    logger.info(`执行 /history 指令: ${sessionId}`);
+
+    if (!this.sessionManager) {
+      return '❌ SessionManager 未初始化';
+    }
+
+    const sessionFilePath = this.sessionManager.getSessionFilePath(sessionId);
+    const agentPrompt = `读取我的对话历史文件并分析：${sessionFilePath}
 
 请回答以下问题：
 1. 一共进行了多少轮对话？（1 轮 = 1 条用户消息 + 1 条 AI 回复）
@@ -408,30 +382,24 @@ export class GatewayConnectorHandler {
 3. 对话的主要话题是什么？
 
 使用 file_read 工具读取文件内容后进行分析。`;
-      
-      setTimeout(async () => {
-        try {
-          const runtime = this.getOrCreateRuntimeFn!(sessionId);
-          
-          sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
-            messageId: generateUserMessageId(),
-            content: agentPrompt,
-            done: true,
-            role: 'user',
-            sessionId,
-          });
 
-          await this.sendAIResponseFn!(runtime, agentPrompt, sessionId);
-        } catch (error) {
-          console.error('[ConnectorHandler] ❌ 自动发送历史分析失败:', error);
-          this.sendErrorFn!(`分析历史失败: ${getErrorMessage(error)}`, sessionId);
-        }
-      }, 100);
+    setTimeout(async () => {
+      try {
+        const runtime = this.getOrCreateRuntimeFn!(sessionId);
+        sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+          messageId: generateUserMessageId(),
+          content: agentPrompt,
+          done: true,
+          role: 'user',
+          sessionId,
+        });
+        await this.sendAIResponseFn!(runtime, agentPrompt, sessionId);
+      } catch (error) {
+        logger.error('❌ 自动发送历史分析失败:', error);
+        this.sendErrorFn!(`分析历史失败: ${getErrorMessage(error)}`, sessionId);
+      }
+    }, 100);
 
-      return successMessage;
-    } catch (error) {
-      console.error('[ConnectorHandler] ❌ 执行 /history 指令失败:', error);
-      throw error;
-    }
+    return '✅ 正在分析对话历史...';
   }
 }

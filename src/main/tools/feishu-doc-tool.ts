@@ -26,11 +26,18 @@ let configStoreInstance: any = null;
 // 当前会话发送者 ID（由 gateway-connector.ts 每次消息时更新）
 let currentSenderId: string | null = null;
 
+// 缓存的 lark Client 实例（配置不变时复用）
+let cachedClient: any = null;
+let cachedClientKey: string = '';
+
 /**
  * 注入 configStore（由 gateway.ts 调用）
+ * 配置变更时清除 Client 缓存
  */
 export function setConfigStoreForFeishuDocTool(store: any): void {
   configStoreInstance = store;
+  cachedClient = null;
+  cachedClientKey = '';
 }
 
 /**
@@ -73,7 +80,7 @@ async function addDocumentCollaborator(
 }
 
 /**
- * 获取飞书 lark Client
+ * 获取飞书 lark Client（带缓存，appId/appSecret 不变时复用实例）
  * 从飞书连接器配置中读取 appId / appSecret
  */
 async function getLarkClient(): Promise<any> {
@@ -86,13 +93,21 @@ async function getLarkClient(): Promise<any> {
     throw new Error('飞书连接器未配置，请先通过 api_set_feishu_connector_config 设置 appId 和 appSecret');
   }
 
+  // 用 appId+appSecret 作为缓存 key，配置变更时自动重建
+  const clientKey = `${connectorConfig.config.appId}:${connectorConfig.config.appSecret}`;
+  if (cachedClient && cachedClientKey === clientKey) {
+    return cachedClient;
+  }
+
   // 动态加载 SDK，避免打包时强依赖
   const lark = require('@larksuiteoapi/node-sdk');
-  return new lark.Client({
+  cachedClient = new lark.Client({
     appId: connectorConfig.config.appId,
     appSecret: connectorConfig.config.appSecret,
     disableTokenCache: false,
   });
+  cachedClientKey = clientKey;
+  return cachedClient;
 }
 
 /** 生成飞书文档链接 */
@@ -107,6 +122,33 @@ function errResult(msg: string, error: unknown) {
     details: { success: false, error: getErrorMessage(error) },
     isError: true,
   };
+}
+
+/** 检查 abort 信号，已取消则抛出 AbortError */
+function checkAbort(signal?: AbortSignal): void {
+  if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+}
+
+/**
+ * 从块数据中提取纯文本内容
+ * 支持 text/heading/bullet/ordered/code/quote/todo 等文本类块
+ */
+function extractBlockText(block: any): string {
+  // 按块类型字段名查找文本数据（飞书 API 用块类型名作为字段名）
+  const TEXT_BLOCK_KEYS = [
+    'text', 'heading1', 'heading2', 'heading3', 'heading4', 'heading5',
+    'heading6', 'heading7', 'heading8', 'heading9',
+    'bullet', 'ordered', 'code', 'quote', 'todo',
+  ];
+  for (const key of TEXT_BLOCK_KEYS) {
+    const textBlock = block[key];
+    if (textBlock?.elements) {
+      return textBlock.elements
+        .map((el: any) => el.text_run?.content || el.mention_user?.user_id || '')
+        .join('');
+    }
+  }
+  return `[type:${block.block_type}]`;
 }
 
 // ==================== 工具插件 ====================
@@ -137,7 +179,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
             const data: Record<string, string> = { title: args.title };
             if (args.folder_token) data.folder_token = args.folder_token;
@@ -177,7 +219,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
             logger.info('获取文档信息:', args.document_id);
             const [infoRes, textRes] = await Promise.all([
@@ -210,7 +252,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
             logger.info('获取文档块列表:', args.document_id);
             const res = await client.docx.v1.documentBlock.list({
@@ -218,22 +260,6 @@ export const feishuDocToolPlugin: ToolPlugin = {
               params: { page_size: 100, document_revision_id: -1 },
             });
             const blocks: any[] = res?.data?.items || [];
-
-            // 提取每个块的文本内容
-            const extractBlockText = (block: any): string => {
-              const type = block.block_type;
-              // 文本类块（type 2=text, 3=heading1~9, 12=bullet, 13=ordered, 14=code, 等）
-              const textBlock = block.text || block.heading1 || block.heading2 || block.heading3 ||
-                block.heading4 || block.heading5 || block.heading6 || block.heading7 ||
-                block.heading8 || block.heading9 || block.bullet || block.ordered ||
-                block.code || block.quote || block.todo;
-              if (textBlock?.elements) {
-                return textBlock.elements
-                  .map((el: any) => el.text_run?.content || el.mention_user?.user_id || '')
-                  .join('');
-              }
-              return `[type:${type}]`;
-            };
 
             const summary = blocks.map((b: any) => {
               const text = extractBlockText(b);
@@ -262,7 +288,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
             logger.info('追加内容到文档:', args.document_id);
             const res = await client.docx.v1.documentBlockChildren.create({
@@ -302,7 +328,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
             logger.info('更新块内容:', args.block_id);
             await client.docx.v1.documentBlock.patch({
@@ -332,17 +358,18 @@ export const feishuDocToolPlugin: ToolPlugin = {
         description: '删除文档中指定范围的块（先用 feishu_doc_get_blocks 确认索引位置）',
         parameters: Type.Object({
           document_id: Type.String({ description: '文档 ID' }),
-          parent_block_id: Type.String({ description: '父块 ID（通常与 document_id 相同）' }),
+          parent_block_id: Type.Optional(Type.String({ description: '父块 ID，不填则默认使用 document_id' })),
           start_index: Type.Number({ description: '起始块索引（从 0 开始）' }),
           end_index: Type.Number({ description: '结束块索引（不含）' }),
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
+            const parentBlockId = args.parent_block_id ?? args.document_id;
             logger.info('删除文档块:', args.document_id, args.start_index, '-', args.end_index);
             await client.docx.v1.documentBlockChildren.batchDelete({
-              path: { document_id: args.document_id, block_id: args.parent_block_id },
+              path: { document_id: args.document_id, block_id: parentBlockId },
               params: { document_revision_id: -1 },
               data: { start_index: args.start_index, end_index: args.end_index },
             });
@@ -368,7 +395,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
             logger.info('添加文档评论:', args.document_id);
             const res = await client.drive.v1.fileComment.create({
@@ -409,7 +436,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
         }),
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           try {
-            if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
+            checkAbort(signal);
             const client = await getLarkClient();
             logger.info('删除文档文件:', args.document_id);
             await client.drive.v1.file.delete({
