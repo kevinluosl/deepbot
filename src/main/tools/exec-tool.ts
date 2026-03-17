@@ -161,6 +161,7 @@ function checkCommandPathSecurity(command: string): void {
   const allPrefixWhitelist = [...SYSTEM_DIR_PREFIX_WHITELIST, ...envTempDirs];
   
   // 提取命令中可能的路径参数
+  // 注意：只检查 shell 层面的路径参数，不扫描命令字符串内容（避免误判 Python/JS 代码里的路径字符串）
   const pathPatterns = [
     // cd 命令：cd /path/to/dir
     { pattern: /cd\s+([^\s&|;]+)/gi, name: 'cd' },
@@ -168,10 +169,9 @@ function checkCommandPathSecurity(command: string): void {
     { pattern: /(cp|mv|rm|mkdir|rmdir|touch|cat|ls|find|grep)\s+([^\s&|;-][^\s&|;]*)/gi, name: 'file operations' },
     // 重定向：> /path/to/file, >> /path/to/file
     { pattern: /(>>?)\s*([^\s&|;]+)/gi, name: 'redirection' },
-    // Python/Node.js 脚本执行：python /path/to/script.py
+    // Python/Node.js 脚本文件执行：python /path/to/script.py（注意：-c 参数会被跳过）
     { pattern: /(python|python3|node|npm|pip|pip3)\s+([^\s&|;-][^\s&|;]*)/gi, name: 'script execution' },
-    // 通用文件路径：任何以 / 或 ~ 开头的路径
-    { pattern: /\s([~/][^\s&|;]*)/gi, name: 'absolute paths' },
+    // 注意：移除了通用 absolute paths 正则，因为它会误匹配命令字符串内容（如 URL、Python 代码里的路径）
   ];
   
   for (const { pattern, name } of pathPatterns) {
