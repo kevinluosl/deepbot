@@ -319,7 +319,7 @@ export class FeishuConnector implements Connector {
   private async replyWithReaction(messageId: string): Promise<void> {
     try {
       // 从预设表情中随机选择一个
-      const emojis = ['OK', 'THUMBSUP', 'DONE', 'STRIVE', 'STRONG','Typing','HIGHFIVE'];
+      const emojis = ['OK', 'THUMBSUP', 'STRIVE', 'STRONG','Typing','HIGHFIVE'];
       const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
       
       console.log('[FeishuConnector] 回复表情:', randomEmoji);

@@ -118,13 +118,11 @@ export class GatewayConnectorHandler {
         logger.info('保存 replyToMessageId:', message.replyToMessageId);
       }
 
-      // 发送消息给 Agent 处理
-      let content = message.content.text || '';
-      let displayContent = '';
+      const rawContent = message.content.text || '';
       const senderName = message.source.senderName || '用户';
 
       // 检查是否是系统指令
-      const systemCommandMatch = content.match(/^\/(\w+)(?:\s+(.*))?$/);
+      const systemCommandMatch = rawContent.match(/^\/(\w+)(?:\s+(.*))?$/);
       if (systemCommandMatch) {
         const commandName = systemCommandMatch[1];
         const commandArgs = systemCommandMatch[2];
@@ -140,46 +138,58 @@ export class GatewayConnectorHandler {
         }
       }
 
-      // 处理图片消息
-      if (message.content.type === 'image' && message.content.imagePath) {
-        const imagePath = message.content.imagePath;
-        content = `[系统通知: 用户发送了一张图片]
-
-图片已自动下载并保存到: ${imagePath}
-
-请立即回复用户:
-1. 确认收到图片
-2. 告知图片保存位置
-3. 询问用户需要对图片做什么操作`;
-        displayContent = `[收到图片]`;
-      }
-      // 处理文件消息
-      else if (message.content.type === 'file' && message.content.filePath) {
-        const fileName = message.content.fileName || '未知文件';
-        const filePath = message.content.filePath;
-        content = `[系统通知: 用户发送了文件]
-
-文件名: ${fileName}
-文件已自动下载并保存到: ${filePath}
-
-请立即回复用户:
-1. 确认收到文件
-2. 告知文件保存位置
-3. 询问用户需要对文件做什么操作`;
-        displayContent = `[收到文件: ${fileName}]`;
-      }
-      // 处理文本消息
-      else {
-        displayContent = content;
-      }
-
       // 更新飞书文档工具的当前发送者 ID（用于创建文档后自动添加协作者）
       if (message.source.senderId) {
         setCurrentSenderIdForFeishuDocTool(message.source.senderId);
       }
 
-      const contentWithSource = `[来自: ${senderName}]\n${content}`;
-      const systemHint = `\n\n[系统提示: 这是飞书通讯会话，除了系统的工具，你还可以使用以下专用工具:
+      // 构建发给 agent 的内容
+      const { contentForAgent, displayContent } = this.buildAgentContent(message, senderName, rawContent);
+
+      logger.info('📤 准备发送给 Agent:', {
+        displayContent: displayContent.substring(0, 200),
+        tabId: tab.id,
+      });
+
+      await this.handleSendMessageFn(contentForAgent, tab.id, displayContent);
+      logger.info('✅ 连接器消息已处理');
+    } catch (error) {
+      logger.error('❌ 处理连接器消息失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 构建发给 agent 的消息内容
+   *
+   * 将以下部分组合成最终内容：
+   * 1. 来源标注（[来自: xxx]）
+   * 2. 消息正文（文本/图片/文件通知）
+   * 3. 飞书专用工具提示（固定系统提示）
+   * 4. 额外系统通知（如首次管理员授权提示，由连接器注入）
+   */
+  private buildAgentContent(
+    message: GatewayMessage,
+    senderName: string,
+    rawContent: string
+  ): { contentForAgent: string; displayContent: string } {
+    let content = rawContent;
+    let displayContent = '';
+
+    // 根据消息类型构建正文
+    if (message.content.type === 'image' && message.content.imagePath) {
+      content = `[系统通知: 用户发送了一张图片]\n\n图片已自动下载并保存到: ${message.content.imagePath}\n\n请立即回复用户:\n1. 确认收到图片\n2. 告知图片保存位置\n3. 询问用户需要对图片做什么操作`;
+      displayContent = `[收到图片]`;
+    } else if (message.content.type === 'file' && message.content.filePath) {
+      const fileName = message.content.fileName || '未知文件';
+      content = `[系统通知: 用户发送了文件]\n\n文件名: ${fileName}\n文件已自动下载并保存到: ${message.content.filePath}\n\n请立即回复用户:\n1. 确认收到文件\n2. 告知文件保存位置\n3. 询问用户需要对文件做什么操作`;
+      displayContent = `[收到文件: ${fileName}]`;
+    } else {
+      displayContent = content;
+    }
+
+    // 飞书专用工具提示（固定注入）
+    const feishuToolsHint = `\n\n[系统提示: 这是飞书通讯会话，除了系统的工具，你还可以使用以下专用工具:
 - connector_send_image: 发送图片给对方
 - connector_send_file: 发送文件给对方
 - feishu_doc_create: 创建飞书云文档（参数: title, folder_token?）
@@ -195,19 +205,12 @@ export class GatewayConnectorHandler {
 1. feishu_doc_append 是追加正文内容，feishu_doc_add_comment 是添加评论，客户要求添加评论时使用后者
 2. 不用回复你有什么工具，需要的时候直接执行]`;
 
-      const contentForAgent = contentWithSource + systemHint + (message.systemContext ? `\n\n${message.systemContext}` : '');
+    // 额外系统通知（由连接器按需注入，如首次管理员授权提示）
+    const extraNotice = message.systemContext ? `\n\n${message.systemContext}` : '';
 
-      logger.info('📤 准备发送给 Agent:', {
-        displayContent: displayContent.substring(0, 200),
-        tabId: tab.id,
-      });
+    const contentForAgent = `[来自: ${senderName}]\n${content}${feishuToolsHint}${extraNotice}`;
 
-      await this.handleSendMessageFn(contentForAgent, tab.id, displayContent);
-      logger.info('✅ 连接器消息已处理');
-    } catch (error) {
-      logger.error('❌ 处理连接器消息失败:', error);
-      throw error;
-    }
+    return { contentForAgent, displayContent };
   }
 
   /**
