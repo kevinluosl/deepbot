@@ -181,12 +181,6 @@ export function createChatTool(configStore: SystemConfigStore): AgentTool {
           maxChunkSize?: number;
         };
 
-        if (signal?.aborted) {
-          const err = new Error('Chat 操作被取消');
-          err.name = 'AbortError';
-          throw err;
-        }
-
         if (!params.prompt?.trim()) {
           throw new Error('缺少参数: prompt');
         }
