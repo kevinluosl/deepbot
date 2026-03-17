@@ -64,6 +64,9 @@ export class AgentInitializer {
     
     console.log('✅ Agent 实例创建完成');
     
+    // 使用串行工具执行，避免并发工具调用导致的依赖问题
+    agent.setToolExecution('sequential');
+    
     return { agent, tools };
   }
 
@@ -168,6 +171,9 @@ export class AgentInitializer {
     });
     
     console.log('✅ Agent 实例已重新创建');
+    
+    // 使用串行工具执行
+    agent.setToolExecution('sequential');
     
     return agent;
   }

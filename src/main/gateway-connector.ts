@@ -203,8 +203,9 @@ export class GatewayConnectorHandler {
 
 注意：
 1. feishu_doc_append 是追加正文内容，feishu_doc_add_comment 是添加评论，客户要求添加评论时使用后者
-2. 不用回复你有什么工具，需要的时候直接执行
-3. 如果用户没有明确要求创建文件，不要主动创建，直接回复结果，回复的时候不要用md格式，排版优美]`;
+2. 不用回复你有什么工具
+3. 如果用户没有明确要求创建文件，不要主动创建，直接回复结果，回复的时候不要用md格式，排版优美
+4. 如果要回复的内容太长，创建飞书文档回复，除非用户明确要求要创建其他的文件并回传]`;
 
     // 额外系统通知（由连接器按需注入，如首次管理员授权提示）
     const extraNotice = message.systemContext ? `\n\n${message.systemContext}` : '';
