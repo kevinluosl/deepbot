@@ -133,8 +133,8 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
     <div className="space-y-6">
       {/* 标题和说明 */}
       <div>
-        <h3 className="text-base font-semibold text-gray-900">环境配置</h3>
-        <p className="text-sm text-gray-600 mt-1">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">环境配置</h3>
+        <p className="text-sm text-gray-500">
           DeepBot 需要 Python 环境才能正常运行。
         </p>
       </div>

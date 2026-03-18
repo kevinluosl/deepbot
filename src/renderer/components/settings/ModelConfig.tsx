@@ -168,8 +168,8 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       )}
 
       <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-4">模型配置</h3>
-        <p className="text-sm text-gray-600 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">模型配置</h3>
+        <p className="text-sm text-gray-500">
           选择 AI 模型提供商并配置 API 密钥
         </p>
       </div>

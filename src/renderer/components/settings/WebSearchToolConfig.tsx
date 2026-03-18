@@ -104,8 +104,8 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Web Search 工具配置</h3>
-        <p className="text-sm text-gray-600 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Web Search 工具配置</h3>
+        <p className="text-sm text-gray-500">
           配置 Web Search 工具，支持 Qwen 和 Google Gemini 的网络搜索能力
         </p>
       </div>

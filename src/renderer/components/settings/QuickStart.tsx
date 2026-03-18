@@ -10,24 +10,44 @@ interface QuickStartProps {
   onClose: () => void;
 }
 
+// 统一的样式常量
+const STYLES = {
+  // 间距
+  sectionMargin: '24px',      // 章节之间的间距
+  contentMargin: '16px',      // 内容块之间的间距
+  itemMargin: '12px',         // 列表项之间的间距
+  
+  // 缩进
+  indent: '24px',             // 标准缩进
+  
+  // 内边距
+  cardPadding: '16px',        // 卡片内边距
+  itemPadding: '12px',        // 列表项内边距
+  
+  // 字体大小
+  titleSize: '15px',          // 标题字体
+  contentSize: '13px',        // 正文字体
+  smallSize: '12px',          // 小字体
+  tinySize: '11px',           // 极小字体
+};
+
 export function QuickStart(_props: QuickStartProps) {
   return (
     <div className="settings-section">
-      <h3 className="settings-section-title">快速入门</h3>
-      
       {/* 欢迎横幅 */}
       <div style={{ 
-        marginBottom: '24px', 
-        padding: '20px', 
+        marginBottom: '12px', 
+        padding: '16px 20px', 
         background: 'linear-gradient(135deg, var(--settings-accent) 0%, var(--settings-accent-hover) 100%)',
         borderRadius: '8px',
         color: '#fff'
       }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '6px' }}>
-          👋 欢迎使用 DeepBot
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '6px', color: '#fff', display: 'flex', alignItems: 'center', marginLeft: '-20px' }}>
+          <span style={{ marginRight: '8px' }}>👋</span>
+          欢迎使用 DeepBot
         </h2>
         <p style={{ fontSize: '13px', lineHeight: '1.5', opacity: 0.95 }}>
-          全能 AI 助手，帮你完成文件操作、命令执行、浏览器控制、定时任务等各种工作
+          DeepBot 是一个系统级 AI 助手，会更多探索企业生产提效方向。它能够与企业现有系统深度结合，让 AI 深入参与各部门的日常办公提效，通过多 Agent 协作模式实现复杂业务流程的自动化。无论是文档处理、数据分析、系统监控，还是跨部门协作任务，DeepBot 都能通过 AI Agent 技术帮助企业轻松搞定。它支持多任务并行处理、定时任务、技能扩展等功能，同时通过严格的安全机制保护企业系统安全。
         </p>
       </div>
 
@@ -46,52 +66,57 @@ export function QuickStart(_props: QuickStartProps) {
           lineHeight: '1.6' 
         }}>
           <div style={{ marginBottom: '10px' }}>
-            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>1. 配置主大模型（必需）</span>
+            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>第一步：配置主大模型（必需）</span>
             <div style={{ marginLeft: '16px', marginTop: '4px' }}>
-              前往「模型配置」→「主大模型」，配置 Qwen、OpenAI 或 Claude 的 API 密钥
+              前往「模型配置」，配置 Qwen、DeepSeek、Gemini、Minimax 或自定义模型的 API 密钥
             </div>
           </div>
           <div style={{ marginBottom: '10px' }}>
-            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>2. 配置快速模型（推荐）</span>
+            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>第二步：配置工具（可选）</span>
             <div style={{ marginLeft: '16px', marginTop: '4px' }}>
-              前往「模型配置」→「快速模型」，配置一个快速响应的模型（如 GPT-4o-mini），用于快速任务处理
-            </div>
-          </div>
-          <div style={{ marginBottom: '10px' }}>
-            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>3. 配置图片生成（可选）</span>
-            <div style={{ marginLeft: '16px', marginTop: '4px' }}>
-              前往「工具配置」→「图片生成工具」，配置 Qwen Image 或 Gemini API 密钥，启用 AI 绘图功能
+              • 前往「工具配置」→「图片生成工具」，配置 Qwen Image 或 Gemini API 密钥，启用 AI 绘图功能<br/>
+              • 前往「工具配置」→「网络搜索工具」，配置 Qwen 或 Gemini 的 API 密钥，启用实时信息查询
             </div>
           </div>
           <div>
-            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>4. 配置网络搜索（可选）</span>
+            <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>第三步：安装环境依赖（推荐）</span>
             <div style={{ marginLeft: '16px', marginTop: '4px' }}>
-              前往「工具配置」→「网络搜索工具」，配置 Qwen 或 Gemini 的 API 密钥，启用实时信息查询
+              • Python：用于执行 Python 脚本和 Skill（💬 告诉 DeepBot："帮我安装 Python"）<br/>
+              • Chrome：浏览器工具需要系统已安装 Chrome<br/>
+              • Node.js：用于运行需要 JavaScript 环境的程序
             </div>
           </div>
         </div>
       </div>
 
-      {/* 环境要求 */}
+      {/* 环境要求详细说明 */}
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>📋</span>
-          环境要求
+          环境依赖安装指南
         </h4>
-        <div style={{ display: 'grid', gap: '8px', fontSize: '13px' }}>
-          <div style={{ color: 'var(--settings-text)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ marginRight: '8px' }}>🐍</span>
-              <span style={{ fontWeight: '600', marginRight: '6px' }}>Python（推荐）：</span>
-              <span style={{ color: 'var(--settings-text-dim)' }}>用于执行 Python 脚本和 Skill</span>
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--settings-input-bg)',
+          borderRadius: '8px',
+          fontSize: '13px',
+          color: 'var(--settings-text-dim)',
+          lineHeight: '1.6'
+        }}>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>🐍</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)', fontSize: '14px' }}>Python（推荐）</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              用于执行 Python 脚本和 Skill
             </div>
             <div style={{ 
               marginLeft: '28px', 
               padding: '10px 12px',
-              background: 'var(--settings-input-bg)',
+              background: 'rgba(0,0,0,0.1)',
               borderRadius: '6px',
               fontSize: '12px',
-              color: 'var(--settings-text-dim)',
               lineHeight: '1.5'
             }}>
               <div style={{ marginBottom: '6px', color: 'var(--settings-text)', fontWeight: '600' }}>
@@ -122,15 +147,25 @@ export function QuickStart(_props: QuickStartProps) {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', color: 'var(--settings-text)' }}>
-            <span style={{ marginRight: '8px' }}>🌐</span>
-            <span style={{ fontWeight: '600', marginRight: '6px' }}>Chrome（可选）：</span>
-            <span style={{ color: 'var(--settings-text-dim)' }}>浏览器工具需要系统已安装 Chrome</span>
+
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>🌐</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)', fontSize: '14px' }}>Chrome（可选）</span>
+            </div>
+            <div style={{ marginLeft: '28px' }}>
+              浏览器工具需要系统已安装 Chrome
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', color: 'var(--settings-text)' }}>
-            <span style={{ marginRight: '8px' }}>📦</span>
-            <span style={{ fontWeight: '600', marginRight: '6px' }}>Node.js（可选）：</span>
-            <span style={{ color: 'var(--settings-text-dim)' }}>用于运行需要 JavaScript 环境的程序</span>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>📦</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)', fontSize: '14px' }}>Node.js（可选）</span>
+            </div>
+            <div style={{ marginLeft: '28px' }}>
+              用于运行需要 JavaScript 环境的程序
+            </div>
           </div>
         </div>
       </div>
@@ -168,7 +203,7 @@ export function QuickStart(_props: QuickStartProps) {
             { icon: '🔎', name: '网页搜索', desc: '实时信息查询' },
             { icon: '📄', name: '网页获取', desc: '提取网页内容' },
             { icon: '🧠', name: '记忆管理', desc: '存储用户偏好' },
-            { icon: '🎯', name: '技能管理', desc: '安装技能包' },
+            { icon: '🎯', name: 'Skill 管理', desc: 'Skill 搜索、安装、使用' },
             { icon: '⏰', name: '定时任务', desc: '创建周期任务' },
             { icon: '💬', name: 'AI 对话', desc: '后台 AI 处理' },
             { icon: '🔗', name: '跨会话通信', desc: '多 Tab 协作' },
@@ -199,6 +234,17 @@ export function QuickStart(_props: QuickStartProps) {
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>💬</span>
           外部通讯
+          <span style={{ 
+            marginLeft: '8px', 
+            padding: '1px 6px', 
+            background: 'var(--settings-accent)', 
+            color: '#fff', 
+            borderRadius: '10px', 
+            fontSize: '11px',
+            fontWeight: '600'
+          }}>
+            1
+          </span>
         </h4>
         <div style={{ 
           padding: '12px',
@@ -358,6 +404,147 @@ export function QuickStart(_props: QuickStartProps) {
             fontSize: '12px'
           }}>
             💡 提示：Skill 安装在 <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>~/.agents/skills</code> 目录，可以手动管理
+          </div>
+        </div>
+      </div>
+
+      {/* 外部工具使用指南 */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px' }}>🔧</span>
+          外部工具使用指南
+        </h4>
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--settings-input-bg)',
+          borderRadius: '8px',
+          fontSize: '13px',
+          color: 'var(--settings-text-dim)',
+          lineHeight: '1.6'
+        }}>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>🐍</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)', fontSize: '14px' }}>使用 Python 应用库</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              DeepBot 可以通过命令行调用任何已安装的 Python 工具，无需额外集成。只需安装工具，然后告诉 DeepBot 如何使用即可。
+            </div>
+          </div>
+
+          <div style={{ marginLeft: '28px', marginBottom: '12px' }}>
+            <strong style={{ color: 'var(--settings-text)' }}>示例 1：MarkItDown（文档转换）</strong>
+            <div style={{ 
+              marginTop: '6px',
+              padding: '10px',
+              background: 'rgba(0,0,0,0.1)',
+              borderRadius: '6px',
+              lineHeight: '1.8'
+            }}>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: 'var(--settings-text)' }}>安装：</strong>
+                <div style={{ 
+                  marginTop: '4px',
+                  padding: '8px',
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}>
+                  💬 "读取 github.com/microsoft/markitdown 说明，帮我安装 markitdown"
+                </div>
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: 'var(--settings-text)' }}>使用：</strong>
+                <div style={{ 
+                  marginTop: '4px',
+                  padding: '8px',
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}>
+                  💬 "使用 markitdown 转换这个 PDF 文件"<br/>
+                  💬 "用命令 markitdown document.pdf 读取文档内容"
+                </div>
+              </div>
+              <div>
+                <strong style={{ color: 'var(--settings-text)' }}>让 AI 记住：</strong>
+                <div style={{ 
+                  marginTop: '4px',
+                  padding: '8px',
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}>
+                  💬 "记住：当我要读取 PDF、Word、Excel 等文档时，使用 markitdown 命令转换为文本"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginLeft: '28px', marginBottom: '12px' }}>
+            <strong style={{ color: 'var(--settings-text)' }}>示例 2：Agent Reach（互联网工具）</strong>
+            <div style={{ 
+              marginTop: '6px',
+              padding: '10px',
+              background: 'rgba(0,0,0,0.1)',
+              borderRadius: '6px',
+              lineHeight: '1.8'
+            }}>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: 'var(--settings-text)' }}>安装：</strong>
+                <div style={{ 
+                  marginTop: '4px',
+                  padding: '8px',
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}>
+                  💬 "帮我安装 Agent Reach：https://raw.githubusercontent.com/Panniantong/agent-reach/main/docs/install.md"
+                </div>
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: 'var(--settings-text)' }}>使用：</strong>
+                <div style={{ 
+                  marginTop: '4px',
+                  padding: '8px',
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}>
+                  💬 "用 agent-reach 获取 Twitter 上关于 AI 的最新推文"<br/>
+                  💬 "使用命令 agent-reach twitter search 'AI' 搜索内容"
+                </div>
+              </div>
+              <div>
+                <strong style={{ color: 'var(--settings-text)' }}>让 AI 记住：</strong>
+                <div style={{ 
+                  marginTop: '4px',
+                  padding: '8px',
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}>
+                  💬 "记住：当我需要获取 Twitter、小红书、B站等平台内容时，使用 agent-reach 命令"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ 
+            marginTop: '12px',
+            padding: '10px',
+            background: 'rgba(var(--settings-accent-rgb), 0.1)',
+            borderLeft: '3px solid var(--settings-accent)',
+            borderRadius: '4px',
+            fontSize: '12px'
+          }}>
+            💡 提示：通过 "记住：..." 指令，DeepBot 会将工具使用方式存入长期记忆，之后会自动选择合适的工具处理任务
           </div>
         </div>
       </div>
@@ -707,7 +894,14 @@ export function QuickStart(_props: QuickStartProps) {
             12
           </span>
         </h4>
-        <div style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--settings-input-bg)',
+          borderRadius: '8px',
+          display: 'grid', 
+          gap: '6px', 
+          fontSize: '13px' 
+        }}>
           {[
             { icon: '👥', text: '多 Tab 协作：每个 Tab 可以有独立的角色和记忆，支持跨 Tab 通信' },
             { icon: '🧠', text: '长期记忆：告诉 AI "记住：..."，它会永久记住用户偏好和习惯' },
@@ -743,7 +937,14 @@ export function QuickStart(_props: QuickStartProps) {
           <span style={{ marginRight: '8px' }}>💬</span>
           示例对话
         </h4>
-        <div style={{ display: 'grid', gap: '6px', fontSize: '13px' }}>
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--settings-input-bg)',
+          borderRadius: '8px',
+          display: 'grid', 
+          gap: '8px', 
+          fontSize: '13px' 
+        }}>
           {[
             '帮我整理桌面上的文件，把图片放到 Pictures 文件夹',
             '每天下午 5 点提醒我写日报',
@@ -757,8 +958,8 @@ export function QuickStart(_props: QuickStartProps) {
             <div 
               key={index}
               style={{ 
-                padding: '8px 10px', 
-                background: 'var(--settings-input-bg)', 
+                padding: '10px 12px', 
+                background: 'rgba(0,0,0,0.05)', 
                 borderRadius: '6px',
                 color: 'var(--settings-text-dim)',
                 fontStyle: 'italic'
