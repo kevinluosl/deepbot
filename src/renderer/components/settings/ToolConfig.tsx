@@ -268,7 +268,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
           </div>
 
           {/* 保存按钮 */}
-          <div className="flex gap-2">
+          <div className="flex justify-end pt-4 border-t">
             <button
               onClick={handleSave}
               disabled={saving}

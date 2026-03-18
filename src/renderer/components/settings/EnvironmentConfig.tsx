@@ -186,15 +186,6 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
         >
           检查环境
         </button>
-
-        {status && !status.needsCheck && (
-          <button
-            onClick={loadStatus}
-            className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-          >
-            刷新状态
-          </button>
-        )}
       </div>
 
       {/* 总体状态 */}

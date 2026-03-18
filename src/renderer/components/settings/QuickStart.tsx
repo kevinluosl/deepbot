@@ -949,7 +949,7 @@ export function QuickStart(_props: QuickStartProps) {
             '帮我整理桌面上的文件，把图片放到 Pictures 文件夹',
             '每天下午 5 点提醒我写日报',
             '记住：我喜欢简洁的代码风格，不要写太多注释',
-            '打开淘宝网站，搜索"机械键盘"，截图前 3 个商品',
+            '打开百度搜索"人工智能最新进展"，截图前 3 条结果',
             '分析 ~/Documents/sales.csv 文件，生成销售趋势图表',
             '创建一个 Python 脚本，每小时自动备份 ~/work 目录到云盘',
             '搜索最新的 React 19 新特性，总结成 Markdown 文档保存',

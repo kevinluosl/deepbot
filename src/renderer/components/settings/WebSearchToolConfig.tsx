@@ -223,7 +223,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
       )}
 
       {/* 保存按钮 */}
-      <div className="flex gap-2 pt-4 border-t">
+      <div className="flex justify-end pt-4 border-t">
         <button
           onClick={handleSave}
           disabled={isSaving}
