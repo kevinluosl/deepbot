@@ -94,39 +94,44 @@ export async function handleSetNameConfig(
       // 更新 Gateway 中所有相关 Tab 的 title
       const gateway = await getGatewayInstance();
       if (gateway && params.agentName) {
-        const tabs = (gateway as any).tabs as Map<string, any>;
-        
-        // 更新主 Tab 的 title
-        const defaultTab = tabs.get('default');
-        if (defaultTab) {
-          defaultTab.title = params.agentName;
-          logger.info('已更新主 Tab title:', params.agentName);
-        }
-        
-        // 遍历所有 Tab，更新没有独立名字的 Tab
-        const updatedTabIds: string[] = ['default'];
-        
-        for (const [tabId, tab] of tabs.entries()) {
-          if (tabId === 'default') continue;
+        const tabManager = (gateway as any).tabManager;
+        if (!tabManager) {
+          logger.warn('TabManager 未初始化，无法更新 Tab title');
+        } else {
+          const tabs = tabManager.getTabs();
           
-          // 检查 Tab 是否有独立的 Agent 名字
-          const tabConfig = store.getTabConfig(tabId);
-          const hasIndependentName = tabConfig?.agentName != null;
+          // 更新主 Tab 的 title
+          const defaultTab = tabs.get('default');
+          if (defaultTab) {
+            defaultTab.title = params.agentName;
+            logger.info('已更新主 Tab title:', params.agentName);
+          }
           
-          if (!hasIndependentName) {
-            // 没有独立名字的 Tab，需要更新 title
-            const match = tab.title.match(/\s+(\d+)$/);
-            const number = match ? match[1] : '';
+          // 遍历所有 Tab，更新没有独立名字的 Tab
+          const updatedTabIds: string[] = ['default'];
+          
+          for (const [tabId, tab] of tabs.entries()) {
+            if (tabId === 'default') continue;
             
-            if (number) {
-              tab.title = `${params.agentName} ${number}`;
-              logger.info(`已更新 Tab ${tabId} title: ${tab.title}`);
-              updatedTabIds.push(tabId);
+            // 检查 Tab 是否有独立的 Agent 名字
+            const tabConfig = store.getTabConfig(tabId);
+            const hasIndependentName = tabConfig?.agentName != null;
+            
+            if (!hasIndependentName) {
+              // 没有独立名字的 Tab，需要更新 title
+              const match = tab.title.match(/\s+(\d+)$/);
+              const number = match ? match[1] : '';
+              
+              if (number) {
+                tab.title = `${params.agentName} ${number}`;
+                logger.info(`已更新 Tab ${tabId} title: ${tab.title}`);
+                updatedTabIds.push(tabId);
+              }
             }
           }
+          
+          logger.info(`共更新了 ${updatedTabIds.length} 个 Tab 的 title`);
         }
-        
-        logger.info(`共更新了 ${updatedTabIds.length} 个 Tab 的 title`);
       }
       
       // 发送事件到前端
@@ -165,28 +170,33 @@ export async function handleSetNameConfig(
         // 更新 Tab 的 title
         const gateway = await getGatewayInstance();
         if (gateway) {
-          const tabs = (gateway as any).tabs as Map<string, any>;
-          const tab = tabs.get(sessionId);
-          
-          if (tab) {
-            tab.title = params.agentName;
-            logger.info(`已更新 Tab title: ${sessionId} -> ${params.agentName}`);
+          const tabManager = (gateway as any).tabManager;
+          if (!tabManager) {
+            logger.warn('TabManager 未初始化，无法更新 Tab title');
+          } else {
+            const tabs = tabManager.getTabs();
+            const tab = tabs.get(sessionId);
             
-            // 如果 Tab 是持久化的，更新数据库
-            if (tab.isPersistent) {
-              const { saveTabConfig } = await import('../../database/tab-config');
-              const tabType = tab.type === 'scheduled_task' ? 'task' : tab.type === 'connector' ? 'connector' : 'manual';
+            if (tab) {
+              tab.title = params.agentName;
+              logger.info(`已更新 Tab title: ${sessionId} -> ${params.agentName}`);
               
-              saveTabConfig((store as any).db, {
-                id: tab.id,
-                title: tab.title,
-                type: tabType,
-                memoryFile: tab.memoryFile || null,
-                agentName: params.agentName,
-                isPersistent: tab.isPersistent,
-                createdAt: tab.createdAt,
-                lastActiveAt: tab.lastActiveAt,
-              });
+              // 如果 Tab 是持久化的，更新数据库
+              if (tab.isPersistent) {
+                const { saveTabConfig } = await import('../../database/tab-config');
+                const tabType = tab.type === 'scheduled_task' ? 'task' : tab.type === 'connector' ? 'connector' : 'manual';
+                
+                saveTabConfig((store as any).db, {
+                  id: tab.id,
+                  title: tab.title,
+                  type: tabType,
+                  memoryFile: tab.memoryFile || null,
+                  agentName: params.agentName,
+                  isPersistent: tab.isPersistent,
+                  createdAt: tab.createdAt,
+                  lastActiveAt: tab.lastActiveAt,
+                });
+              }
             }
           }
         }
