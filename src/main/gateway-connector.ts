@@ -131,6 +131,16 @@ export class GatewayConnectorHandler {
         if (this.executeSystemCommandFn) {
           await this.executeSystemCommandFn(commandName, commandArgs, tab.id);
           logger.info('✅ 系统指令已执行');
+
+          // connector tab 的系统指令需要把结果回复给用户
+          // （executeSystemCommand 只发到前端 UI，connector 用户看不到）
+          if (tab.type === 'connector') {
+            try {
+              await this.sendResponseToConnector(tab.id, this.getSystemCommandReply(commandName));
+            } catch (replyError) {
+              logger.error('❌ 回复系统指令结果失败:', replyError);
+            }
+          }
           return;
         } else {
           logger.error('❌ executeSystemCommand 回调未设置');
@@ -288,6 +298,10 @@ export class GatewayConnectorHandler {
           resultText = await this.handleHistoryCommand(sessionId);
           break;
 
+        case 'stop':
+          resultText = await this.handleStopCommand(sessionId);
+          break;
+
         default:
           resultText = `❌ 未知指令: /${commandName}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /memory - 查看和管理记忆\n- /history - 查看对话历史统计`;
       }
@@ -363,6 +377,42 @@ export class GatewayConnectorHandler {
     }, 100);
 
     return '✅ 正在查询记忆系统...';
+  }
+
+  /**
+   * 获取系统指令的简短回复文本（用于 connector 回复用户）
+   */
+  private getSystemCommandReply(commandName: string): string {
+    switch (commandName.toLowerCase()) {
+      case 'stop': return '⏹️ 任务已停止';
+      case 'new': return '✅ 已清空会话历史，开始新对话';
+      case 'memory': return '✅ 正在查询记忆系统...';
+      case 'history': return '✅ 正在分析对话历史...';
+      default: return `❌ 未知指令: /${commandName}`;
+    }
+  }
+
+  /**
+   * 处理 /stop 命令（停止当前正在执行的任务）
+   */
+  private async handleStopCommand(sessionId: string): Promise<string> {
+    if (!this.resetSessionRuntimeFn || !this.getOrCreateRuntimeFn) {
+      throw new Error('依赖未设置');
+    }
+
+    logger.info(`执行 /stop 指令，停止任务: ${sessionId}`);
+
+    const runtime = this.getOrCreateRuntimeFn(sessionId);
+    const wasGenerating = runtime.isCurrentlyGenerating();
+
+    // 停止 agent（等同于点击 Stop 按钮）
+    await this.resetSessionRuntimeFn(sessionId, {
+      reason: '用户发送 /stop 指令',
+      recreate: false,
+    });
+
+    logger.info('✅ /stop 指令已执行');
+    return wasGenerating ? '⏹️ 任务已停止' : '⏹️ 当前没有正在执行的任务';
   }
 
   /**

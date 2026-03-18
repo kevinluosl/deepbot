@@ -14,6 +14,7 @@ interface MessageInputProps {
   isGenerating?: boolean;
   userName?: string; // 用户名字
   disableStop?: boolean; // 是否禁用 Stop 按钮（独立控制）
+  isConnectorTab?: boolean; // 是否是连接器 Tab（显示 /stop 指令）
 }
 
 // 🔥 暴露给父组件的方法
@@ -28,6 +29,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   isGenerating = false,
   userName = 'user',
   disableStop = false,
+  isConnectorTab = false,
 }, ref) => {
   const [content, setContent] = useState('');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
@@ -47,11 +49,12 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   // 🔥 防止重复执行标志
   const isExecutingCommandRef = useRef(false);
   
-  // 可用命令列表
+  // 可用命令列表（connector tab 额外显示 /stop）
   const availableCommands = [
     { name: 'new', description: '清空当前会话历史，开始新对话' },
     { name: 'memory', description: '查看和管理记忆' },
     { name: 'history', description: '查看对话历史统计' },
+    ...(isConnectorTab ? [{ name: 'stop', description: '停止当前正在执行的任务' }] : []),
   ];
 
   // 🔥 暴露 focus 方法给父组件
