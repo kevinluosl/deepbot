@@ -287,7 +287,7 @@ export class GatewayConnectorHandler {
     } else if (message.content.type === 'file' && message.content.filePath) {
       const fileName = message.content.fileName || '未知文件';
       content = `[系统通知: 用户发送了文件]\n\n文件名: ${fileName}\n文件已自动下载并保存到: ${message.content.filePath}\n\n请立即回复用户:\n1. 确认收到文件\n2. 告知文件保存位置\n3. 询问用户需要对文件做什么操作`;
-      displayContent = `[收到文件: ${fileName}]`;
+      displayContent = `[收到文件]`;
     } else {
       displayContent = content;
     }

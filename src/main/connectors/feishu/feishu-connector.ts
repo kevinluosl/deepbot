@@ -213,9 +213,10 @@ export class FeishuConnector implements Connector {
   
   /**
    * 下载飞书文件到本地临时目录
-   * 注意：用户发送的文件需要使用 message-resource API，不能使用 file.get API
+   * 使用纯英文文件名保存，避免中文文件名传给 AI 时被模型修改排版
+   * originalName 保留原始文件名，用于展示给用户
    */
-  private async downloadFile(messageId: string, fileKey: string, fileName: string): Promise<{ path: string; name: string } | null> {
+  private async downloadFile(messageId: string, fileKey: string, fileName: string): Promise<{ path: string; name: string; originalName: string } | null> {
     try {
       const response = await this.client.im.messageResource.get({
         path: { message_id: messageId, file_key: fileKey },
@@ -225,13 +226,13 @@ export class FeishuConnector implements Connector {
       const crypto = await import('crypto');
       const id = crypto.randomBytes(8).toString('hex');
       const ext = path.extname(fileName);
-      const baseName = path.basename(fileName, ext);
-      const uniqueFileName = `${baseName}_${id}${ext}`;
-      const filePath = path.join(this.getTempUploadDir(), uniqueFileName);
+      // 使用纯英文文件名，和图片处理方式一致
+      const safeFileName = `feishu_file_${id}${ext}`;
+      const filePath = path.join(this.getTempUploadDir(), safeFileName);
       
       await response.writeFile(filePath);
       
-      return { path: filePath, name: uniqueFileName };
+      return { path: filePath, name: safeFileName, originalName: fileName };
     } catch (error) {
       console.error('[FeishuConnector] ❌ 下载文件失败:', error);
       return null;
@@ -417,7 +418,7 @@ export class FeishuConnector implements Connector {
         if (imageKey) {
           const downloadedImage = await this.downloadImage(feishuMessage.messageId, imageKey);
           if (downloadedImage) {
-            feishuMessage.content.text = `[收到图片: ${downloadedImage.name}]`;
+            feishuMessage.content.text = `[收到图片]`;
             feishuMessage.content.imageKey = imageKey;
             feishuMessage.content.imagePath = downloadedImage.path;
           } else {
@@ -433,7 +434,7 @@ export class FeishuConnector implements Connector {
         if (fileKey) {
           const downloadedFile = await this.downloadFile(feishuMessage.messageId, fileKey, fileName);
           if (downloadedFile) {
-            feishuMessage.content.text = `[收到文件: ${downloadedFile.name}]`;
+            feishuMessage.content.text = `[收到文件]`;
             feishuMessage.content.fileKey = fileKey;
             feishuMessage.content.filePath = downloadedFile.path;
             feishuMessage.content.fileName = downloadedFile.name;

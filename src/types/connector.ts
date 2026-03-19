@@ -52,7 +52,7 @@ export interface GatewayMessage {
     type: 'text' | 'image' | 'file';
     text?: string;            // 文本内容
     fileUrl?: string;         // 文件 URL
-    fileName?: string;        // 文件名
+    fileName?: string;        // 文件名（英文安全文件名，传给 AI 使用）
     // 图片相关
     imageKey?: string;        // 飞书图片 Key
     imagePath?: string;       // 本地图片路径
