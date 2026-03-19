@@ -138,14 +138,17 @@ export class GatewayConnectorHandler {
       const senderName = message.source.senderName || '用户';
 
       // 检查是否是系统指令
-      const systemCommandMatch = rawContent.match(/^\/(\w+)(?:\s+(.*))?$/);
+      // 支持两种格式：
+      // 1. /command - 行首的指令
+      // 2. @xxx /command - @ 提及后的指令（飞书群组场景）
+      const systemCommandMatch = rawContent.match(/^(?:@\S+\s+)?\/(\w+)(?:\s+(.*))?$/);
       if (systemCommandMatch) {
         const commandName = systemCommandMatch[1];
         const commandArgs = systemCommandMatch[2];
         logger.info('🔧 检测到系统指令:', { command: commandName, args: commandArgs, tabId: tab.id });
 
         if (this.executeSystemCommandFn) {
-          // 🔥 特殊处理：/status 指令直接返回内容，不需要中间提示
+          // 🔥 特殊处理：/status 和 /stop 指令直接执行，不经过消息队列
           if (commandName.toLowerCase() === 'status') {
             const statusResult = await this.handleStatusCommand(tab.id);
             if (tab.type === 'connector') {
@@ -153,6 +156,18 @@ export class GatewayConnectorHandler {
                 await this.sendResponseToConnector(tab.id, statusResult);
               } catch (replyError) {
                 logger.error('❌ 回复 status 指令结果失败:', replyError);
+              }
+            }
+            return;
+          }
+
+          if (commandName.toLowerCase() === 'stop') {
+            const stopResult = await this.handleStopCommand(tab.id);
+            if (tab.type === 'connector') {
+              try {
+                await this.sendResponseToConnector(tab.id, stopResult);
+              } catch (replyError) {
+                logger.error('❌ 回复 stop 指令结果失败:', replyError);
               }
             }
             return;
@@ -267,10 +282,9 @@ export class GatewayConnectorHandler {
 
 注意：
 1. feishu_doc_append 是追加正文内容，feishu_doc_add_comment 是添加评论，客户要求添加评论时使用后者
-2. 不要回复你有什么工具
-3. 不要用markdown格式回复内容，不要使用表格回复内容，飞书只能接收无格式的的字符，注意排版优美
-4. 回复的内容超过1000个字，创建飞书文档回复
-5. 回复的时候根据回复的内容，带上用户的名字]`;
+2. 不要用markdown格式回复内容，不要使用表格回复内容，飞书只能接收无格式的的字符，注意排版优美
+3. 回复的内容超过1000个字，创建飞书文档回复
+4. 回复的时候根据回复的内容，带上用户的名字]`;
 
     // 额外系统通知（由连接器按需注入，如首次管理员授权提示）
     const extraNotice = message.systemContext ? `\n\n${message.systemContext}` : '';
