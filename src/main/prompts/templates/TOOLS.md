@@ -147,17 +147,17 @@ sudo apt-get install -y nodejs
 ```
 
 **支持的路径格式**：
-- 绝对路径：`![截图](/path/to/Desktop/screenshot.png)`
-- 用户目录：`![截图](~/Desktop/screenshot.png)`
-- file:// 协议：`![截图](file:///path/to/Desktop/screenshot.png)`
+- 绝对路径：`![截图](/path/to/screenshot.png)`
+- 用户目录：`![截图](~/path/to/screenshot.png)`
+- file:// 协议：`![截图](file:///path/to/screenshot.png)`
 
 **响应示例**：
 ```
-✅ 已成功加载并预览桌面图片：截屏2026-02-03 21.10.06.png
+✅ 已成功加载并预览图片：screenshot.png
 
-![截屏2026-02-03 21.10.06.png](~/Desktop/截屏2026-02-03 21.10.06.png)
+![screenshot.png](~/path/to/screenshot.png)
 
-📁 路径：~/Desktop/截屏2026-02-03 21.10.06.png
+📁 路径：~/path/to/screenshot.png
 📏 尺寸：27.05 KB｜🖼️ 格式：PNG
 ```
 
@@ -331,7 +331,7 @@ google-chrome --remote-debugging-port=9222
 {
   "action": "create",
   "name": "每日报告",
-  "description": "生成每日工作报告并保存到桌面",
+  "description": "生成每日工作报告并保存到指定目录",
   "schedule": {
     "type": "cron",
     "cronExpr": "0 9 * * *"
@@ -341,11 +341,11 @@ google-chrome --remote-debugging-port=9222
 
 ### 正确理解用户需求
 
-**用户说**："每隔10秒检查桌面有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务"
+**用户说**："每隔10秒检查指定目录有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务"
 
 **正确拆分**：
 1. **触发器**：每隔 10 秒 → `schedule: { type: "interval", intervalMs: 10000 }`
-2. **任务内容**：检查桌面有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务 → `description`
+2. **任务内容**：检查指定目录有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务 → `description`
 
 ### ⚠️⚠️⚠️ 重要：任务描述（description）必须完整保留用户输入 ⚠️⚠️⚠️
 
@@ -363,8 +363,8 @@ google-chrome --remote-debugging-port=9222
 ### 任务描述规范
 
 **好的描述**：
-- ✅ "检查桌面有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务"
-- ✅ "检查 ~/Documents 目录，如果有新文件就发送通知"
+- ✅ "检查指定目录有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务"
+- ✅ "检查指定目录，如果有新文件就发送通知"
 - ✅ "打开浏览器访问天气网站，获取今天的天气预报"
 
 **不好的描述**：
@@ -949,7 +949,7 @@ google-chrome --remote-debugging-port=9222
 ```json
 {
   "prompt": "一只可爱的小猫",
-  "outputPath": "~/Desktop/cat_$(date +%s%3N).jpg"
+  "outputPath": "~/path/to/cat_unique_name.jpg"
 }
 ```
 
@@ -959,13 +959,14 @@ google-chrome --remote-debugging-port=9222
 1. **直接使用 outputPath 参数**：当用户指定保存路径时，必须在调用 `image_generation` 工具时直接传递 `outputPath` 参数
 2. **不要生成后再移动**：❌ 不要先生成到默认目录，再用 `exec` 工具移动文件
 3. **一步到位**：✅ 直接在 `image_generation` 调用中指定 `outputPath`，工具会直接保存到目标位置
+4. **文件名唯一性**：生成多张图片时，确保每个文件名都不重复（可以使用时间戳、序号等方式）
 
 **✅ 正确做法（用户指定路径）**：
 ```json
-// 用户说："生成一张图片，保存到桌面，文件名用时间戳"
+// 用户说："生成一张图片，保存到指定目录"
 {
   "prompt": "一只可爱的小猫",
-  "outputPath": "~/Desktop/cat_$(date +%s%3N).jpg"
+  "outputPath": "~/path/to/cat_unique_name.jpg"
 }
 ```
 
@@ -979,7 +980,7 @@ google-chrome --remote-debugging-port=9222
 // 第 2 步：移动文件（错误：不需要这一步）
 {
   "tool": "exec",
-  "command": "cp <imageDir>/generated-123.jpg ~/Desktop/cat_123.jpg"
+  "command": "cp <imageDir>/generated-123.jpg ~/path/to/cat_123.jpg"
 }
 ```
 
@@ -987,29 +988,29 @@ google-chrome --remote-debugging-port=9222
 
 **场景 1：用户指定目录和文件名模式**
 ```
-用户："生成 10 张图片，保存到 ~/Desktop/train_new/，文件名格式：20260208-102632_clean_6grid_时间戳.jpeg"
+用户："生成 10 张图片，保存到 ~/path/to/train_new/，文件名格式：20260208-102632_clean_6grid_序号.jpeg"
 ```
 ```json
 // 第 1 张
 {
   "prompt": "...",
-  "outputPath": "~/Desktop/train_new/20260208-102632_clean_6grid_$(date +%s%3N).jpeg"
+  "outputPath": "~/path/to/train_new/20260208-102632_clean_6grid_001.jpeg"
 }
 // 第 2 张
 {
   "prompt": "...",
-  "outputPath": "~/Desktop/train_new/20260208-102632_clean_6grid_$(date +%s%3N).jpeg"
+  "outputPath": "~/path/to/train_new/20260208-102632_clean_6grid_002.jpeg"
 }
 ```
 
 **场景 2：用户只指定目录**
 ```
-用户："生成图片保存到桌面"
+用户："生成图片保存到指定目录"
 ```
 ```json
 {
   "prompt": "...",
-  "outputPath": "~/Desktop/generated_$(date +%s%3N).jpg"
+  "outputPath": "~/path/to/generated_unique_name.jpg"
 }
 ```
 
@@ -1159,20 +1160,20 @@ google-chrome --remote-debugging-port=9222
 // 1. 读取文件
 {
   "tool": "file_read",
-  "path": "~/Documents/config.json"
+  "path": "~/path/to/config.json"
 }
 
 // 2. 写入文件
 {
   "tool": "file_write",
-  "path": "~/Documents/output.txt",
+  "path": "~/path/to/output.txt",
   "content": "Hello, World!"
 }
 
 // 3. 编辑文件（替换文本）
 {
   "tool": "file_edit",
-  "path": "~/Documents/config.json",
+  "path": "~/path/to/config.json",
   "old_string": "\"debug\": false",
   "new_string": "\"debug\": true"
 }
@@ -1263,14 +1264,14 @@ node script.js
 
 ```bash
 # ❌ 错误：文件名有空格但没有引号
-cp ~/Desktop/my file.txt ~/Documents/
+cp ~/path/to/my file.txt ~/another/path/
 
 # ✅ 正确：用双引号或单引号包裹
-cp ~/Desktop/"my file.txt" ~/Documents/
-cp '~/Desktop/my file.txt' ~/Documents/
+cp ~/path/to/"my file.txt" ~/another/path/
+cp '~/path/to/my file.txt' ~/another/path/
 
 # ✅ 正确：用反斜杠转义空格
-cp ~/Desktop/my\ file.txt ~/Documents/
+cp ~/path/to/my\ file.txt ~/another/path/
 ```
 
 常见场景：
@@ -1657,7 +1658,7 @@ cp ~/Desktop/my\ file.txt ~/Documents/
 ```json
 {
   "tool": "connector_send_image",
-  "imagePath": "~/Desktop/report.png",
+  "imagePath": "~/path/to/report.png",
   "caption": "本周数据报告",
   "userId": "ou_xxxxxxxx"
 }
@@ -1667,7 +1668,7 @@ cp ~/Desktop/my\ file.txt ~/Documents/
 ```json
 {
   "tool": "connector_send_file",
-  "filePath": "~/Documents/report.xlsx",
+  "filePath": "~/path/to/report.xlsx",
   "userId": "ou_xxxxxxxx"
 }
 ```
@@ -1676,7 +1677,7 @@ cp ~/Desktop/my\ file.txt ~/Documents/
 ```json
 {
   "tool": "connector_send_image",
-  "imagePath": "~/Desktop/result.png",
+  "imagePath": "~/path/to/result.png",
   "caption": "生成结果"
 }
 ```

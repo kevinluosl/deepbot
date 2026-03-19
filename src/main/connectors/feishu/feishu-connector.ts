@@ -357,16 +357,21 @@ export class FeishuConnector implements Connector {
       });
       
       // 3. 群组消息：先判断是否 @ 了机器人，再回复表情
+      // 🔥 特殊处理：图片和文件消息无法 @，因此不需要检查 mention
       const isGroup = event.message.chat_type !== 'p2p';
+      const isMediaMessage = msgType === 'image' || msgType === 'file';
+      
       console.log('[FeishuConnector] 🔍 消息类型检查:', {
         chatType: event.message.chat_type,
         isGroup,
+        msgType,
+        isMediaMessage,
         requireMention: this.security.requireMention,
         isBotMentioned,
       });
       
-      if (isGroup && this.security.requireMention && !isBotMentioned) {
-        // 未 @ 机器人，直接忽略，不回复表情
+      if (isGroup && this.security.requireMention && !isBotMentioned && !isMediaMessage) {
+        // 未 @ 机器人且不是图片/文件消息，直接忽略，不回复表情
         console.log('[FeishuConnector] 🚫 群组消息未 @ 机器人，忽略');
         return;
       }
@@ -870,12 +875,17 @@ export class FeishuConnector implements Connector {
       }
       
       // 2.3 检查是否需要 @ 机器人
+      // 🔥 特殊处理：图片和文件消息无法 @，因此不需要检查 mention
+      const isMediaMessage = message.content.type === 'image' || message.content.type === 'file';
+      
       console.log('[FeishuConnector] 🔍 安全检查:', {
         requireMention: this.security.requireMention,
         isBotMentioned: message.mentions?.isBotMentioned,
+        messageType: message.content.type,
+        isMediaMessage,
       });
       
-      if (this.security.requireMention) {
+      if (this.security.requireMention && !isMediaMessage) {
         if (!message.mentions?.isBotMentioned) {
           // 未 @ 机器人，拒绝处理
           console.log('[FeishuConnector] 🚫 群组消息未 @ 机器人，忽略');
