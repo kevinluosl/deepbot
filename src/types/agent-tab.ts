@@ -5,6 +5,19 @@
 import type { Message } from './message';
 
 /**
+ * 待处理消息（用于消息队列）
+ */
+export interface PendingMessage {
+  messageId: string;             // 消息 ID
+  senderId: string;              // 发送者 ID
+  senderName: string;            // 发送者名字
+  content: string;               // 消息内容
+  displayContent: string;        // 显示内容（用于前端展示）
+  replyToMessageId?: string;     // 回复目标消息 ID
+  timestamp: number;             // 消息时间戳
+}
+
+/**
  * Agent Tab 数据结构
  */
 export interface AgentTab {
@@ -25,6 +38,10 @@ export interface AgentTab {
   memoryFile?: string | null;    // Memory 文件路径（NULL 表示使用默认）
   agentName?: string | null;     // Agent 名字（NULL 表示继承主 Agent）
   isPersistent?: boolean;        // 是否持久化（手动创建的 Tab 为 true）
+  
+  // 🔥 新增：消息队列（用于连接器 Tab 的多人消息处理）
+  pendingMessages?: PendingMessage[];  // 待处理消息队列
+  processingMessageId?: string;        // 当前正在处理的消息 ID
 }
 
 /**

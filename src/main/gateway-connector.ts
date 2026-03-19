@@ -134,12 +134,6 @@ export class GatewayConnectorHandler {
         logger.info('创建连接器 Tab:', { tabId: tab.id, title, conversationKey });
       }
 
-      // 保存 replyToMessageId 到 Tab（用于后续回复）
-      if (message.replyToMessageId) {
-        (tab as any).replyToMessageId = message.replyToMessageId;
-        logger.info('保存 replyToMessageId:', message.replyToMessageId);
-      }
-
       const rawContent = message.content.text || '';
       const senderName = message.source.senderName || '用户';
 
@@ -178,16 +172,37 @@ export class GatewayConnectorHandler {
       // 构建发给 agent 的内容
       const { contentForAgent, displayContent } = this.buildAgentContent(message, senderName, rawContent);
 
-      logger.info('📤 准备发送给 Agent:', {
-        displayContent: displayContent.substring(0, 200),
+      // 🔥 新增：将消息加入队列
+      const pendingMessage = {
+        messageId: message.replyToMessageId || `msg_${Date.now()}`,
+        senderId: message.source.senderId || '',
+        senderName,
+        content: contentForAgent,
+        displayContent,
+        replyToMessageId: message.replyToMessageId,
+        timestamp: Date.now(),
+      };
+
+      // 初始化队列（如果不存在）
+      if (!tab.pendingMessages) {
+        tab.pendingMessages = [];
+      }
+
+      // 加入队列
+      tab.pendingMessages.push(pendingMessage);
+      logger.info('📥 消息已加入队列:', {
         tabId: tab.id,
+        messageId: pendingMessage.messageId,
+        queueLength: tab.pendingMessages.length,
+        isProcessing: !!tab.processingMessageId,
       });
 
-      // 先启动进度提醒定时器，再发送给 agent（发送是异步阻塞的，定时器需要提前注册）
-      this.startProgressTimers(tab.id);
-
-      await this.handleSendMessageFn(contentForAgent, tab.id, displayContent);
-      logger.info('✅ 连接器消息已处理');
+      // 如果当前没有正在处理的消息，开始处理队列
+      if (!tab.processingMessageId) {
+        await this.processNextMessage(tab.id);
+      } else {
+        logger.info('⏳ 有消息正在处理中，当前消息已排队等待');
+      }
     } catch (error) {
       logger.error('❌ 处理连接器消息失败:', error);
       throw error;
@@ -252,6 +267,67 @@ export class GatewayConnectorHandler {
   }
 
   /**
+   * 处理队列中的下一条消息
+   */
+  private async processNextMessage(tabId: string): Promise<void> {
+    if (!this.tabManager || !this.handleSendMessageFn) {
+      logger.error('依赖未设置');
+      return;
+    }
+
+    const tab = this.tabManager.getTab(tabId);
+    if (!tab || !tab.pendingMessages || tab.pendingMessages.length === 0) {
+      logger.info('📭 队列为空，无需处理');
+      return;
+    }
+
+    // 取出队列第一条消息
+    const message = tab.pendingMessages[0];
+    tab.processingMessageId = message.messageId;
+
+    logger.info('🚀 开始处理队列消息:', {
+      tabId,
+      messageId: message.messageId,
+      senderName: message.senderName,
+      queueLength: tab.pendingMessages.length,
+    });
+
+    try {
+      // 启动进度提醒定时器
+      this.startProgressTimers(tabId);
+
+      // 发送给 agent 处理
+      await this.handleSendMessageFn(message.content, tabId, message.displayContent);
+
+      logger.info('✅ 消息处理完成:', { messageId: message.messageId });
+    } catch (error) {
+      logger.error('❌ 处理消息失败:', error);
+    } finally {
+      // 从队列中移除已处理的消息
+      tab.pendingMessages.shift();
+      tab.processingMessageId = undefined;
+
+      logger.info('📤 消息已出队:', {
+        messageId: message.messageId,
+        remainingCount: tab.pendingMessages.length,
+      });
+
+      // 如果队列还有消息，继续处理下一条
+      if (tab.pendingMessages.length > 0) {
+        logger.info('⏭️ 继续处理下一条消息');
+        // 使用 setImmediate 避免递归调用栈过深
+        setImmediate(() => {
+          this.processNextMessage(tabId).catch(err => {
+            logger.error('❌ 处理下一条消息失败:', err);
+          });
+        });
+      } else {
+        logger.info('✅ 队列已清空');
+      }
+    }
+  }
+
+  /**
    * 发送响应到连接器
    * @param isProgressNotice 是否是进度提醒消息（进度提醒不清除定时器）
    */
@@ -272,8 +348,14 @@ export class GatewayConnectorHandler {
       return;
     }
 
-    // 获取 replyToMessageId（如果有）
-    const replyToMessageId = (tab as any).replyToMessageId;
+    // 🔥 修改：从队列中获取 replyToMessageId（当前正在处理的消息）
+    let replyToMessageId: string | undefined;
+    if (tab.processingMessageId && tab.pendingMessages && tab.pendingMessages.length > 0) {
+      const currentMessage = tab.pendingMessages[0];
+      if (currentMessage.messageId === tab.processingMessageId) {
+        replyToMessageId = currentMessage.replyToMessageId;
+      }
+    }
 
     logger.info('发送响应到连接器:', {
       tabId,
@@ -281,6 +363,7 @@ export class GatewayConnectorHandler {
       conversationId: tab.conversationId,
       responseLength: response.length,
       replyToMessageId,
+      processingMessageId: tab.processingMessageId,
     });
 
     try {
