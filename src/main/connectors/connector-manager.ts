@@ -150,6 +150,7 @@ export class ConnectorManager {
           conversationId: parsedMessage.conversation.id,
           senderId: parsedMessage.sender.id,
           senderName: parsedMessage.sender.name,
+          chatType: parsedMessage.conversation.type,  // 直接使用，已经是 'p2p' 或 'group'
         },
         content: parsedMessage.content,
         systemContext: parsedMessage.systemContext,

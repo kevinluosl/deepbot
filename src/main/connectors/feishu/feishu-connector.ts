@@ -393,7 +393,7 @@ export class FeishuConnector implements Connector {
         },
         conversation: {
           id: event.message.chat_id,
-          type: event.message.chat_type === 'p2p' ? 'private' : 'group',
+          type: event.message.chat_type === 'p2p' ? 'p2p' : 'group',  // 直接使用飞书原始值
         },
         content: {
           type: msgType === 'image' ? 'image' : msgType === 'file' ? 'file' : 'text',
@@ -501,7 +501,7 @@ export class FeishuConnector implements Connector {
       // 7. 安全检查
       if (!this.checkSecurity(feishuMessage)) {
         // 私聊未配对：发送配对码
-        if (feishuMessage.conversation.type === 'private') {
+        if (feishuMessage.conversation.type === 'p2p') {
           const code = this.pairing!.generatePairingCode(feishuMessage.sender.id, feishuMessage.sender.name, openId);
 
           // 检查是否被自动批准（首位用户）
@@ -852,7 +852,7 @@ export class FeishuConnector implements Connector {
 
   private checkSecurity(message: FeishuIncomingMessage): boolean {
     // 1. 检查 DM 策略（固定使用 pairing 模式）
-    if (message.conversation.type === 'private') {
+    if (message.conversation.type === 'p2p') {
       // 检查是否已配对
       return this.pairing!.verifyPairingCode(message.sender.id);
     }

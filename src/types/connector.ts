@@ -44,6 +44,7 @@ export interface GatewayMessage {
     conversationId?: string;    // 外部会话 ID
     senderId?: string;          // 发送者 ID
     senderName?: string;        // 发送者名称
+    chatType?: 'group' | 'p2p'; // 聊天类型（飞书专用：group=群组，p2p=私聊）
   };
   
   // 消息内容
@@ -176,7 +177,7 @@ export interface FeishuIncomingMessage {
   };
   conversation: {
     id: string;
-    type: 'private' | 'group';
+    type: 'p2p' | 'group';  // 使用飞书原始值：p2p=私聊，group=群组
     name?: string;
   };
   mentions?: {

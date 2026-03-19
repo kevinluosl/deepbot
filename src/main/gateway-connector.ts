@@ -119,11 +119,36 @@ export class GatewayConnectorHandler {
       let tab = this.tabManager.findTabByConversationKey(conversationKey);
 
       if (!tab) {
-        // 飞书 Tab 显示为 "FS-用户名"，其他连接器用 connectorId
-        const senderName = message.source.senderName || '';
-        const title = message.source.connectorId === 'feishu' && senderName
-          ? `FS-${senderName}`
-          : message.source.connectorId;
+        // 生成 Tab 标题
+        let title: string;
+        
+        if (message.source.connectorId === 'feishu') {
+          // 判断是否是群组消息（使用 chatType 字段）
+          const isGroup = message.source.chatType === 'group';
+          
+          if (isGroup) {
+            // 群组消息：生成 FS-GROUP-{数字} 格式
+            const existingTabs = this.tabManager.getAllTabs();
+            const groupTabNumbers = existingTabs
+              .filter(t => t.title?.startsWith('FS-GROUP-'))
+              .map(t => {
+                const match = t.title?.match(/^FS-GROUP-(\d+)$/);
+                return match ? parseInt(match[1], 10) : 0;
+              })
+              .filter(n => n > 0);
+            
+            const nextNumber = groupTabNumbers.length > 0 ? Math.max(...groupTabNumbers) + 1 : 1;
+            title = `FS-GROUP-${nextNumber}`;
+          } else {
+            // 私聊消息：使用用户名
+            const senderName = message.source.senderName || '';
+            title = senderName ? `FS-${senderName}` : 'feishu';
+          }
+        } else {
+          // 其他连接器使用 connectorId
+          title = message.source.connectorId || 'unknown';
+        }
+        
         tab = await this.tabManager.createTab({
           type: 'connector',
           title,
