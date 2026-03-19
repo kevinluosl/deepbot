@@ -309,12 +309,16 @@ export class GatewayConnectorHandler {
 1. feishu_doc_append 是追加正文内容，feishu_doc_add_comment 是添加评论，客户要求添加评论时使用后者
 2. 不要用markdown格式回复内容，不要使用表格回复内容，飞书只能接收无格式的的字符，注意排版优美
 3. 回复的内容超过1000个字，创建飞书文档回复
-4. 回复的时候根据回复的内容，带上用户的名字]`;
+4. 回复的时候根据回复的内容，带上用户的名字
+5. 来自信息中包含了用户名字用户发送信息给用户，和chat_id用于获取发送信息时的chat_id
+6. ⚠️ 严格禁止使用 feishu_send_message 工具！你的回复会自动发送给用户，使用该工具会导致重复发送消息]`;
 
     // 额外系统通知（由连接器按需注入，如首次管理员授权提示）
     const extraNotice = message.systemContext ? `\n\n${message.systemContext}` : '';
 
-    const contentForAgent = `[来自: ${senderName}]\n${content}${feishuToolsHint}${extraNotice}`;
+    // 构建来源标注（包含用户名和 conversationId）
+    const conversationInfo = message.source.conversationId ? `; chat_id: ${message.source.conversationId}` : '';
+    const contentForAgent = `[来自: ${senderName}${conversationInfo}]\n${content}${feishuToolsHint}${extraNotice}`;
 
     return { contentForAgent, displayContent };
   }

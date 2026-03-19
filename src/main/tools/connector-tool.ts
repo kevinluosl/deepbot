@@ -7,7 +7,7 @@
  * - connector_send_file：发送文件（同上）
  *
  * 三个工具共用同一套"查找目标会话"逻辑：
- *   1. 当前 Tab 是 connector 类型 → 直接发到当前会话（receive_id_type=chat_id）
+ *   1. 当前 Tab 是 connector 类型 → 直接发到当前会话（receive_id_type=conversation_id）
  *   2. 当前 Tab 是普通 Tab，且提供了 userId → 查找 pairing 记录中的 open_id 直发
  *      （receive_id_type=open_id）
  */
@@ -46,16 +46,47 @@ interface ResolvedTarget {
  * 解析发送目标
  *
  * 优先级：
- * 1. 当前 Tab 是 connector → 直接用当前会话（chat_id 模式）
- * 2. 提供了 userId → 在 pairing 记录中查找对应的 open_id，用 open_id 直发
+ * 1. 提供了 chatId → 直接发到指定群组（chat_id 模式）
+ * 2. 提供了 tabName → 查找对应 Tab 的 conversationId
+ * 3. 当前 Tab 是 connector → 直接用当前会话（chat_id 模式）
+ * 4. 提供了 userId → 在 pairing 记录中查找对应的 open_id，用 open_id 直发
  */
-function resolveTarget(sessionId: string, userId?: string): ResolvedTarget {
+function resolveTarget(sessionId: string, userId?: string, chatId?: string, tabName?: string): ResolvedTarget {
   if (!gatewayInstance) throw new Error('Gateway 未初始化');
+
+  // 情况 1：提供了 chatId，直接发到指定群组
+  if (chatId) {
+    return {
+      connectorId: 'feishu',
+      conversationId: chatId,
+      receiveIdType: 'chat_id',
+    };
+  }
+
+  // 情况 2：提供了 tabName，查找对应 Tab 的 conversationId
+  if (tabName) {
+    const tabs = gatewayInstance.getAllTabs();
+    const targetTab = tabs.find(t => t.title === tabName);
+    
+    if (!targetTab) {
+      throw new Error(`未找到名为 "${tabName}" 的 Tab`);
+    }
+    
+    if (targetTab.type !== 'connector' || !targetTab.conversationId) {
+      throw new Error(`Tab "${tabName}" 不是飞书会话 Tab`);
+    }
+    
+    return {
+      connectorId: targetTab.connectorId || 'feishu',
+      conversationId: targetTab.conversationId,
+      receiveIdType: 'chat_id',
+    };
+  }
 
   const tabs = gatewayInstance.getAllTabs();
   const currentTab = tabs.find(t => t.id === sessionId);
 
-  // 情况 1：当前就是 connector Tab，直接发
+  // 情况 3：当前就是 connector Tab，直接发
   if (currentTab?.type === 'connector' && currentTab.connectorId && currentTab.conversationId) {
     return {
       connectorId: currentTab.connectorId,
@@ -64,9 +95,9 @@ function resolveTarget(sessionId: string, userId?: string): ResolvedTarget {
     };
   }
 
-  // 情况 2：普通 Tab，必须提供 userId
+  // 情况 4：普通 Tab，必须提供 userId
   if (!userId) {
-    throw new Error('当前不在飞书会话中，请提供 userId 参数指定目标用户');
+    throw new Error('当前不在飞书会话中，请提供 userId（发给个人）、chatId（发给群组）或 tabName（通过 Tab 名称发送）参数');
   }
 
   // 从 pairing 记录中查找该用户的 open_id
@@ -212,15 +243,23 @@ export const connectorToolPlugin: ToolPlugin = {
         name: TOOL_NAMES.FEISHU_SEND_MESSAGE,
         label: '发送飞书消息',
         description: [
-          '向已配对的飞书用户发送文本消息。',
-          '在飞书会话中调用时，默认发给当前会话用户；',
-          '在普通 Tab / 定时任务 Tab 中调用时，必须提供 userId 参数。',
-          '可先调用 api_get_pairing_records 获取已配对用户列表及其 userId。',
+          '向飞书用户或群组发送文本消息。',
+          '在飞书会话中调用时，默认发给当前会话（私聊或群组）；',
+          '在普通 Tab / 定时任务 Tab 中调用时，可以：',
+          '1. 提供 userId 参数发给个人（推荐使用 openId，可通过 api_get_pairing_records 查询）',
+          '2. 提供 chatId 参数发给群组（群组 ID 通常以 oc_ 开头）',
+          '3. 提供 tabName 参数通过 Tab 名称发送（如 "FS-GROUP-1"、"FS-张三"）',
         ].join(' '),
         parameters: Type.Object({
           message: Type.String({ description: '要发送的文本消息内容' }),
           userId: Type.Optional(Type.String({
-            description: '目标用户的飞书 openId（ou_ 开头）或 userId（非飞书会话时必填）。推荐使用 openId，可通过 api_get_pairing_records 查询',
+            description: '目标用户的飞书 openId（ou_ 开头）或 userId（发给个人时使用）。推荐使用 openId，可通过 api_get_pairing_records 查询',
+          })),
+          chatId: Type.Optional(Type.String({
+            description: '目标群组的 chat_id（oc_ 开头，发给群组时使用）',
+          })),
+          tabName: Type.Optional(Type.String({
+            description: '目标 Tab 的名称（如 "FS-GROUP-1"、"FS-张三"），通过 Tab 名称查找对应的会话发送',
           })),
         }),
 
@@ -230,12 +269,27 @@ export const connectorToolPlugin: ToolPlugin = {
             if (signal?.aborted) throw Object.assign(new Error('操作被取消'), { name: 'AbortError' });
             if (!sessionId) throw new Error('无法获取会话 ID');
 
-            const target = resolveTarget(sessionId, args.userId);
+            // 检查当前 Tab 是否是飞书连接器 Tab
+            const tabs = gatewayInstance.getAllTabs();
+            const currentTab = tabs.find(t => t.id === sessionId);
+            if (currentTab?.type === 'connector' && currentTab.connectorId === 'feishu') {
+              throw new Error('在飞书会话中禁止使用 feishu_send_message 工具！你的回复会自动发送给用户，无需手动发送。');
+            }
+
+            const target = resolveTarget(sessionId, args.userId, args.chatId, args.tabName);
             logger.info('发送飞书消息:', { target, messageLength: args.message.length });
 
             await sendMessageToTarget(target, args.message);
 
-            const toDesc = args.userId ? `用户 ${args.userId}` : '当前会话';
+            let toDesc = '当前会话';
+            if (args.tabName) {
+              toDesc = `Tab "${args.tabName}"`;
+            } else if (args.chatId) {
+              toDesc = `群组 ${args.chatId}`;
+            } else if (args.userId) {
+              toDesc = `用户 ${args.userId}`;
+            }
+            
             return {
               content: [{ type: 'text' as const, text: `✅ 消息已发送给${toDesc}` }],
               details: { success: true, target },
@@ -258,13 +312,19 @@ export const connectorToolPlugin: ToolPlugin = {
         description: [
           '通过飞书发送图片。',
           '在飞书会话中调用时，默认发给当前会话；',
-          '在普通 Tab / 定时任务 Tab 中调用时，必须提供 userId 参数。',
+          '在普通 Tab / 定时任务 Tab 中调用时，可以提供 userId（发给个人）、chatId（发给群组）或 tabName（通过 Tab 名称发送）参数。',
         ].join(' '),
         parameters: Type.Object({
           imagePath: Type.String({ description: '图片文件路径（支持 ~ 符号）' }),
           caption: Type.Optional(Type.String({ description: '图片说明文字（可选）' })),
           userId: Type.Optional(Type.String({
-            description: '目标用户的飞书 open_id 或 user_id（非飞书会话时必填）',
+            description: '目标用户的飞书 open_id 或 user_id（发给个人时使用）',
+          })),
+          chatId: Type.Optional(Type.String({
+            description: '目标群组的 chat_id（oc_ 开头，发给群组时使用）',
+          })),
+          tabName: Type.Optional(Type.String({
+            description: '目标 Tab 的名称（如 "FS-GROUP-1"、"FS-张三"），通过 Tab 名称查找对应的会话发送',
           })),
         }),
 
@@ -281,12 +341,19 @@ export const connectorToolPlugin: ToolPlugin = {
             const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
             if (!imageExts.includes(ext)) throw new Error(`不支持的图片格式: ${ext}`);
 
-            const target = resolveTarget(sessionId, args.userId);
+            const target = resolveTarget(sessionId, args.userId, args.chatId, args.tabName);
             logger.info('发送图片:', { target, path: expandedPath });
 
             await sendImageToTarget(target, expandedPath, args.caption);
 
-            const toDesc = args.userId ? `用户 ${args.userId}` : '当前会话';
+            let toDesc = '当前会话';
+            if (args.tabName) {
+              toDesc = `Tab "${args.tabName}"`;
+            } else if (args.chatId) {
+              toDesc = `群组 ${args.chatId}`;
+            } else if (args.userId) {
+              toDesc = `用户 ${args.userId}`;
+            }
             return {
               content: [{ type: 'text' as const, text: `✅ 图片已发送给${toDesc}\n文件: ${basename(expandedPath)}` }],
               details: { success: true, target, fileName: basename(expandedPath) },
@@ -309,13 +376,19 @@ export const connectorToolPlugin: ToolPlugin = {
         description: [
           '通过飞书发送文件。',
           '在飞书会话中调用时，默认发给当前会话；',
-          '在普通 Tab / 定时任务 Tab 中调用时，必须提供 userId 参数。',
+          '在普通 Tab / 定时任务 Tab 中调用时，可以提供 userId（发给个人）、chatId（发给群组）或 tabName（通过 Tab 名称发送）参数。',
         ].join(' '),
         parameters: Type.Object({
           filePath: Type.String({ description: '文件路径（支持 ~ 符号）' }),
           fileName: Type.Optional(Type.String({ description: '自定义文件名（可选）' })),
           userId: Type.Optional(Type.String({
-            description: '目标用户的飞书 open_id 或 user_id（非飞书会话时必填）',
+            description: '目标用户的飞书 open_id 或 user_id（发给个人时使用）',
+          })),
+          chatId: Type.Optional(Type.String({
+            description: '目标群组的 chat_id（oc_ 开头，发给群组时使用）',
+          })),
+          tabName: Type.Optional(Type.String({
+            description: '目标 Tab 的名称（如 "FS-GROUP-1"、"FS-张三"），通过 Tab 名称查找对应的会话发送',
           })),
         }),
 
@@ -330,13 +403,21 @@ export const connectorToolPlugin: ToolPlugin = {
             const stats = statSync(expandedPath);
             if (!stats.isFile()) throw new Error(`路径不是文件: ${expandedPath}`);
 
-            const target = resolveTarget(sessionId, args.userId);
+            const target = resolveTarget(sessionId, args.userId, args.chatId, args.tabName);
             logger.info('发送文件:', { target, path: expandedPath });
 
             await sendFileToTarget(target, expandedPath, args.fileName);
 
             const fileName = args.fileName || basename(expandedPath);
-            const toDesc = args.userId ? `用户 ${args.userId}` : '当前会话';
+            let toDesc = '当前会话';
+            if (args.tabName) {
+              toDesc = `Tab "${args.tabName}"`;
+            } else if (args.chatId) {
+              toDesc = `群组 ${args.chatId}`;
+            } else if (args.userId) {
+              toDesc = `用户 ${args.userId}`;
+            }
+            
             return {
               content: [{ type: 'text' as const, text: `✅ 文件已发送给${toDesc}\n文件: ${fileName}\n大小: ${(stats.size / 1024).toFixed(2)} KB` }],
               details: { success: true, target, fileName, fileSize: stats.size },
