@@ -199,31 +199,22 @@ ${tailResponse}
         const stateSystemPrompt = this.instanceManager.agent.state.systemPrompt as string;
         if (stateSystemPrompt && stateSystemPrompt.trim().length > 0) {
           actualSystemPrompt = stateSystemPrompt;
-          console.log('✅ [Debug] 从 Agent.state 获取系统提示词，长度:', actualSystemPrompt.length);
-        } else {
-          console.log('✅ [Debug] 使用 AgentMessageProcessor 中的系统提示词，长度:', actualSystemPrompt.length);
         }
         
         // 优先使用 Agent.state 中的工具列表
         if (this.instanceManager.agent.state.tools && this.instanceManager.agent.state.tools.length > 0) {
           actualTools = this.instanceManager.agent.state.tools as any[];
-          console.log('✅ [Debug] 从 Agent.state 获取工具列表，数量:', actualTools.length);
         }
       }
       
-      // 如果还是为空，显示警告
+      // 如果还是为空，使用默认值
       if (!actualSystemPrompt || actualSystemPrompt.trim().length === 0) {
-        console.error('❌ [Debug] 系统提示词仍然为空');
         actualSystemPrompt = '[系统提示词未初始化]';
       }
       
       if (!actualTools || actualTools.length === 0) {
-        console.warn('⚠️ [Debug] 工具列表为空');
         actualTools = [];
       }
-      
-      console.log('🔍 [Debug] 最终系统提示词长度:', actualSystemPrompt.length);
-      console.log('🔍 [Debug] 最终工具数量:', actualTools.length);
       
       // 构建完整的 prompt 内容
       let promptContent = '# Captured Prompt\n\n';
@@ -341,10 +332,9 @@ ${tailResponse}
       const filePath = path.join(debugDir, 'captured-prompt.md');
       fs.writeFileSync(filePath, promptContent, 'utf-8');
       
-      console.log('🔍 [Debug] 已保存完整 prompt 到:', filePath);
-      console.log(`📊 [Debug] 统计: ${conversationRounds} 轮对话, ${totalTokens.toLocaleString()} tokens`);
+      // 保存成功，不输出日志
     } catch (error) {
-      console.error('⚠️ [Debug] 保存 captured-prompt.md 失败:', getErrorMessage(error));
+      // 保存失败，静默处理
     }
   }
 
@@ -431,11 +421,11 @@ ${tailResponse}
       }
     }
     
-    // 🔍 Debug: 在发送给 AI 之前保存完整的 prompt（确保和实际发送的一致）
+    // 保存完整的 prompt（用于调试）
     try {
       await this.saveCapturedPrompt(enhancedContent);
     } catch (error) {
-      console.error('⚠️ [Debug] 保存 captured-prompt 失败:', getErrorMessage(error));
+      // 保存失败，静默处理
     }
     
     // 收集完整的响应和工具调用信息

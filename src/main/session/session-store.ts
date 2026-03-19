@@ -56,7 +56,6 @@ export class SessionStore {
   async initialize(): Promise<void> {
     try {
       await ensureDirectoryExists(this.sessionDir);
-      console.log('[SessionStore] ✅ Session 目录已初始化:', this.sessionDir);
     } catch (error) {
       console.error('[SessionStore] ❌ 初始化 session 目录失败:', getErrorMessage(error));
       throw error;
@@ -79,7 +78,6 @@ export class SessionStore {
       const line = JSON.stringify(message) + '\n';
       
       await fs.appendFile(filePath, line, 'utf-8');
-      console.log(`[SessionStore] 💾 已保存消息: ${tabId} (${message.role})`);
     } catch (error) {
       console.error('[SessionStore] ❌ 保存消息失败:', getErrorMessage(error));
       throw error;
@@ -95,7 +93,6 @@ export class SessionStore {
       const lines = messages.map(msg => JSON.stringify(msg) + '\n').join('');
       
       await fs.appendFile(filePath, lines, 'utf-8');
-      console.log(`[SessionStore] 💾 已批量保存 ${messages.length} 条消息: ${tabId}`);
     } catch (error) {
       console.error('[SessionStore] ❌ 批量保存消息失败:', getErrorMessage(error));
       throw error;
@@ -126,11 +123,10 @@ export class SessionStore {
           const message = JSON.parse(line);
           messages.push(message);
         } catch (error) {
-          console.warn('[SessionStore] ⚠️ 解析消息失败，跳过:', line.substring(0, 50));
+          // 跳过无效消息
         }
       }
       
-      console.log(`[SessionStore] 📖 已加载 ${messages.length} 条消息: ${tabId}`);
       return messages;
     } catch (error) {
       console.error('[SessionStore] ❌ 加载消息失败:', getErrorMessage(error));
@@ -161,11 +157,6 @@ export class SessionStore {
       // 🔥 倒序读取文件（从末尾开始）
       const messages = await this.loadRecentMessagesFromFile(filePath, maxRounds);
       
-      if (messages.length === 0) {
-        return [];
-      }
-      
-      console.log(`[SessionStore] 📖 UI加载最近消息，共 ${messages.length} 条`);
       return messages;
     } catch (error) {
       console.error('[SessionStore] ❌ 加载最近消息失败:', getErrorMessage(error));
@@ -217,16 +208,12 @@ export class SessionStore {
           }
         }
       } catch (error) {
-        console.warn('[SessionStore] ⚠️ 解析消息失败，跳过:', lines[i].substring(0, 50));
+        // 跳过无效消息
       }
     }
     
     // 展平为消息列表
-    const result = rounds.flat();
-    
-    console.log(`[SessionStore] 📖 倒序加载最近 ${rounds.length} 轮对话，共 ${result.length} 条消息`);
-    
-    return result;
+    return rounds.flat();
   }
   
   /**
@@ -252,10 +239,7 @@ export class SessionStore {
       }
       
       // 🔥 复用倒序读取逻辑
-      const messages = await this.loadRecentMessagesFromFile(filePath, maxRounds);
-      
-      console.log(`[SessionStore] 📖 加载最近 ${maxRounds} 轮上下文，共 ${messages.length} 条消息`);
-      return messages;
+      return await this.loadRecentMessagesFromFile(filePath, maxRounds);
     } catch (error) {
       console.error('[SessionStore] ❌ 加载上下文消息失败:', getErrorMessage(error));
       return [];
@@ -273,7 +257,6 @@ export class SessionStore {
       try {
         await fs.access(filePath);
         await fs.unlink(filePath);
-        console.log(`[SessionStore] 🗑️ 已清空 session: ${tabId}`);
       } catch {
         // 文件不存在，无需删除
       }

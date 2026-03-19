@@ -55,12 +55,10 @@ const MAX_TASKS = 10; // 最多允许创建 10 个定时任务
  */
 export function setGatewayInstance(gateway: Gateway): void {
   gatewayInstance = gateway;
-  console.info('[Scheduled Task] Gateway 实例已设置');
   
   // 🔥 同时设置给 TaskExecutor
   const { setGatewayForExecutor } = require('../scheduled-tasks/executor');
   setGatewayForExecutor(gateway);
-  console.info('[Scheduled Task] Gateway 实例已传递给 TaskExecutor');
   
   // 🔥 异步启动调度器（避免阻塞 Gateway 初始化）
   // 延迟 2 秒，确保其他数据库初始化完成
@@ -70,8 +68,7 @@ export function setGatewayInstance(gateway: Gateway): void {
       const { retry } = await import('../../shared/utils/async-utils');
       await retry(
         async () => {
-          const taskScheduler = getScheduler();
-          console.info('[Scheduled Task] ✅ 调度器已自动启动');
+          getScheduler();
         },
         {
           maxRetries: 3,
@@ -129,8 +126,6 @@ function getExecutor(): TaskExecutor {
  * @returns Scheduled Task Tool
  */
 export function createScheduledTaskTool(): AgentTool {
-  console.info('[Scheduled Task] ✅ Scheduled Task Tool 创建完成');
-  
   return {
     name: TOOL_NAMES.SCHEDULED_TASK,
     label: 'Scheduled Task',
@@ -221,7 +216,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${name}" 创建成功（当前 ${existingTasks.length + 1}/${MAX_TASKS}）`,
             };
             
-            console.info(`[Scheduled Task] ✅ 任务创建成功: ${name} (${task.id})`);
             break;
           }
           
@@ -249,7 +243,6 @@ export function createScheduledTaskTool(): AgentTool {
                 : `共有 ${tasks.length} 个任务`,
             };
             
-            console.info(`[Scheduled Task] 列出任务: ${tasks.length} 个`);
             break;
           }
           
@@ -273,9 +266,8 @@ export function createScheduledTaskTool(): AgentTool {
                 reason: '删除定时任务',
                 recreate: false
               });
-              console.info('[Scheduled Task] ✅ Agent Runtime 已重置（删除任务）');
             } catch (error) {
-              console.warn('[Scheduled Task] ⚠️ Agent Runtime 重置失败（删除任务）:', getErrorMessage(error));
+              // 忽略重置失败
             }
             
             result = {
@@ -283,7 +275,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${task.name}" 已删除`,
             };
             
-            console.info(`[Scheduled Task] ✅ 任务删除成功: ${task.name} (${taskId})`);
             break;
           }
           
@@ -307,9 +298,8 @@ export function createScheduledTaskTool(): AgentTool {
                 reason: '暂停定时任务',
                 recreate: false
               });
-              console.info('[Scheduled Task] ✅ Agent Runtime 已重置（暂停任务）');
             } catch (error) {
-              console.warn('[Scheduled Task] ⚠️ Agent Runtime 重置失败（暂停任务）:', getErrorMessage(error));
+              // 忽略重置失败
             }
             
             result = {
@@ -317,7 +307,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${task.name}" 已暂停`,
             };
             
-            console.info(`[Scheduled Task] ✅ 任务暂停成功: ${task.name} (${taskId})`);
             break;
           }
           
@@ -339,7 +328,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${task.name}" 已恢复`,
             };
             
-            console.info(`[Scheduled Task] ✅ 任务恢复成功: ${task.name} (${taskId})`);
             break;
           }
           
@@ -366,7 +354,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${task.name}" 内容已更新`,
             };
             
-            console.info(`[Scheduled Task] ✅ 任务更新成功: ${task.name} (${taskId})`);
             break;
           }
           
@@ -407,7 +394,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${task.name}" 调度方式已更新`,
             };
             
-            console.info(`[Scheduled Task] ✅ 任务调度更新成功: ${task.name} (${taskId})`);
             break;
           }
           
@@ -432,7 +418,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${task.name}" 已触发执行`,
             };
             
-            console.info(`[Scheduled Task] ✅ 任务触发成功: ${task.name} (${taskId})`);
             break;
           }
           
@@ -469,7 +454,6 @@ export function createScheduledTaskTool(): AgentTool {
               message: `任务 "${task.name}" 共有 ${executions.length} 条执行记录`,
             };
             
-            console.info(`[Scheduled Task] 查看执行历史: ${task.name} (${executions.length} 条)`);
             break;
           }
           
@@ -528,7 +512,6 @@ function validateSchedule(schedule: any): void {
       
       // 🔥 限制最短间隔为 10 秒
       if (schedule.intervalMs < MIN_INTERVAL_MS) {
-        console.warn(`[Scheduled Task] 间隔时间 ${schedule.intervalMs}ms 小于最小值 ${MIN_INTERVAL_MS}ms，已自动调整为 ${MIN_INTERVAL_MS}ms`);
         schedule.intervalMs = MIN_INTERVAL_MS;
       }
       break;
@@ -632,7 +615,6 @@ function parseScheduleText(text: string): TaskSchedule {
 export function stopScheduler(): void {
   if (scheduler) {
     scheduler.stop();
-    console.info('[Scheduled Task] 调度器已停止');
   }
   
   // TaskStore 使用单例模式，不需要手动关闭

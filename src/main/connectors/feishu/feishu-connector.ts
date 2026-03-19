@@ -105,8 +105,6 @@ export class FeishuConnector implements Connector {
       return;
     }
     
-    console.log('[FeishuConnector] 启动连接器...');
-    
     // 确保旧连接已关闭
     if (this.wsClient) {
       this.wsClient = undefined;
@@ -140,15 +138,12 @@ export class FeishuConnector implements Connector {
     this.wsClient.start({ eventDispatcher });
     
     this.isStarted = true;
-    console.log('[FeishuConnector] ✅ 连接器已启动');
   }
   
   async stop(): Promise<void> {
     if (!this.isStarted) {
       return;
     }
-    
-    console.log('[FeishuConnector] 停止连接器...');
     
     // 关闭 WebSocket 连接
     if (this.wsClient) {
@@ -161,7 +156,6 @@ export class FeishuConnector implements Connector {
     }
     
     this.isStarted = false;
-    console.log('[FeishuConnector] ✅ 连接器已停止');
   }
   
   async healthCheck(): Promise<HealthStatus> {
@@ -270,7 +264,7 @@ export class FeishuConnector implements Connector {
         return name;
       }
     } catch (error) {
-      console.warn('[FeishuConnector] ⚠️ 获取用户名字失败，使用 ID 后缀:', getErrorMessage(error));
+      // 降级：使用 ID 后缀
     }
 
     // 降级：使用 ID 后缀
@@ -298,8 +292,6 @@ export class FeishuConnector implements Connector {
   
   private async handleIncomingMessage(event: any): Promise<void> {
     try {
-      console.log('[FeishuConnector] 📨 收到消息事件');
-      
       // 1. 解析基础信息
       const senderId = event.sender.sender_id.user_id || event.sender.sender_id.open_id;
       const openId = event.sender.sender_id.open_id || senderId;
@@ -338,7 +330,7 @@ export class FeishuConnector implements Connector {
         // 注意：这里可能需要调用其他 API 获取 bot 的 open_id
         // 暂时使用 name 匹配作为备选方案
       } catch (error) {
-        console.warn('[FeishuConnector] 无法获取机器人信息:', error);
+        // 忽略获取机器人信息失败
       }
       
       // 判断是否 @ 了机器人（通过 name 匹配）
@@ -348,35 +340,15 @@ export class FeishuConnector implements Connector {
         mention.id?.open_id === botOpenId
       );
       
-      console.log('[FeishuConnector] 📋 Mentions 信息:', {
-        chatType: event.message.chat_type,
-        mentionsCount: mentions.length,
-        botName,
-        mentionNames: mentions.map((m: any) => m.name),
-        isBotMentioned,
-      });
-      
       // 3. 群组消息：先判断是否 @ 了机器人，再回复表情
       // 🔥 特殊处理：图片和文件消息无法 @，因此不需要检查 mention
       const isGroup = event.message.chat_type !== 'p2p';
       const isMediaMessage = msgType === 'image' || msgType === 'file';
       
-      console.log('[FeishuConnector] 🔍 消息类型检查:', {
-        chatType: event.message.chat_type,
-        isGroup,
-        msgType,
-        isMediaMessage,
-        requireMention: this.security.requireMention,
-        isBotMentioned,
-      });
-      
       if (isGroup && this.security.requireMention && !isBotMentioned && !isMediaMessage) {
         // 未 @ 机器人且不是图片/文件消息，直接忽略，不回复表情
-        console.log('[FeishuConnector] 🚫 群组消息未 @ 机器人，忽略');
         return;
       }
-      
-      console.log('[FeishuConnector] ✅ 消息通过初步检查，继续处理');
       
       // 4. 回复表情，让用户知道已收到
       const messageId = event.message.message_id;
@@ -487,8 +459,6 @@ export class FeishuConnector implements Connector {
           }
           const documentContent = this.documentHandler.formatDocumentContent(documents);
           feishuMessage.content.text = cleanedText + documentContent;
-        } else {
-          console.warn('[FeishuConnector] ⚠️ 未能读取任何文档内容，可能是权限不足或文档不存在');
         }
       }
       
@@ -780,7 +750,7 @@ export class FeishuConnector implements Connector {
       conversationId: target,
       content: '✅ 授权完成，你可以开始和 DeepBot 对话了。\n\n发送「你能做什么」获取使用帮助。',
       _receiveIdType: receiveIdType,
-    }).catch(err => console.error('[FeishuConnector] ⚠️ 发送欢迎消息失败:', err));
+    }).catch(() => {});
   }
 
   /**
@@ -861,7 +831,6 @@ export class FeishuConnector implements Connector {
     if (message.conversation.type === 'group') {
       // 2.1 检查群组策略
       if (this.security.groupPolicy === 'disabled') {
-        console.log('[FeishuConnector] 🚫 群组策略：禁用');
         return false;
       }
       
@@ -869,7 +838,6 @@ export class FeishuConnector implements Connector {
       if (this.security.groupPolicy === 'allowlist') {
         const groupAllowFrom = this.connectorConfig.groupAllowFrom || [];
         if (!groupAllowFrom.includes(message.conversation.id)) {
-          console.log('[FeishuConnector] 🚫 群组不在白名单中');
           return false;
         }
       }
@@ -878,22 +846,13 @@ export class FeishuConnector implements Connector {
       // 🔥 特殊处理：图片和文件消息无法 @，因此不需要检查 mention
       const isMediaMessage = message.content.type === 'image' || message.content.type === 'file';
       
-      console.log('[FeishuConnector] 🔍 安全检查:', {
-        requireMention: this.security.requireMention,
-        isBotMentioned: message.mentions?.isBotMentioned,
-        messageType: message.content.type,
-        isMediaMessage,
-      });
-      
       if (this.security.requireMention && !isMediaMessage) {
         if (!message.mentions?.isBotMentioned) {
           // 未 @ 机器人，拒绝处理
-          console.log('[FeishuConnector] 🚫 群组消息未 @ 机器人，忽略');
           return false;
         }
       }
       
-      console.log('[FeishuConnector] ✅ 群组消息安全检查通过');
       return true;
     }
     

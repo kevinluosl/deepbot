@@ -90,7 +90,6 @@ export class GatewayTabManager {
     };
     
     this.tabs.set('default', defaultTab);
-    console.log('[TabManager] 创建默认 Tab:', defaultTab.id, defaultTab.title);
     
     // 异步加载默认 Tab 的历史消息
     this.loadDefaultTabHistory().catch(error => {
@@ -135,15 +134,12 @@ export class GatewayTabManager {
     }
     
     try {
-      console.log('[TabManager] 🔄 检查默认 Tab 是否有历史消息...');
       const messages = await this.sessionManager.loadUIMessages('default');
       const shouldSendWelcome = this.shouldSendWelcomeMessage(messages);
       
       if (shouldSendWelcome) {
-        console.log('[TabManager] 📝 需要发送欢迎消息');
         await this.sendWelcomeMessage();
       } else {
-        console.log(`[TabManager] 📖 找到 ${messages.length} 条有效历史消息，跳过欢迎消息`);
         const tab = this.tabs.get('default');
         if (tab) {
           tab.messages = messages;
@@ -168,15 +164,11 @@ export class GatewayTabManager {
     }
     
     try {
-      console.log('[TabManager] 🔄 检查是否需要发送欢迎消息...');
       const messages = await this.sessionManager.loadUIMessages('default');
       const shouldSendWelcome = this.shouldSendWelcomeMessage(messages);
       
       if (shouldSendWelcome) {
-        console.log('[TabManager] 📝 需要发送欢迎消息');
         await this.sendWelcomeMessage();
-      } else {
-        console.log(`[TabManager] 📖 找到 ${messages.length} 条有效历史消息，跳过欢迎消息`);
       }
     } catch (error) {
       console.error('[TabManager] ❌ 检查欢迎消息失败:', getErrorMessage(error));
@@ -188,25 +180,21 @@ export class GatewayTabManager {
    */
   private shouldSendWelcomeMessage(messages: Message[]): boolean {
     if (messages.length === 0) {
-      console.log('[TabManager] 原因: 没有历史记录');
       return true;
     }
     
     if (messages.length === 1 && messages[0].role === 'user') {
-      console.log('[TabManager] 原因: 只有一条用户消息，没有 AI 回复');
       return true;
     }
     
     const hasOnlySystemMessages = messages.every(msg => msg.role === 'system');
     if (hasOnlySystemMessages) {
-      console.log('[TabManager] 原因: 只有系统错误消息');
       return true;
     }
     
     const hasUserMessage = messages.some(msg => msg.role === 'user');
     const hasAssistantMessage = messages.some(msg => msg.role === 'assistant');
     if (hasUserMessage && !hasAssistantMessage) {
-      console.log('[TabManager] 原因: 有用户消息但没有 AI 回复');
       return true;
     }
     
@@ -234,21 +222,18 @@ export class GatewayTabManager {
       const defaultTab = this.tabs.get('default');
       if (defaultTab) {
         defaultTab.messages = [];
-        console.log('[TabManager] 🧹 已清除默认 Tab 的所有消息');
         sendToWindow(this.mainWindow, 'tab:messages-cleared', { tabId: 'default' });
       }
       
       // 清除历史记录
       if (this.sessionManager) {
         await this.sessionManager.clearSession('default');
-        console.log('[TabManager] 🧹 已清除默认 Tab 的历史记录');
       }
       
       // 构建欢迎消息内容
       const welcomeContent = this.generateWelcomeContent(nameConfig.userName, nameConfig.agentName, isDefaultUserName, isDefaultAgentName);
       const welcomeMessage = this.generateWelcomePrompt(welcomeContent, nameConfig.userName, isDefaultUserName);
       
-      console.log('[TabManager] 📤 发送欢迎消息到默认会话');
       await this.handleSendMessageFn(welcomeMessage, 'default', undefined, false, true);
     } catch (error) {
       console.error('[TabManager] ❌ 发送欢迎消息失败:', getErrorMessage(error));
@@ -360,11 +345,9 @@ ${welcomeContent}
       
       const messages = await this.sessionManager.loadUIMessages(tabId);
       if (messages.length === 0) {
-        console.log(`[TabManager] Tab ${tabId} 没有历史消息`);
         return;
       }
       
-      console.log(`[TabManager] 📖 已加载 ${messages.length} 条历史消息: ${tabId}`);
       const tab = this.tabs.get(tabId);
       if (tab) {
         tab.messages = messages;
@@ -381,7 +364,6 @@ ${welcomeContent}
    */
   async loadPersistentTabs(): Promise<void> {
     try {
-      console.log('[TabManager] 🔄 加载持久化的 Tab...');
       await sleep(500);
       
       const { SystemConfigStore } = await import('./database/system-config-store');
@@ -391,11 +373,8 @@ ${welcomeContent}
       const persistentTabs = getAllPersistentTabs(store['db']);
       
       if (persistentTabs.length === 0) {
-        console.log('[TabManager] ℹ️ 没有持久化的 Tab');
         return;
       }
-      
-      console.log(`[TabManager] 📋 找到 ${persistentTabs.length} 个持久化的 Tab`);
       
       for (const tabConfig of persistentTabs) {
         try {
@@ -429,7 +408,6 @@ ${welcomeContent}
           };
           
           this.tabs.set(tabId, tab);
-          console.log(`[TabManager] ✅ 已恢复 Tab: ${tabId} (${tabConfig.title}, type: ${tabType})`);
           
           // 加载历史消息（异步，不阻塞）
           if (this.sessionManager) {
@@ -445,8 +423,6 @@ ${welcomeContent}
           console.error(`[TabManager] ❌ 恢复 Tab 失败: ${tabConfig.id}`, error);
         }
       }
-      
-      console.log('[TabManager] ✅ 持久化 Tab 加载完成');
     } catch (error) {
       console.error('[TabManager] ❌ 加载持久化 Tab 失败:', error);
     }
@@ -624,7 +600,6 @@ ${welcomeContent}
    */
   private notifyTabCreated(tab: AgentTab): void {
     sendToWindow(this.mainWindow, 'tab:created', { tab });
-    console.log('[TabManager] 已通知前端 Tab 创建:', tab.id);
   }
   
   /**
