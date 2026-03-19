@@ -32,6 +32,14 @@ const STYLES = {
 };
 
 export function QuickStart(_props: QuickStartProps) {
+  // 滚动到指定章节
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="settings-section">
       {/* 欢迎横幅 */}
@@ -51,8 +59,80 @@ export function QuickStart(_props: QuickStartProps) {
         </p>
       </div>
 
+      {/* 导航目录 */}
+      <div style={{ 
+        marginBottom: '20px',
+        padding: '16px',
+        background: 'var(--settings-input-bg)',
+        borderRadius: '8px',
+        border: '1px solid var(--settings-border)'
+      }}>
+        <h4 style={{ 
+          fontSize: '14px', 
+          fontWeight: '600', 
+          color: 'var(--settings-text)', 
+          marginBottom: '12px',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <span style={{ marginRight: '8px' }}>📑</span>
+          快速导航
+        </h4>
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: '8px',
+          fontSize: '13px'
+        }}>
+          {[
+            { id: 'quick-config', icon: '⚡', text: '快速配置' },
+            { id: 'env-guide', icon: '📋', text: '环境依赖安装（Python）' },
+            { id: 'available-tools', icon: '🔧', text: '可用工具' },
+            { id: 'external-comm', icon: '💬', text: '外部通讯（飞书）' },
+            { id: 'skill-guide', icon: '🎯', text: 'Skill 使用指南' },
+            { id: 'external-tools', icon: '🔧', text: '外部工具使用' },
+            { id: 'memory-guide', icon: '🧠', text: '记忆使用指南' },
+            { id: 'command-system', icon: '⌨️', text: '指令系统' },
+            { id: 'recommended', icon: '⭐', text: '推荐工具' },
+            { id: 'tips', icon: '💡', text: '使用技巧' },
+            { id: 'examples', icon: '💬', text: '示例对话' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => scrollToSection(item.id)}
+              style={{
+                padding: '8px 12px',
+                background: 'rgba(0,0,0,0.05)',
+                border: '1px solid var(--settings-border)',
+                borderRadius: '6px',
+                color: 'var(--settings-text)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'all 0.2s',
+                fontSize: '13px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--settings-accent)';
+                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.transform = 'translateX(4px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
+                e.currentTarget.style.color = 'var(--settings-text)';
+                e.currentTarget.style.transform = 'translateX(0)';
+              }}
+            >
+              <span style={{ marginRight: '8px', fontSize: '14px' }}>{item.icon}</span>
+              <span>{item.text}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* 快速配置指南 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="quick-config" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>⚡</span>
           快速配置（发挥最大能力）
@@ -90,7 +170,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* 环境要求详细说明 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="env-guide" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>📋</span>
           环境依赖安装指南
@@ -171,7 +251,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* 可用工具 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="available-tools" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>🔧</span>
           可用工具
@@ -230,7 +310,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* 外部通讯 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="external-comm" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>💬</span>
           外部通讯
@@ -307,7 +387,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* Skill 使用指南 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="skill-guide" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>🎯</span>
           Skill 使用指南
@@ -409,7 +489,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* 外部工具使用指南 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="external-tools" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>🔧</span>
           外部工具使用指南
@@ -550,7 +630,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* 指令系统 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="command-system" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>⌨️</span>
           指令系统
@@ -734,7 +814,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* 推荐工具和 Skill */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="recommended" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>⭐</span>
           推荐工具和 Skill
@@ -910,8 +990,130 @@ export function QuickStart(_props: QuickStartProps) {
         </div>
       </div>
 
+      {/* 记忆使用指南 */}
+      <div id="memory-guide" style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px' }}>🧠</span>
+          记忆使用指南
+        </h4>
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--settings-input-bg)',
+          borderRadius: '8px',
+          fontSize: '13px',
+          color: 'var(--settings-text-dim)',
+          lineHeight: '1.6'
+        }}>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>💾</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)', fontSize: '14px' }}>什么是记忆？</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              记忆是 DeepBot 的长期存储系统，用于记住用户的偏好、习惯、角色定义和重要信息。不同于对话历史（会话结束后清空），记忆会永久保存，让 AI 越用越懂你。
+            </div>
+          </div>
+
+          <div style={{ marginLeft: '28px', marginBottom: '12px' }}>
+            <strong style={{ color: 'var(--settings-text)' }}>记忆分类：</strong>
+            <div style={{ marginTop: '6px', lineHeight: '1.8' }}>
+              • <strong>角色</strong>：AI 的专业角色（如"你是法律专家"、"你是数据分析师"）<br/>
+              • <strong>用户习惯</strong>：个人偏好、工作流程、常用工具（如"我喜欢简洁的代码风格"）<br/>
+              • <strong>错误总结</strong>：之前遇到的错误和解决方案（避免重复犯错）<br/>
+              • <strong>备忘事项</strong>：其他重要信息（如"项目截止日期是下周五"）
+            </div>
+          </div>
+
+          <div style={{ marginLeft: '28px', marginBottom: '12px' }}>
+            <strong style={{ color: 'var(--settings-text)' }}>如何添加记忆：</strong>
+            <div style={{ 
+              marginTop: '6px',
+              padding: '10px',
+              background: 'rgba(0,0,0,0.1)',
+              borderRadius: '6px',
+              lineHeight: '1.8'
+            }}>
+              <div style={{ 
+                padding: '8px',
+                background: 'rgba(0,0,0,0.1)',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                marginBottom: '8px'
+              }}>
+                💬 "记住：我喜欢用 VS Code 编辑器"<br/>
+                💬 "记住：你是一个前端开发专家"<br/>
+                💬 "记住：当我要读取 PDF 时，使用 markitdown 命令"<br/>
+                💬 "记住：项目部署在 ~/work/myproject 目录"
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--settings-text)' }}>
+                AI 会自动提炼关键信息并分类存储
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginLeft: '28px', marginBottom: '12px' }}>
+            <strong style={{ color: 'var(--settings-text)' }}>查看记忆：</strong>
+            <div style={{ marginTop: '6px', lineHeight: '1.8' }}>
+              • 使用指令：<code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>/memory</code><br/>
+              • 或直接问：<code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>"你记住了什么？"</code>
+            </div>
+          </div>
+
+          <div style={{ marginLeft: '28px', marginBottom: '12px' }}>
+            <strong style={{ color: 'var(--settings-text)' }}>多 Tab 记忆管理：</strong>
+            <div style={{ marginTop: '6px', lineHeight: '1.8' }}>
+              • <strong>主记忆</strong>：默认 Tab 使用，存储通用信息<br/>
+              • <strong>Tab 独立记忆</strong>：每个 Tab 可以有自己的记忆（如"法律专家"Tab 有专门的法律知识）<br/>
+              • <strong>记忆合并</strong>：可以将其他 Tab 的记忆合并到当前 Tab
+            </div>
+          </div>
+
+          <div style={{ marginLeft: '28px', marginBottom: '12px' }}>
+            <strong style={{ color: 'var(--settings-text)' }}>合并记忆：</strong>
+            <div style={{ 
+              marginTop: '6px',
+              padding: '10px',
+              background: 'rgba(0,0,0,0.1)',
+              borderRadius: '6px',
+              lineHeight: '1.8'
+            }}>
+              <div style={{ marginBottom: '8px' }}>
+                当你想让当前 Tab 继承其他 Tab 的经验时，可以合并记忆：
+              </div>
+              <div style={{ 
+                padding: '8px',
+                background: 'rgba(0,0,0,0.1)',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                marginBottom: '8px'
+              }}>
+                💬 "合并主记忆到当前 Tab"<br/>
+                💬 "合并'法律专家'Tab 的记忆"<br/>
+                💬 "将'数据分析师'的记忆合并过来"
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--settings-text)' }}>
+                AI 会智能合并两边的记忆，自动解决冲突和去重
+              </div>
+            </div>
+          </div>
+
+          <div style={{ 
+            marginTop: '12px',
+            padding: '10px',
+            background: 'rgba(var(--settings-accent-rgb), 0.1)',
+            borderLeft: '3px solid var(--settings-accent)',
+            borderRadius: '4px',
+            fontSize: '12px'
+          }}>
+            💡 提示：记忆文件存储在 <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>~/.deepbot/memory/</code> 目录，可以手动编辑
+          </div>
+        </div>
+      </div>
+
       {/* 使用技巧 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="tips" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>💡</span>
           使用技巧
@@ -965,7 +1167,7 @@ export function QuickStart(_props: QuickStartProps) {
       </div>
 
       {/* 示例对话 */}
-      <div style={{ marginBottom: '20px' }}>
+      <div id="examples" style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--settings-text)', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '8px' }}>💬</span>
           示例对话

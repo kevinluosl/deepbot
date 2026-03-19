@@ -66,6 +66,7 @@ const MemoryToolSchema = Type.Object({
   action: Type.Union([
     Type.Literal('read', { description: '读取记忆内容' }),
     Type.Literal('update', { description: '更新记忆内容（需要 userMessage 参数）' }),
+    Type.Literal('merge', { description: '合并指定 Tab 的记忆到当前 Tab' }),
   ]),
   
   userMessage: Type.Optional(Type.String({
@@ -79,6 +80,10 @@ const MemoryToolSchema = Type.Object({
   updateMainMemory: Type.Optional(Type.Boolean({
     description: '是否同时更新主记忆（用于 update 操作，默认 false）。设为 true 时会同时更新当前 Tab 记忆和主记忆',
     default: false,
+  })),
+  
+  sourceTabName: Type.Optional(Type.String({
+    description: '源 Tab 名称（用于 merge 操作）。不指定时默认合并主记忆（memory.md）',
   })),
 });
 
@@ -223,6 +228,84 @@ async function writeMemory(content: string, tabId?: string): Promise<void> {
 }
 
 /**
+ * 使用大模型合并两个记忆文件
+ */
+async function mergeMemories(
+  currentMemory: string,
+  sourceMemory: string,
+  signal?: AbortSignal
+): Promise<string> {
+  // 检查是否已被取消
+  if (signal?.aborted) {
+    const err = new Error('记忆合并操作被取消');
+    err.name = 'AbortError';
+    throw err;
+  }
+
+  const prompt = `你是一个记忆管理助手，负责合并两个记忆文件。
+
+当前 Tab 的记忆：
+"""
+${currentMemory}
+"""
+
+源 Tab 的记忆：
+"""
+${sourceMemory}
+"""
+
+任务：
+1. 将两个记忆文件合并为一个完整的记忆文件
+2. **解决冲突**：
+   - 如果两边有冲突的信息（如角色定义不同），保留当前 Tab 的信息（优先级更高）
+   - 如果信息互补，合并两边的信息
+   - 如果信息重复，只保留一条（选择表达更清晰的）
+3. **去重**：
+   - 检查整个合并后的记忆中是否有语义相同或重复的条目
+   - 只保留一条（选择表达更清晰的）
+4. **分类整理**：
+   - 将合并后的信息按照正确的分类整理：
+     * 角色：智能体的特定专业角色
+     * 用户习惯：用户的偏好、使用习惯、工作流程
+     * 错误总结：之前遇到的错误和解决方案
+     * 备忘事项：其他重要信息
+5. 保持记忆文件的结构和格式
+6. 确保总长度不超过 20000 字符
+7. **严格禁止记录任何名字相关信息**
+
+冲突处理规则：
+- 当前 Tab 记忆优先级 > 源 Tab 记忆优先级
+- 如果当前 Tab 有明确的角色定义，保留当前 Tab 的角色
+- 如果当前 Tab 有明确的用户习惯，保留当前 Tab 的习惯
+- 源 Tab 的信息作为补充，不覆盖当前 Tab 的核心信息
+
+直接输出合并后的完整记忆文件内容，不要解释。`;
+
+  try {
+    const response = await callAI([
+      {
+        role: 'system',
+        content: '你是一个记忆管理助手，负责合并两个记忆文件并解决冲突。输出格式必须是 Markdown。',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ], {
+      temperature: 0.3,
+      maxTokens: 15000, // 🔥 两个记忆文件最多 40000 字符，需要足够的输出空间
+      signal,
+      useFastModel: true,
+    });
+    
+    return response.content.trim();
+  } catch (error) {
+    console.error('[Memory Tool] 大模型合并记忆失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 使用大模型提炼记忆
  */
 async function refineMemory(
@@ -362,6 +445,7 @@ export const memoryToolPlugin: ToolPlugin = {
 功能：
 - read: 读取当前记忆内容
 - update: 更新记忆（自动提炼用户消息和执行结果）
+- merge: 合并指定 Tab 的记忆到当前 Tab
 
 记忆分类：
 - 角色：智能体的特定专业角色（如法律专家、数据挖掘专家、前端开发专家）
@@ -380,8 +464,14 @@ export const memoryToolPlugin: ToolPlugin = {
 - 设置 updateMainMemory=true 可同时更新主记忆和当前 Tab 记忆
 - 主记忆只影响默认 Tab，其他 Tab 使用独立记忆文件
 
+记忆合并：
+- 使用 merge 操作将指定 Tab 的记忆合并到当前 Tab
+- 不指定 sourceTabName 时，默认合并主记忆（memory.md）
+- 合并时会自动解决冲突（当前 Tab 记忆优先级更高）
+- 合并后会自动去重和分类整理
+
 注意：
-- 记忆文件最大 5000 字符
+- 记忆文件最大 20000 字符
 - 更新时会自动提炼和分类
 - 避免重复记录相似信息
 - ⚠️ 严格禁止记录任何名字相关信息（名字由 api_set_name 工具管理）`,
@@ -390,10 +480,11 @@ export const memoryToolPlugin: ToolPlugin = {
         
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           const params = args as {
-            action: 'read' | 'update';
+            action: 'read' | 'update' | 'merge';
             userMessage?: string;
             context?: string;
             updateMainMemory?: boolean;
+            sourceTabName?: string;
           };
           
           try {
@@ -404,7 +495,7 @@ export const memoryToolPlugin: ToolPlugin = {
               throw err;
             }
 
-            const { action, userMessage, context, updateMainMemory = false } = params;
+            const { action, userMessage, context, updateMainMemory = false, sourceTabName } = params;
             
             console.log(`[Memory Tool] 执行操作: ${action}, Tab ID: ${tabId || 'default'}, 更新主记忆: ${updateMainMemory}`);
             
@@ -423,6 +514,108 @@ export const memoryToolPlugin: ToolPlugin = {
                   memory,
                   length: memory.length,
                   tabId: tabId || 'default',
+                },
+              };
+            }
+            
+            if (action === 'merge') {
+              // 合并记忆
+              console.log('\n' + '='.repeat(80));
+              console.log('[Memory Tool] 🔄 开始合并记忆');
+              console.log('='.repeat(80));
+              
+              // 1. 确定源 Tab ID
+              let sourceTabId: string | undefined = undefined;
+              
+              if (sourceTabName) {
+                // 通过 Tab 名称查找 Tab ID
+                const gateway = getGatewayInstance();
+                if (!gateway) {
+                  throw new Error('Gateway 实例未设置，无法查找 Tab');
+                }
+                
+                const allTabs = gateway.getAllTabs();
+                const sourceTab = allTabs.find(tab => tab.title === sourceTabName);
+                
+                if (!sourceTab) {
+                  throw new Error(`未找到名为 "${sourceTabName}" 的 Tab`);
+                }
+                
+                // 检查源 Tab 是否有独立的 memory 配置
+                const configStore = SystemConfigStore.getInstance();
+                const sourceTabConfig = configStore.getTabConfig(sourceTab.id);
+                
+                if (sourceTabConfig?.memoryFile) {
+                  sourceTabId = sourceTab.id;
+                  console.log(`[Memory Tool] 📂 源 Tab: ${sourceTabName} (ID: ${sourceTabId})`);
+                } else {
+                  console.log(`[Memory Tool] 📂 源 Tab "${sourceTabName}" 使用主记忆，将合并主记忆`);
+                }
+              } else {
+                console.log('[Memory Tool] 📂 未指定源 Tab，将合并主记忆（memory.md）');
+              }
+              
+              // 2. 读取当前 Tab 的记忆
+              const currentMemory = await readMemory(tabId);
+              console.log('[Memory Tool] 📥 当前 Tab 记忆内容:');
+              console.log(currentMemory);
+              console.log('='.repeat(80));
+              
+              // 3. 读取源记忆
+              const sourceMemory = await readMemory(sourceTabId);
+              console.log(`[Memory Tool] 📥 源记忆内容 (${sourceTabName || '主记忆'}):`);
+              console.log(sourceMemory);
+              console.log('='.repeat(80));
+              
+              // 4. 检查是否已被取消
+              if (signal?.aborted) {
+                const err = new Error('记忆合并操作被取消');
+                err.name = 'AbortError';
+                throw err;
+              }
+              
+              // 5. 调用 AI 合并记忆
+              console.log('[Memory Tool] 🤖 使用大模型合并记忆...');
+              const mergedMemory = await mergeMemories(currentMemory, sourceMemory, signal);
+              
+              console.log('\n' + '='.repeat(80));
+              console.log('[Memory Tool] 📤 合并后的记忆内容:');
+              console.log(mergedMemory);
+              console.log('='.repeat(80));
+              
+              // 6. 写入当前 Tab
+              await writeMemory(mergedMemory, tabId);
+              const { memoryFile } = getMemoryFilePath(tabId);
+              console.log('[Memory Tool] ✅ 合并后的记忆已写入:', memoryFile);
+              
+              // 7. 重新加载当前 Tab 的系统提示词
+              const gateway = getGatewayInstance();
+              if (gateway) {
+                console.log('\n' + '='.repeat(80));
+                console.log(`[Memory Tool] 🔄 触发当前 Tab (${sessionId}) 系统提示词重新加载...`);
+                console.log('='.repeat(80));
+                await gateway.reloadSessionSystemPrompt(sessionId);
+                console.log('='.repeat(80));
+                console.log(`[Memory Tool] ✅ Tab ${sessionId} 系统提示词已重新加载`);
+                console.log('='.repeat(80) + '\n');
+              } else {
+                console.warn('[Memory Tool] ⚠️ Gateway 实例未设置，无法重新加载系统提示词');
+              }
+              
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: `记忆已合并。已将 ${sourceTabName || '主记忆'} 的内容合并到当前 Tab。`,
+                  },
+                ],
+                details: {
+                  success: true,
+                  sourceTabName: sourceTabName || '主记忆',
+                  sourceTabId: sourceTabId || 'default',
+                  currentTabId: tabId || sessionId,
+                  oldLength: currentMemory.length,
+                  newLength: mergedMemory.length,
                 },
               };
             }
