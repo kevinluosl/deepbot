@@ -261,13 +261,18 @@ export const feishuDocToolPlugin: ToolPlugin = {
             });
             const blocks: any[] = res?.data?.items || [];
 
-            const summary = blocks.map((b: any) => {
+            // 第一个块是 Page 根块（block_id === document_id），其余是内容块
+            // 删除时 start_index/end_index 是相对于父块（Page根块）的子块列表索引
+            // 即内容块的删除索引 = 在 blocks 数组中的位置 - 1（跳过根块）
+            const summary = blocks.map((b: any, i: number) => {
               const text = extractBlockText(b);
-              return `- block_id: ${b.block_id}  type: ${b.block_type}  内容: ${text.substring(0, 80)}${text.length > 80 ? '...' : ''}`;
+              const isRoot = b.block_id === args.document_id;
+              const deleteIndex = isRoot ? '(根块，不可删除)' : `删除索引: ${i - 1}`;
+              return `- block_id: ${b.block_id}  type: ${b.block_type}  ${deleteIndex}  内容: ${text.substring(0, 80)}${text.length > 80 ? '...' : ''}`;
             }).join('\n');
 
             return {
-              content: [{ type: 'text' as const, text: `📦 共 ${blocks.length} 个块:\n${summary}\n链接: ${docUrl(args.document_id)}` }],
+              content: [{ type: 'text' as const, text: `📦 共 ${blocks.length} 个块:\n${summary}\n\n⚠️ 删除时 start_index/end_index 使用"删除索引"（从0开始，不含根块）\n链接: ${docUrl(args.document_id)}` }],
               details: { blocks, url: docUrl(args.document_id) },
             };
           } catch (error) {
@@ -355,7 +360,7 @@ export const feishuDocToolPlugin: ToolPlugin = {
       {
         name: TOOL_NAMES.FEISHU_DOC_DELETE_BLOCKS,
         label: '删除飞书文档中的块',
-        description: '删除文档中指定范围的块（先用 feishu_doc_get_blocks 确认索引位置）',
+        description: '删除文档中指定范围的块。start_index/end_index 是相对于父块子块列表的索引（从0开始，不含根块），先用 feishu_doc_get_blocks 查看"删除索引"再操作',
         parameters: Type.Object({
           document_id: Type.String({ description: '文档 ID' }),
           parent_block_id: Type.Optional(Type.String({ description: '父块 ID，不填则默认使用 document_id' })),
@@ -450,6 +455,81 @@ export const feishuDocToolPlugin: ToolPlugin = {
           } catch (error) {
             logger.error('删除文档失败:', error);
             return errResult('删除文档失败', error);
+          }
+        },
+      },
+
+      // ── 下载云空间文件 ────────────────────────────────────────
+      {
+        name: TOOL_NAMES.FEISHU_DRIVE_DOWNLOAD,
+        label: '下载飞书云空间文件',
+        description: '下载飞书云空间中的文件（如 PDF、Word 等），不支持在线文档（docx/sheet/bitable）。需要 drive:file:download 或 drive:drive 权限。',
+        parameters: Type.Object({
+          file_token: Type.String({ description: '文件的 token，可从云空间文件链接或 API 获取' }),
+          file_name: Type.Optional(Type.String({ description: '保存的本地文件名（含扩展名），不填则使用 file_token 作为文件名' })),
+        }),
+        execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          try {
+            checkAbort(signal);
+            const client = await getLarkClient();
+
+            // 直接从配置读取凭证，获取 tenant_access_token
+            const connectorConfig = configStoreInstance.getConnectorConfig('feishu');
+            const tokenRes = await client.auth.tenantAccessToken.internal({
+              data: {
+                app_id: connectorConfig.config.appId,
+                app_secret: connectorConfig.config.appSecret,
+              },
+            });
+            const accessToken = (tokenRes as any)?.tenant_access_token;
+            if (!accessToken) {
+              throw new Error('获取 tenant_access_token 失败');
+            }
+
+            logger.info('下载云空间文件:', args.file_token);
+
+            // 调用下载接口，获取文件二进制流
+            const response = await fetch(
+              `https://open.feishu.cn/open-apis/drive/v1/files/${args.file_token}/download`,
+              {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${accessToken}` },
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`下载失败，HTTP ${response.status}: ${await response.text()}`);
+            }
+
+            // 从响应头提取原始文件名
+            const disposition = response.headers.get('content-disposition') || '';
+            const headerFileName = disposition.match(/filename\*?=(?:UTF-8'')?([^;\r\n]+)/i)?.[1]
+              ?.replace(/['"]/g, '')
+              .trim();
+
+            const localFileName = args.file_name || headerFileName || `feishu_${args.file_token}`;
+
+            // 写入临时目录
+            const os = require('os');
+            const path = require('path');
+            const fs = require('fs');
+            const savePath = path.join(os.tmpdir(), localFileName);
+
+            const buffer = Buffer.from(await response.arrayBuffer());
+            fs.writeFileSync(savePath, buffer);
+
+            logger.info('文件已保存:', savePath);
+
+            return {
+              content: [{
+                type: 'text' as const,
+                text: `✅ 文件下载成功\n文件名: ${localFileName}\n保存路径: ${savePath}\n文件大小: ${buffer.length} 字节`,
+              }],
+              details: { file_token: args.file_token, file_name: localFileName, save_path: savePath, size: buffer.length },
+            };
+          } catch (error) {
+            logger.error('下载云空间文件失败:', error);
+            return errResult('下载云空间文件失败', error);
           }
         },
       },

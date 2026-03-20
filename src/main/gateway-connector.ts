@@ -304,6 +304,7 @@ export class GatewayConnectorHandler {
 - feishu_doc_delete_blocks: 删除文档中指定范围的块（参数: document_id, start_index, end_index，parent_block_id 可选默认同 document_id）
 - feishu_doc_delete_file: 永久删除整篇文档文件，不可恢复（参数: document_id）
 - feishu_doc_add_comment: 在文档中添加评论（参数: document_id, content）
+- feishu_drive_download: 下载飞书云空间文件到本地（参数: file_token, file_name?）
 
 注意：
 1. feishu_doc_append 是追加正文内容，feishu_doc_add_comment 是添加评论，客户要求添加评论时使用后者

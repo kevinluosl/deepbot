@@ -72,6 +72,7 @@ export const TOOL_NAMES = {
   FEISHU_DOC_DELETE_FILE: 'feishu_doc_delete_file',
   FEISHU_DOC_GET_BLOCKS: 'feishu_doc_get_blocks',
   FEISHU_DOC_ADD_COMMENT: 'feishu_doc_add_comment',
+  FEISHU_DRIVE_DOWNLOAD: 'feishu_drive_download',
   
   // AI 对话工具
   CHAT: 'chat',
