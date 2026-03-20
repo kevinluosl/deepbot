@@ -22,7 +22,7 @@
     "pack": "pnpm run build && electron-builder --dir",
     "dist": "pnpm run build && electron-builder",
     "dist:mac": "pnpm run build && electron-builder --mac",
-    "dist:win": "pnpm run build && electron-builder --win",
+    "dist:win": "node scripts/download-node-win.js && pnpm run build && electron-builder --win",
     "dist:linux": "pnpm run build && electron-builder --linux",
     "reset-dev": "bash scripts/reset-dev-data.sh"
   },
@@ -114,6 +114,7 @@
       "node_modules/agent-browser/package.json",
       "node_modules/agent-browser/node_modules/**/*",
       "node_modules/playwright-core/**/*",
+      "node.exe",
       "!node_modules/**/{CHANGELOG.md,README.md,README,readme.md,readme}",
       "!node_modules/**/{test,__tests__,tests,powered-test,example,examples}",
       "!node_modules/**/*.d.ts",

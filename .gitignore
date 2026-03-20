@@ -45,3 +45,4 @@ temp/
 # Kiro and migration notes
 .kiro/
 .migration-notes/
+/node.exe

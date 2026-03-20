@@ -82,59 +82,36 @@ export class AgentBrowserWrapper {
   private getAgentBrowserPath(): string {
     // 开发环境：使用 npx
     if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
-      logger.info('🔧 开发环境检测');
-      logger.info(`  NODE_ENV: ${process.env.NODE_ENV || 'N/A'}`);
-      logger.info(`  VITE_DEV_SERVER_URL: ${process.env.VITE_DEV_SERVER_URL || 'N/A'}`);
-      logger.info('  使用命令: npx agent-browser');
-      logger.info('  npx 会调用: node_modules/.bin/agent-browser');
-      logger.info('  该脚本会调用: node_modules/agent-browser/bin/agent-browser-<platform>-<arch>');
       return 'npx agent-browser';
     }
     
     // 生产环境：直接调用可执行文件
-    logger.info('🔧 生产环境检测');
     const platform = process.platform;
     const arch = process.arch;
     
-    // 确定可执行文件名
     let executableName: string;
     if (platform === 'win32') {
       executableName = 'agent-browser-win32-x64.exe';
     } else if (platform === 'darwin') {
       executableName = arch === 'arm64' ? 'agent-browser-darwin-arm64' : 'agent-browser-darwin-x64';
     } else {
-      // Linux
       executableName = arch === 'arm64' ? 'agent-browser-linux-arm64' : 'agent-browser-linux-x64';
     }
     
-    logger.info(`  平台: ${platform}, 架构: ${arch}`);
-    logger.info(`  目标可执行文件: ${executableName}`);
-    
-    // 在 asar: false 的情况下，文件直接在 app 目录中
     const resourcesPath = process.resourcesPath || process.cwd();
-    
-    // 尝试多个可能的路径
     const possiblePaths = [
-      // asar: false 的标准路径
       join(resourcesPath, 'app', 'node_modules', 'agent-browser', 'bin', executableName),
-      // 备选路径
       join(resourcesPath, 'node_modules', 'agent-browser', 'bin', executableName),
-      // 相对于当前工作目录
       join(process.cwd(), 'node_modules', 'agent-browser', 'bin', executableName),
     ];
     
-    logger.info('  尝试查找路径:');
     for (const executablePath of possiblePaths) {
-      const exists = existsSync(executablePath);
-      logger.info(`    ${exists ? '✅' : '❌'} ${executablePath}`);
-      if (exists) {
-        logger.info(`  ✅ 找到可执行文件: ${executableName}`);
+      if (existsSync(executablePath)) {
         return `"${executablePath}"`;
       }
     }
     
-    // 如果都找不到，尝试使用系统 PATH 中的 agent-browser
-    logger.warn('⚠️ 未找到可执行文件，尝试系统 PATH');
+    logger.warn('⚠️ 未找到 agent-browser 可执行文件，尝试系统 PATH');
     return 'agent-browser';
   }
 
@@ -169,104 +146,51 @@ export class AgentBrowserWrapper {
     // 🔧 设置环境变量：让 agent-browser 使用 Electron 内置的 Node.js
     const env = {
       ...process.env,
-      NODE: process.execPath,  // Electron 可执行文件路径（包含 Node.js）
-      PATH: process.env.PATH || '/usr/bin:/bin:/usr/sbin:/sbin',
+      NODE: process.execPath,
+      PATH: process.env.PATH || (process.platform === 'win32'
+        ? 'C:\\Windows\\System32;C:\\Windows'
+        : '/usr/bin:/bin:/usr/sbin:/sbin'),
     };
     
-    // 🔗 在生产环境中，确保 node 包装脚本存在并添加到 PATH
+    // 生产环境：将 app 目录加入 PATH
+    // Windows：app 目录里有打包进来的 node.exe（构建时由 download-node-win.js 下载）
+    // macOS/Linux：app 目录里有 node 包装脚本（运行时动态创建）
     if (process.env.NODE_ENV !== 'development' && !process.env.VITE_DEV_SERVER_URL) {
       const resourcesPath = process.resourcesPath || process.cwd();
       const appDir = join(resourcesPath, 'app');
-      const nodeWrapperPath = join(appDir, 'node');
+      const sep = process.platform === 'win32' ? ';' : ':';
       
-      // 检查包装脚本是否存在
-      if (!existsSync(nodeWrapperPath)) {
-        logger.warn('⚠️ node 包装脚本不存在，尝试创建...');
-        try {
-          const { writeFileSync, chmodSync } = require('fs');
-          
-          // 创建包装脚本
-          const wrapperScript = `#!/bin/bash
-# Node.js wrapper for agent-browser
-# This script uses Electron's built-in Node.js to run scripts
-
-# CRITICAL: Set ELECTRON_RUN_AS_NODE before anything else
-# This tells Electron to run as pure Node.js, not as an Electron app
+      if (process.platform === 'win32') {
+        const nodeExePath = join(appDir, 'node.exe');
+        if (existsSync(nodeExePath)) {
+          env.PATH = `${appDir}${sep}${env.PATH}`;
+        } else {
+          logger.error('❌ node.exe 不存在，浏览器工具将无法工作。请重新安装应用。');
+        }
+      } else {
+        const nodeWrapperPath = join(appDir, 'node');
+        if (!existsSync(nodeWrapperPath)) {
+          try {
+            const { writeFileSync, chmodSync } = require('fs');
+            const wrapperScript = `#!/bin/bash
 export ELECTRON_RUN_AS_NODE=1
-
-# Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
-
-# Get the Electron executable path (3 levels up: app -> Resources -> Contents -> MacOS)
 ELECTRON_PATH="$SCRIPT_DIR/../../MacOS/$(basename "${process.execPath}")"
-
-# Execute with all arguments
 exec "$ELECTRON_PATH" "$@"
 `;
-          
-          writeFileSync(nodeWrapperPath, wrapperScript);
-          chmodSync(nodeWrapperPath, 0o755);
-          logger.info('✅ node 包装脚本创建成功');
-        } catch (error) {
-          logger.error(`❌ 创建 node 包装脚本失败: ${getErrorMessage(error)}`);
+            writeFileSync(nodeWrapperPath, wrapperScript);
+            chmodSync(nodeWrapperPath, 0o755);
+          } catch (error) {
+            logger.error(`❌ 创建 node 包装脚本失败: ${getErrorMessage(error)}`);
+          }
         }
-      }
-      
-      // 将 app 目录添加到 PATH 前面，让 agent-browser 能找到 node 命令
-      if (existsSync(nodeWrapperPath)) {
-        env.PATH = `${appDir}:${env.PATH}`;
-        logger.info(`✅ 已将 app 目录添加到 PATH: ${appDir}`);
+        if (existsSync(nodeWrapperPath)) {
+          env.PATH = `${appDir}${sep}${env.PATH}`;
+        }
       }
     }
     
-    // 📋 详细诊断日志（仅在首次调用或出错时输出）
-    const isFirstCall = !process.env.DEEPBOT_BROWSER_INITIALIZED;
-    if (isFirstCall) {
-      process.env.DEEPBOT_BROWSER_INITIALIZED = '1';
-      
-      logger.info('=== agent-browser 首次执行诊断 ===');
-      logger.info(`📌 命令: ${command}`);
-      logger.info('');
-      
-      // 环境信息
-      logger.info('🔧 环境信息:');
-      logger.info(`  工作目录: ${process.cwd()}`);
-      logger.info(`  NODE 环境变量: ${env.NODE}`);
-      logger.info(`  PATH: ${env.PATH.split(':').slice(0, 3).join(':') + '...'}`);
-      logger.info(`  process.platform: ${process.platform}`);
-      logger.info(`  process.arch: ${process.arch}`);
-      logger.info('');
-      
-      // 检查关键文件是否存在
-      logger.info('📂 关键文件检查:');
-      const agentBrowserBinPath = agentBrowserCmd.replace(/"/g, '');
-      
-      logger.info(`  agent-browser 二进制: ${existsSync(agentBrowserBinPath) ? '✅' : '❌'}`);
-      
-      // 🔗 检查 node 包装脚本
-      if (process.env.NODE_ENV !== 'development' && !process.env.VITE_DEV_SERVER_URL) {
-        const resourcesPath = process.resourcesPath || process.cwd();
-        const appDir = join(resourcesPath, 'app');
-        const nodeWrapperPath = join(appDir, 'node');
-        
-        logger.info(`  node 包装脚本: ${existsSync(nodeWrapperPath) ? '✅' : '❌'}`);
-        
-        if (existsSync(nodeWrapperPath)) {
-          try {
-            const { readFileSync } = require('fs');
-            const content = readFileSync(nodeWrapperPath, 'utf-8');
-            const hasElectronRunAsNode = content.includes('ELECTRON_RUN_AS_NODE=1');
-            logger.info(`  包含 ELECTRON_RUN_AS_NODE: ${hasElectronRunAsNode ? '✅' : '❌'}`);
-          } catch (error) {
-            logger.error(`  读取脚本失败: ${getErrorMessage(error)}`);
-          }
-        }
-      }
-      
-      logger.info('');
-      logger.info('=== 诊断完成 ===');
-      logger.info('');
-    }
+    logger.info(`执行: ${command}`);
     
     try {
       const { stdout, stderr } = await execAsync(fullCommand, {
@@ -280,28 +204,17 @@ exec "$ELECTRON_PATH" "$@"
     } catch (error: any) {
       const errorMessage = getErrorMessage(error);
       
-      // 📋 详细错误诊断
-      logger.error('');
-      logger.error('=== agent-browser 执行失败 ===');
-      logger.error(`❌ 命令: ${command}`);
-      logger.error(`❌ 错误: ${errorMessage}`);
-      
+      logger.error(`执行失败 [${command}]: ${errorMessage}`);
       if (error.stderr) {
-        logger.error(`📤 stderr: ${error.stderr.substring(0, 500)}`);
+        logger.error(`stderr: ${error.stderr.substring(0, 300)}`);
       }
       
-      logger.error('');
-      
-      // 处理超时错误
       if (error.killed && error.signal === 'SIGTERM') {
         throw new Error(`命令执行超时: ${command}`);
       }
-      
-      // 处理可执行文件不存在的错误
       if (error.code === 'ENOENT' || error.message.includes('command not found')) {
-        throw new Error(`agent-browser 可执行文件未找到。请检查安装或联系技术支持。错误详情: ${errorMessage}`);
+        throw new Error(`agent-browser 可执行文件未找到。错误详情: ${errorMessage}`);
       }
-      
       throw new Error(`命令执行失败: ${errorMessage}`);
     }
   }
