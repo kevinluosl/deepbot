@@ -98,7 +98,7 @@ export const apiToolPlugin: ToolPlugin = {
       {
         name: TOOL_NAMES.API_SET_FEISHU_CONNECTOR_CONFIG,
         label: '设置飞书连接器配置',
-        description: '配置飞书连接器。设置 App ID、App Secret、安全策略等。配置后需要启用才能使用',
+        description: '配置飞书连接器。设置 App ID 和 App Secret。配置后需要启用才能使用',
         parameters: schemas.SetFeishuConnectorConfigSchema,
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
           return handlers.handleSetFeishuConnectorConfig(args, signal);

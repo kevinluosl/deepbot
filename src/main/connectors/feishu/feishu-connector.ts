@@ -74,12 +74,14 @@ export class FeishuConnector implements Connector {
     validate: (config: FeishuConnectorConfig): boolean => {
       return !!(
         config.appId &&
-        config.appSecret &&
-        config.botName
+        config.appSecret
       );
     },
   };
   
+  // 机器人自身的 open_id（启动时获取并缓存）
+  private botOpenId: string | undefined;
+
   // ========== 生命周期 ==========
   
   async initialize(config: FeishuConnectorConfig): Promise<void> {
@@ -94,10 +96,6 @@ export class FeishuConnector implements Connector {
     
     // 初始化文档处理器
     this.documentHandler = new FeishuDocumentHandler(this.client);
-    
-    // 更新 security 配置（群组默认必须 @ 机器人）
-    this.security.requireMention = true;
-    this.security.groupPolicy = config.groupPolicy || 'open';
   }
   
   async start(): Promise<void> {
@@ -108,6 +106,38 @@ export class FeishuConnector implements Connector {
     // 确保旧连接已关闭
     if (this.wsClient) {
       this.wsClient = undefined;
+    }
+
+    // 获取机器人自身的 open_id，用于群组消息中判断是否 @ 了机器人
+    try {
+      // 先获取 tenant_access_token
+      const tokenRes = await this.client.auth.tenantAccessToken.internal({
+        data: {
+          app_id: this.connectorConfig.appId,
+          app_secret: this.connectorConfig.appSecret,
+        },
+      });
+      const token = (tokenRes as any)?.tenant_access_token;
+      if (!token) {
+        throw new Error('获取 tenant_access_token 失败');
+      }
+
+      // 调飞书 bot info API 获取机器人 open_id
+      const botRes = await fetch('https://open.feishu.cn/open-apis/bot/v3/info', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const botData = await botRes.json() as any;
+      const openId = botData?.bot?.open_id;
+      if (openId) {
+        this.botOpenId = openId;
+        console.log('[FeishuConnector] 🤖 机器人 open_id:', this.botOpenId);
+      } else {
+        console.error('[FeishuConnector] ❌ 未能获取机器人 open_id，连接器启动中止');
+        return;
+      }
+    } catch (error) {
+      console.error('[FeishuConnector] ❌ 获取机器人信息失败，连接器启动中止:', getErrorMessage(error));
+      return;
     }
     
     // 初始化 WebSocket 客户端
@@ -318,35 +348,17 @@ export class FeishuConnector implements Connector {
       // 2. 提取 mentions 信息（用于判断是否 @ 了机器人）
       const mentions = event.message.mentions || [];
       
-      // 获取机器人的 bot_id（从 SDK 获取）
-      let botOpenId: string | undefined;
-      try {
-        // 尝试获取机器人信息
-        const botInfo = await this.client.auth.tenantAccessToken.internal({
-          data: {
-            app_id: this.connectorConfig.appId,
-            app_secret: this.connectorConfig.appSecret,
-          },
-        });
-        // 注意：这里可能需要调用其他 API 获取 bot 的 open_id
-        // 暂时使用 name 匹配作为备选方案
-      } catch (error) {
-        // 忽略获取机器人信息失败
-      }
-      
-      // 判断是否 @ 了机器人（通过 name 匹配）
-      const botName = this.connectorConfig.botName;
-      const isBotMentioned = mentions.some((mention: any) => 
-        mention.name === botName || 
-        mention.id?.open_id === botOpenId
-      );
+      // 用机器人 open_id 精确匹配，获取不到则不处理群组消息
+      const isBotMentioned = this.botOpenId
+        ? mentions.some((mention: any) => mention.id?.open_id === this.botOpenId)
+        : false;
       
       // 3. 群组消息：先判断是否 @ 了机器人，再回复表情
       // 🔥 特殊处理：图片和文件消息无法 @，因此不需要检查 mention
       const isGroup = event.message.chat_type !== 'p2p';
       const isMediaMessage = msgType === 'image' || msgType === 'file';
       
-      if (isGroup && this.security.requireMention && !isBotMentioned && !isMediaMessage) {
+      if (isGroup && !isBotMentioned && !isMediaMessage) {
         // 未 @ 机器人且不是图片/文件消息，直接忽略，不回复表情
         return;
       }
@@ -741,16 +753,6 @@ export class FeishuConnector implements Connector {
     },
   };
   
-  security: {
-    dmPolicy: 'pairing';
-    groupPolicy: 'open' | 'allowlist' | 'disabled';
-    requireMention: boolean;
-  } = {
-    dmPolicy: 'pairing',
-    groupPolicy: 'open',
-    requireMention: true,
-  };
-  
   /**
    * 配对批准后发送欢迎消息给用户
    * 使用 open_id 直发，避免依赖 chat_id
@@ -833,39 +835,15 @@ export class FeishuConnector implements Connector {
   }
 
   private checkSecurity(message: FeishuIncomingMessage): boolean {
-    // 1. 检查 DM 策略（固定使用 pairing 模式）
+    // 私聊：检查是否已配对
     if (message.conversation.type === 'p2p') {
-      // 检查是否已配对
       return this.pairing!.verifyPairingCode(message.sender.id);
     }
     
-    // 2. 群组消息：检查群组策略和 @ 机器人要求
-    if (message.conversation.type === 'group') {
-      // 2.1 检查群组策略
-      if (this.security.groupPolicy === 'disabled') {
-        return false;
-      }
-      
-      // 2.2 检查白名单（如果是 allowlist 模式）
-      if (this.security.groupPolicy === 'allowlist') {
-        const groupAllowFrom = this.connectorConfig.groupAllowFrom || [];
-        if (!groupAllowFrom.includes(message.conversation.id)) {
-          return false;
-        }
-      }
-      
-      // 2.3 检查是否需要 @ 机器人
-      // 🔥 特殊处理：图片和文件消息无法 @，因此不需要检查 mention
-      const isMediaMessage = message.content.type === 'image' || message.content.type === 'file';
-      
-      if (this.security.requireMention && !isMediaMessage) {
-        if (!message.mentions?.isBotMentioned) {
-          // 未 @ 机器人，拒绝处理
-          return false;
-        }
-      }
-      
-      return true;
+    // 群组：检查是否 @ 了机器人（图片/文件消息无法 @，直接放行）
+    const isMediaMessage = message.content.type === 'image' || message.content.type === 'file';
+    if (!isMediaMessage && !message.mentions?.isBotMentioned) {
+      return false;
     }
     
     return true;

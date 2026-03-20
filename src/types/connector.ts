@@ -117,15 +117,11 @@ export interface Connector {
   };
   
   // ========== 安全控制 ==========
-  security: {
+  security?: {
     verifySignature?(request: {
       headers: Record<string, string>;
       body: string;
     }): Promise<boolean>;
-    
-    dmPolicy: 'open' | 'pairing' | 'allowlist';
-    groupPolicy: 'open' | 'allowlist' | 'disabled';
-    requireMention: boolean;
   };
   
   // ========== Pairing 机制 ==========
@@ -150,18 +146,6 @@ export interface Connector {
 export interface FeishuConnectorConfig extends ConnectorConfig {
   appId: string;              // 应用 ID（cli_xxx）
   appSecret: string;          // 应用密钥
-  verificationToken: string;  // 验证 Token
-  encryptKey?: string;        // 加密 Key（可选）
-  botName: string;            // 机器人名称
-  
-  // 安全策略
-  dmPolicy: 'open' | 'pairing' | 'allowlist';
-  groupPolicy: 'open' | 'allowlist' | 'disabled';
-  requireMention: boolean;
-  
-  // 白名单（可选）
-  allowFrom?: string[];       // 允许的用户 Open ID
-  groupAllowFrom?: string[];  // 允许的群组 ID
 }
 
 /**

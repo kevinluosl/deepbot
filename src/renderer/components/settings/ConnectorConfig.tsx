@@ -21,14 +21,6 @@ interface Connector {
 interface FeishuConfig {
   appId: string;
   appSecret: string;
-  verificationToken: string;
-  encryptKey: string;
-  botName: string;
-  dmPolicy: 'open' | 'pairing' | 'allowlist';
-  groupPolicy: 'open' | 'allowlist' | 'disabled';
-  requireMention: boolean;
-  allowFrom?: string[];
-  groupAllowFrom?: string[];
 }
 
 interface PairingRecord {
@@ -51,12 +43,6 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   const [feishuConfig, setFeishuConfig] = useState<FeishuConfig>({
     appId: '',
     appSecret: '',
-    verificationToken: '',
-    encryptKey: '',
-    botName: 'DeepBot',
-    dmPolicy: 'pairing',
-    groupPolicy: 'open',
-    requireMention: true,
   });
   const [pairingRecords, setPairingRecords] = useState<PairingRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,10 +214,6 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
     }
     if (!feishuConfig.appSecret.trim()) {
       showMessage('error', '请输入 App Secret');
-      return;
-    }
-    if (!feishuConfig.botName.trim()) {
-      showMessage('error', '请输入机器人名称');
       return;
     }
 
@@ -433,20 +415,6 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
             />
           </div>
 
-          {/* 机器人名称 */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              机器人名称 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={feishuConfig.botName}
-              onChange={(e) => setFeishuConfig({ ...feishuConfig, botName: e.target.value })}
-              placeholder="DeepBot"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
           {/* 群组使用说明 */}
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
             <p className="text-sm text-blue-800">
@@ -630,6 +598,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       "im:message.group_msg",
       "im:message.p2p_msg:readonly",
       "im:message:send_as_bot",
+      "im:resource",
       "sheets:spreadsheet:readonly"
     ],
     "user": []
@@ -644,7 +613,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                     </div>
                     <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
                       <li>切换到「基础配置」标签页</li>
-                      <li>填写 App ID、App Secret 和机器人名称</li>
+                      <li>填写 App ID 和 App Secret</li>
                       <li>点击「保存配置」，再点击「启动连接器」</li>
                     </ol>
                   </div>

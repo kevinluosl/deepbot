@@ -28,13 +28,6 @@ export async function handleSetFeishuConnectorConfig(
   params: {
     appId: string;
     appSecret: string;
-    verificationToken?: string;
-    encryptKey?: string;
-    botName?: string;
-    dmPolicy?: 'open' | 'pairing' | 'allowlist';
-    groupPolicy?: 'open' | 'allowlist' | 'disabled';
-    requireMention?: boolean;
-    allowFrom?: string[];
     enabled?: boolean;
   },
   signal?: AbortSignal
@@ -50,13 +43,6 @@ export async function handleSetFeishuConnectorConfig(
     const config = {
       appId: params.appId,
       appSecret: params.appSecret,
-      verificationToken: params.verificationToken || '',
-      encryptKey: params.encryptKey || '',
-      botName: params.botName || 'DeepBot',
-      dmPolicy: params.dmPolicy || 'pairing',
-      groupPolicy: params.groupPolicy || 'open',
-      requireMention: params.requireMention !== undefined ? params.requireMention : true,
-      allowFrom: params.allowFrom || [],
     };
     
     const enabled = params.enabled !== undefined ? params.enabled : false;

@@ -185,39 +185,6 @@ export const SetFeishuConnectorConfigSchema = Type.Object({
     description: '飞书应用密钥',
   }),
   
-  verificationToken: Type.Optional(Type.String({
-    description: '验证 Token（可选，用于事件验证）',
-  })),
-  
-  encryptKey: Type.Optional(Type.String({
-    description: '加密 Key（可选，用于消息加密）',
-  })),
-  
-  botName: Type.Optional(Type.String({
-    description: '机器人名称（可选，默认为"DeepBot"）',
-  })),
-  
-  dmPolicy: Type.Optional(Type.Union([
-    Type.Literal('open', { description: '开放模式：所有用户都可以私聊' }),
-    Type.Literal('pairing', { description: '配对模式：需要配对码才能私聊' }),
-    Type.Literal('allowlist', { description: '白名单模式：只有白名单用户可以私聊' }),
-  ], { default: 'pairing' })),
-  
-  groupPolicy: Type.Optional(Type.Union([
-    Type.Literal('open', { description: '开放模式：所有群组都可以使用' }),
-    Type.Literal('allowlist', { description: '白名单模式：只有白名单群组可以使用' }),
-    Type.Literal('disabled', { description: '禁用模式：禁止群组使用' }),
-  ], { default: 'open' })),
-  
-  requireMention: Type.Optional(Type.Boolean({
-    description: '是否需要 @ 机器人才能触发（默认：true）',
-    default: true,
-  })),
-  
-  allowFrom: Type.Optional(Type.Array(Type.String(), {
-    description: '白名单用户/群组 ID 列表（可选，格式：ou_xxx 或 oc_xxx）',
-  })),
-  
   enabled: Type.Optional(Type.Boolean({
     description: '是否启用飞书连接器（默认：false）',
     default: false,

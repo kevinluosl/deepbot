@@ -288,24 +288,6 @@ export function formatSetFeishuConnectorConfigResult(params: any, enabled: boole
   
   message += `  • App ID: ${params.appId}\n`;
   message += `  • App Secret: 已设置\n`;
-  
-  if (params.verificationToken) {
-    message += `  • Verification Token: 已设置\n`;
-  }
-  
-  if (params.encryptKey) {
-    message += `  • Encrypt Key: 已设置\n`;
-  }
-  
-  message += `  • 机器人名称: ${params.botName || 'DeepBot'}\n`;
-  message += `  • 私聊策略: ${params.dmPolicy || 'pairing'}\n`;
-  message += `  • 群组策略: ${params.groupPolicy || 'open'}\n`;
-  message += `  • 需要 @ 触发: ${params.requireMention !== false ? '是' : '否'}\n`;
-  
-  if (params.allowFrom && params.allowFrom.length > 0) {
-    message += `  • 白名单: ${params.allowFrom.length} 个用户/群组\n`;
-  }
-  
   message += `  • 状态: ${enabled ? '✅ 已启用' : '⏸️ 已禁用'}\n`;
   
   message += `\n⚠️ 注意：配置已保存，${enabled ? '飞书连接器将在下次启动时生效' : '需要启用后才能使用'}`;
