@@ -42,7 +42,7 @@ interface PairingRecord {
   approvedAt?: number;
 }
 
-type TabType = 'config' | 'pairing';
+type TabType = 'config' | 'pairing' | 'guide';
 
 export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   const [connectors, setConnectors] = useState<Connector[]>([]);
@@ -388,21 +388,22 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab('guide')}
+                className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'guide'
+                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                配置说明
+              </button>
             </nav>
           </div>
 
           {/* 基础配置标签页 */}
           {activeTab === 'config' && (
             <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">配置说明</h4>
-            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-              <li>前往飞书开放平台创建企业自建应用</li>
-              <li>获取 App ID 和 App Secret</li>
-              <li>开启"接收消息"事件权限</li>
-              <li>使用 WebSocket 长连接模式（无需公网 IP）</li>
-            </ol>
-          </div>
 
           {/* App ID */}
           <div className="space-y-2">
@@ -574,6 +575,126 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+          {/* 配置说明标签页 */}
+          {activeTab === 'guide' && (
+            <div className="space-y-4 text-sm text-gray-700 pr-1">
+              <h2 className="text-base font-semibold text-gray-900">飞书机器人配置指南</h2>
+              <p>本文档介绍如何配置 DeepBot 的飞书连接器，使其能够通过飞书接收和发送消息。<span className="bg-yellow-200 text-yellow-900 px-1 rounded">大约 3 ～ 5 分钟配置完成。</span></p>
+
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">前置条件</h3>
+                <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                  <li>拥有飞书企业管理员权限</li>
+                </ol>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">配置步骤</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">1. 创建飞书企业自建应用</h4>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
+                      <li>访问 <a href="https://open.feishu.cn/" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">飞书开放平台</a></li>
+                      <li>登录后，点击「创建企业自建应用」</li>
+                      <li>填写应用名称、描述等信息</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">2. 获取应用凭证</h4>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
+                      <li>在应用详情页，进入「凭证与基础信息」</li>
+                      <li>记录 <strong>App ID</strong> 和 <strong>App Secret</strong></li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">3. 配置应用权限</h4>
+                    <p className="text-gray-600 mb-2">在「权限管理」页面添加以下权限，或点击「批量导入/导出权限」粘贴下方 JSON 一键导入：</p>
+                    <div className="bg-gray-50 border border-gray-200 rounded p-3 font-mono text-xs text-gray-700 whitespace-pre overflow-x-auto">{`{
+  "scopes": {
+    "tenant": [
+      "contact:contact.base:readonly",
+      "contact:user.base:readonly",
+      "contact:user.basic_profile:readonly",
+      "docs:document.comment:create",
+      "docx:document",
+      "drive:drive",
+      "drive:file",
+      "im:chat",
+      "im:message",
+      "im:message.group_at_msg:readonly",
+      "im:message.group_msg",
+      "im:message.p2p_msg:readonly",
+      "im:message:send_as_bot",
+      "sheets:spreadsheet:readonly"
+    ],
+    "user": []
+  }
+}`}</div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">4. 在 DeepBot 中配置</h4>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2 text-yellow-800 text-xs">
+                      注意：配置事件订阅前，需要先在 DeepBot 中填入 App ID 和 App Secret，否则无法建立长连接。
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
+                      <li>切换到「基础配置」标签页</li>
+                      <li>填写 App ID、App Secret 和机器人名称</li>
+                      <li>点击「保存配置」，再点击「启动连接器」</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">5. 配置事件订阅</h4>
+                    <p className="text-gray-600 mb-1">进入应用的「事件与回调」页面：</p>
+                    <div className="ml-2 space-y-2">
+                      <div>
+                        <p className="font-medium text-gray-700">事件配置：</p>
+                        <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
+                          <li>订阅方式选择「使用长连接接收事件」</li>
+                          <li>添加事件 <code className="bg-gray-100 px-1 rounded">im.message.receive_v1</code></li>
+                          <li>开通：接收群聊中@机器人消息、读取单聊消息、获取群组中所有消息</li>
+                        </ol>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-700">回调配置：</p>
+                        <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
+                          <li>订阅方式同样选择「使用长连接接收事件」</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">6. 发布应用</h4>
+                    <p className="text-gray-600 ml-2">完成配置后，在飞书开放平台发布应用，审核通过后即可使用。</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">使用说明</h3>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-medium text-gray-800 mb-1">私聊（Pairing 模式）</h4>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
+                      <li>在飞书中搜索并添加机器人，发送任意消息</li>
+                      <li>机器人返回配对码</li>
+                      <li>管理员在「Pairing 管理」标签页批准配对码</li>
+                      <li>批准后用户即可正常对话</li>
+                    </ol>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-800 mb-1">群组使用</h4>
+                    <p className="text-gray-600 ml-2">将机器人添加到群组，在群组中 @机器人 发送消息即可。</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
