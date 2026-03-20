@@ -79,8 +79,10 @@ export class FeishuConnector implements Connector {
     },
   };
   
-  // 机器人自身的 open_id（启动时获取并缓存）
+  // 机器人自身的 open_id（后台轮询获取）
   private botOpenId: string | undefined;
+  // open_id 轮询定时器
+  private botOpenIdRetryTimer?: ReturnType<typeof setTimeout>;
 
   // ========== 生命周期 ==========
   
@@ -100,45 +102,24 @@ export class FeishuConnector implements Connector {
   
   async start(): Promise<void> {
     if (this.isStarted) {
+      console.log('[FeishuConnector] ⚠️ 连接器已启动，跳过重复启动');
       return;
     }
+    
+    console.log('[FeishuConnector] 🚀 开始启动飞书连接器...');
     
     // 确保旧连接已关闭
     if (this.wsClient) {
       this.wsClient = undefined;
     }
 
-    // 获取机器人自身的 open_id，用于群组消息中判断是否 @ 了机器人
-    try {
-      // 先获取 tenant_access_token
-      const tokenRes = await this.client.auth.tenantAccessToken.internal({
-        data: {
-          app_id: this.connectorConfig.appId,
-          app_secret: this.connectorConfig.appSecret,
-        },
-      });
-      const token = (tokenRes as any)?.tenant_access_token;
-      if (!token) {
-        throw new Error('获取 tenant_access_token 失败');
-      }
+    // 🔥 先设置 isStarted，否则 startBotOpenIdPolling 里的检查会失败
+    console.log('[FeishuConnector] 📍 设置 isStarted = true');
+    this.isStarted = true;
 
-      // 调飞书 bot info API 获取机器人 open_id
-      const botRes = await fetch('https://open.feishu.cn/open-apis/bot/v3/info', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const botData = await botRes.json() as any;
-      const openId = botData?.bot?.open_id;
-      if (openId) {
-        this.botOpenId = openId;
-        console.log('[FeishuConnector] 🤖 机器人 open_id:', this.botOpenId);
-      } else {
-        console.error('[FeishuConnector] ❌ 未能获取机器人 open_id，连接器启动中止');
-        return;
-      }
-    } catch (error) {
-      console.error('[FeishuConnector] ❌ 获取机器人信息失败，连接器启动中止:', getErrorMessage(error));
-      return;
-    }
+    // 后台异步获取机器人 open_id，不阻塞连接启动
+    console.log('[FeishuConnector] 🔄 启动机器人 open_id 轮询...');
+    this.startBotOpenIdPolling();
     
     // 初始化 WebSocket 客户端
     this.wsClient = new Lark.WSClient({
@@ -166,14 +147,19 @@ export class FeishuConnector implements Connector {
     
     // 启动长连接
     this.wsClient.start({ eventDispatcher });
-    
-    this.isStarted = true;
   }
   
   async stop(): Promise<void> {
     if (!this.isStarted) {
       return;
     }
+
+    // 停止 open_id 轮询
+    if (this.botOpenIdRetryTimer) {
+      clearTimeout(this.botOpenIdRetryTimer);
+      this.botOpenIdRetryTimer = undefined;
+    }
+    this.botOpenId = undefined;
     
     // 关闭 WebSocket 连接
     if (this.wsClient) {
@@ -186,6 +172,64 @@ export class FeishuConnector implements Connector {
     }
     
     this.isStarted = false;
+  }
+
+  /**
+   * 后台轮询获取机器人 open_id
+   * 每 5 秒重试一次，直到成功为止，不影响连接状态
+   */
+  private startBotOpenIdPolling(): void {
+    console.log('[FeishuConnector] 📍 startBotOpenIdPolling 被调用，当前 isStarted:', this.isStarted);
+    
+    // 清除旧定时器（防止重复启动）
+    if (this.botOpenIdRetryTimer) {
+      clearTimeout(this.botOpenIdRetryTimer);
+      this.botOpenIdRetryTimer = undefined;
+    }
+
+    const attempt = async (): Promise<void> => {
+      // 连接器已停止则不再重试
+      console.log('[FeishuConnector] 🔍 attempt() 开始执行，当前 isStarted:', this.isStarted);
+      if (!this.isStarted) {
+        console.log('[FeishuConnector] ⏹️ 连接器已停止，终止 open_id 轮询');
+        return;
+      }
+
+      console.log('[FeishuConnector] 🔍 尝试获取机器人 open_id...');
+      
+      try {
+        const tokenRes = await this.client.auth.tenantAccessToken.internal({
+          data: {
+            app_id: this.connectorConfig.appId,
+            app_secret: this.connectorConfig.appSecret,
+          },
+        });
+        const token = (tokenRes as any)?.tenant_access_token;
+        if (!token) throw new Error('获取 tenant_access_token 失败');
+
+        const botRes = await fetch('https://open.feishu.cn/open-apis/bot/v3/info', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const botData = await botRes.json() as any;
+        const openId = botData?.bot?.open_id;
+
+        if (openId) {
+          this.botOpenId = openId;
+          console.log('[FeishuConnector] 🤖 机器人 open_id 获取成功:', this.botOpenId);
+          // 成功后不再重试
+          return;
+        }
+
+        throw new Error('响应中没有 open_id');
+      } catch (error) {
+        console.warn('[FeishuConnector] ⚠️ 获取机器人 open_id 失败，5秒后重试:', getErrorMessage(error));
+        // 5 秒后重试
+        this.botOpenIdRetryTimer = setTimeout(() => attempt(), 5000);
+      }
+    };
+
+    // 立即执行第一次
+    attempt();
   }
   
   async healthCheck(): Promise<HealthStatus> {

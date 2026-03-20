@@ -159,8 +159,16 @@ export function registerConnectorHandlers(): void {
           throw new Error('配置验证失败');
         }
         
-        // 保存到数据库
+        // 🔥 保存配置前，如果连接器正在运行，先停止它
         const store = SystemConfigStore.getInstance();
+        const currentConfig = store.getConnectorConfig(request.connectorId);
+        if (currentConfig?.enabled) {
+          console.log('[IPC] 连接器正在运行，先停止以应用新配置');
+          await connectorManager.stopConnector(request.connectorId as any);
+          store.setConnectorEnabled(request.connectorId, false);
+        }
+        
+        // 保存到数据库
         store.saveConnectorConfig(
           request.connectorId,
           connector.name,
