@@ -183,7 +183,7 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
   return {
     name: TOOL_NAMES.IMAGE_GENERATION,
     label: 'Image Generation',
-    description: '多提供商图片生成工具。支持：1) Gemini 3 Pro Image 生成和解析图片 2) Qwen-Image 系列模型生成图片 3) 使用参考图片（最多5张）生成图片。根据配置的模型自动选择提供商。',
+    description: '多提供商图片生成工具。系统内置 Gemini 和 Qwen 两个提供商，可在工具配置中切换；如需调用其他提供商接口，可通过安装 Skill 扩展。支持：1) Gemini 3 Pro Image 生成和解析图片 2) Qwen-Image 系列模型生成图片 3) 使用参考图片（最多5张）生成图片。根据配置的模型自动选择提供商。',
     parameters: ImageGenerationSchema,
     execute: async (_toolCallId: string, args: unknown, signal?: AbortSignal) => {
       try {

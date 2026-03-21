@@ -410,7 +410,7 @@ export function createWebSearchTool(configStore: SystemConfigStore): AgentTool {
   return {
     name: TOOL_NAMES.WEB_SEARCH,
     label: 'Web Search',
-    description: '使用 Qwen 或 Gemini 进行网络搜索，获取最新的网络信息。适用于需要实时信息、新闻、天气、股票等场景。',
+    description: '网络搜索工具。系统内置 Qwen（enable_search）和 Gemini（Grounding with Google Search）两个提供商，可在工具配置中切换；如需调用其他搜索提供商接口，可通过安装 Skill 扩展。适用于需要实时信息、新闻、天气、股票等场景。',
     parameters: WebSearchSchema,
     execute: async (_toolCallId: string, args: unknown, signal?: AbortSignal) => {
       try {

@@ -186,7 +186,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
           <div>
             <h4 className="text-base font-medium text-gray-900 mb-2">图片生成工具配置</h4>
             <p className="text-sm text-gray-600 mb-4">
-              配置图片生成工具使用的模型和 API 连接
+              系统内置 Gemini 和 Qwen 两个图片生成提供商，可在下方切换。如需调用其他提供商，可通过安装 Skill 扩展。
             </p>
           </div>
 
