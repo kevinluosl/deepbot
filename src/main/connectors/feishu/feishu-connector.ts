@@ -399,11 +399,13 @@ export class FeishuConnector implements Connector {
       
       // 3. 群组消息：先判断是否 @ 了机器人，再回复表情
       // 🔥 特殊处理：图片和文件消息无法 @，因此不需要检查 mention
+      // 🔥 特殊处理：系统指令（/new /stop /memory 等）无需 @，直接执行
       const isGroup = event.message.chat_type !== 'p2p';
       const isMediaMessage = msgType === 'image' || msgType === 'file';
+      const isSystemCommand = /^\/\w+/.test(extractedText.trim());
       
-      if (isGroup && !isBotMentioned && !isMediaMessage) {
-        // 未 @ 机器人且不是图片/文件消息，直接忽略，不回复表情
+      if (isGroup && !isBotMentioned && !isMediaMessage && !isSystemCommand) {
+        // 未 @ 机器人且不是图片/文件/指令消息，直接忽略，不回复表情
         return;
       }
       
@@ -905,9 +907,10 @@ export class FeishuConnector implements Connector {
       return this.pairing!.verifyPairingCode(message.sender.id);
     }
     
-    // 群组：检查是否 @ 了机器人（图片/文件消息无法 @，直接放行）
+    // 群组：检查是否 @ 了机器人（图片/文件消息无法 @，直接放行；系统指令无需 @）
     const isMediaMessage = message.content.type === 'image' || message.content.type === 'file';
-    if (!isMediaMessage && !message.mentions?.isBotMentioned) {
+    const isSystemCommand = /^\/\w+/.test((message.content.text || '').trim());
+    if (!isMediaMessage && !isSystemCommand && !message.mentions?.isBotMentioned) {
       return false;
     }
     
