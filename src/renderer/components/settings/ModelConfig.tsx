@@ -184,11 +184,11 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           onChange={(e) => handleProviderTypeChange(e.target.value as 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="qwen">Qwen</option>
+          <option value="qwen">Qwen（推荐）</option>
           <option value="deepseek">DeepSeek</option>
           <option value="gemini">Google Gemini</option>
           <option value="minimax">MiniMax</option>
-          <option value="custom">自定义</option>
+          <option value="custom">自定义（OpenAI、OpenRouter、Claude）</option>
         </select>
         <p className="mt-1 text-xs text-gray-500">
           选择预设提供商或自定义配置
