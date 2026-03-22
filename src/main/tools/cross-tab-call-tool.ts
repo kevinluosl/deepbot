@@ -90,9 +90,10 @@ export const crossTabCallToolPlugin: ToolPlugin = {
               throw err;
             }
             
-            // 查找目标 Tab
+            // 查找目标 Tab（忽略空格，去掉所有空格后比较）
             const tabs = gatewayInstance.getAllTabs();
-            const targetTab = tabs.find(t => t.title === params.targetTabName);
+            const normalizedQuery = params.targetTabName.replace(/\s+/g, '');
+            const targetTab = tabs.find(t => t.title.replace(/\s+/g, '') === normalizedQuery);
             
             if (!targetTab) {
               throw new Error(`未找到名为"${params.targetTabName}"的 Tab。可用的 Tab: ${tabs.map(t => t.title).join(', ')}`);
@@ -106,10 +107,10 @@ export const crossTabCallToolPlugin: ToolPlugin = {
             console.log('[Cross Tab Call] 📍 发送者名称:', senderName);
             
             // 构建消息（标记来源）
-            const messageWithSource = `[来自 ${senderName}]\n${params.message}`;
+            const messageWithSource = `[跨tab调用，源目标tab ${senderName}]\n${params.message}`;
             
             // 添加系统提示，明确说明除非明确要求回复，否则不回复
-            const systemPrompt = `\n\n[系统提示: 这是来自其他 Tab 的消息。除非消息中明确要求你回复，否则不需要回复，回复的时候根据最新一条[来自 xxxx]信息确认回复目标]`;
+            const systemPrompt = `\n\n[系统提示: 这是来自其他 Tab 的消息。除非消息中明确要求你回复，否则不需要回复，根据最新一条[来自 xxxx]信息确认回复源目标，回复的时候必须调用cross_tab_call回复]`;
             const fullMessage = messageWithSource + systemPrompt;
             
             // 发送消息到目标 Tab（异步，不等待结果）

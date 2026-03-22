@@ -63,10 +63,11 @@ function resolveTarget(sessionId: string, userId?: string, chatId?: string, tabN
     };
   }
 
-  // 情况 2：提供了 tabName，查找对应 Tab 的 conversationId
+  // 情况 2：提供了 tabName，查找对应 Tab 的 conversationId（忽略空格）
   if (tabName) {
     const tabs = gatewayInstance.getAllTabs();
-    const targetTab = tabs.find(t => t.title === tabName);
+    const normalizedQuery = tabName.replace(/\s+/g, '');
+    const targetTab = tabs.find(t => t.title.replace(/\s+/g, '') === normalizedQuery);
     
     if (!targetTab) {
       throw new Error(`未找到名为 "${tabName}" 的 Tab`);
