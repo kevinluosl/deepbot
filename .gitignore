@@ -47,3 +47,6 @@ temp/
 .migration-notes/
 /node.exe
 /DeveloperIDG2CA.cer
+/dist-web
+/dist-server
+/.env.web
