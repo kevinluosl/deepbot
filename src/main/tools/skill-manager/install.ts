@@ -113,21 +113,19 @@ async function downloadSkillFromClawHub(slug: string, targetDir: string): Promis
 }
 
 /**
- * 解压 zip 文件到目标目录
+ * 解压 zip 文件到目标目录（跨平台，使用 adm-zip）
  * zip 内部结构通常是 {slug}-{version}/ 或直接是文件
  */
 async function extractZip(zipPath: string, targetDir: string): Promise<void> {
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
+  const AdmZip = (await import('adm-zip')).default;
 
   // 创建临时解压目录
   const tmpExtractDir = path.join(os.tmpdir(), `deepbot-skill-extract-${Date.now()}`);
   ensureDirectoryExists(tmpExtractDir);
 
   try {
-    // 解压到临时目录
-    await execAsync(`unzip -q "${zipPath}" -d "${tmpExtractDir}"`);
+    const zip = new AdmZip(zipPath);
+    zip.extractAllTo(tmpExtractDir, true);
 
     // 找到解压后的根目录（可能是 {slug}-{version}/ 这样的子目录）
     const entries = fs.readdirSync(tmpExtractDir);
