@@ -1,224 +1,80 @@
 /**
  * Skill Manager 搜索功能
+ * 使用 ClawHub API 搜索 Skills
  */
 
 import type { SkillSearchResult } from './types';
 import { getErrorMessage } from '../../../shared/utils/error-handler';
-import { GITHUB_API_BASE, SKILL_TOPIC, AWESOME_SKILLS_README_URL } from './constants';
-import { extractSkillName } from './utils';
-import { callAI } from '../../utils/ai-client';
+import { CLAWHUB_SEARCH_API } from './constants';
 
 /**
- * 搜索 GitHub 上的 Skill 仓库
- * 
- * 注意：所有 Skills 都在 awesome-openclaw-skills 仓库中，不是独立仓库
- * 因此只需要从 Awesome Skills README 搜索即可
+ * ClawHub API 搜索结果条目
+ */
+interface ClawHubSearchItem {
+  slug: string;
+  displayName: string;
+  summary: string;
+  score: number;
+  version: string | null;
+  updatedAt: number;
+  // 详情页可能包含的额外字段
+  stars?: number;
+  downloads?: number;
+  owner?: string;
+}
+
+/**
+ * 从 ClawHub API 搜索 Skills
  */
 export async function searchSkillsOnGitHub(query: string): Promise<SkillSearchResult[]> {
-  console.info(`[Skill Manager] 从 Awesome Skills 搜索: ${query}`);
-  
+  console.info(`[Skill Manager] 从 ClawHub 搜索: ${query}`);
+
   try {
-    const results = await searchInAwesomeSkills(query);
+    const { httpGet } = await import('../../../shared/utils/http-utils');
+    const url = `${CLAWHUB_SEARCH_API}?q=${encodeURIComponent(query)}`;
+
+    const response = await httpGet<{ results: ClawHubSearchItem[] }>(url, {
+      headers: { 'User-Agent': 'DeepBot-Skill-Manager' },
+      timeout: 10000,
+    });
+
+    if (!response.ok) {
+      throw new Error(`ClawHub API 请求失败: ${response.status} ${response.statusText}`);
+    }
+
+    const data = response.data;
+    if (!data?.results || !Array.isArray(data.results)) {
+      throw new Error('ClawHub API 返回格式异常');
+    }
+
+    const results: SkillSearchResult[] = data.results.map((item) => ({
+      name: item.slug,
+      displayName: item.displayName,
+      description: item.summary,
+      version: item.version ?? 'latest',
+      author: item.owner ?? '',
+      stars: item.stars ?? 0,
+      downloads: item.downloads ?? 0,
+      tags: [],
+      lastUpdated: new Date(item.updatedAt),
+      repository: `https://clawhub.ai/skills/${item.slug}`,
+    }));
+
     console.info(`[Skill Manager] ✅ 找到 ${results.length} 个 Skill`);
     return results;
   } catch (error) {
-    const errorMessage = getErrorMessage(error);
-    console.error(`[Skill Manager] ❌ 搜索失败: ${errorMessage}`);
-    
-    // 检查是否为网络错误
-    if (errorMessage.includes('Network Error') || 
-        errorMessage.includes('ENOTFOUND') || 
-        errorMessage.includes('ETIMEDOUT') || 
-        errorMessage.includes('ECONNREFUSED') ||
-        errorMessage.includes('fetch failed')) {
-      throw new Error('⚠️ 无法连接到 GitHub\n\n可能的原因：\n• 网络连接问题\n• 无法访问 GitHub（可能需要代理）\n• 防火墙阻止了连接\n\n请检查网络连接后重试。');
+    const msg = getErrorMessage(error);
+    console.error(`[Skill Manager] ❌ 搜索失败: ${msg}`);
+
+    if (
+      msg.includes('ENOTFOUND') ||
+      msg.includes('ETIMEDOUT') ||
+      msg.includes('ECONNREFUSED') ||
+      msg.includes('fetch failed')
+    ) {
+      throw new Error('⚠️ 无法连接到 ClawHub\n\n可能的原因：\n• 网络连接问题\n• 防火墙阻止了连接\n\n请检查网络连接后重试。');
     }
-    
-    // 其他错误直接抛出
+
     throw error;
   }
-}
-
-/**
- * 从 Awesome OpenClaw Skills README 搜索 Skills（使用 AI 语义搜索）
- */
-async function searchInAwesomeSkills(query: string): Promise<SkillSearchResult[]> {
-  console.info(`[Skill Manager] 获取 Awesome Skills README: ${AWESOME_SKILLS_README_URL}`);
-  
-  try {
-    // 1. 获取 README.md 内容
-    const { httpGet } = await import('../../../shared/utils/http-utils');
-    const response = await httpGet<string>(AWESOME_SKILLS_README_URL, {
-      headers: {
-        'User-Agent': 'DeepBot-Skill-Manager',
-      },
-      timeout: 10000,
-    });
-    
-    if (!response.ok) {
-      const errorMsg = `获取 README 失败: ${response.status} ${response.statusText}`;
-      console.warn(`[Skill Manager] ${errorMsg}`);
-      throw new Error(errorMsg);
-    }
-    
-    // 🔥 httpGet 现在会自动根据 Content-Type 解析文本或 JSON
-    const readme = response.data;
-    
-    if (!readme || typeof readme !== 'string' || readme.length === 0) {
-      const errorMsg = 'README 内容为空';
-      console.warn(`[Skill Manager] ${errorMsg}`);
-      throw new Error(errorMsg);
-    }
-    
-    console.info(`[Skill Manager] README 大小: ${readme.length} 字符`);
-    
-    // 2. 解析所有 Skills
-    const skillRegex = /- \[([^\]]+)\]\((https:\/\/github\.com\/[^)]+\/SKILL\.md)\)\s*-\s*(.+)/g;
-    
-    const allSkills: Array<{ name: string; description: string; url: string; author: string }> = [];
-    let match;
-    
-    while ((match = skillRegex.exec(readme)) !== null) {
-      const [, name, url, description] = match;
-      
-      // 提取仓库信息
-      const repoMatch = url.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/main\/skills\/([^/]+)\/([^/]+)/);
-      if (!repoMatch) continue;
-      
-      const [, , , author, skillName] = repoMatch;
-      
-      allSkills.push({
-        name: skillName,
-        description: description.trim(),
-        url: url.replace('/SKILL.md', ''),
-        author,
-      });
-    }
-    
-    console.info(`[Skill Manager] 解析到 ${allSkills.length} 个 Skills`);
-    
-    if (allSkills.length === 0) {
-      const errorMsg = '未找到任何 Skills，可能 README 格式已变化';
-      console.warn(`[Skill Manager] ${errorMsg}`);
-      throw new Error(errorMsg);
-    }
-    
-    // 3. 使用 AI 进行语义搜索
-    console.info(`[Skill Manager] 使用 AI 进行语义搜索: "${query}"`);
-    
-    const matchedSkills = await semanticSearchWithAI(query, allSkills);
-    
-    console.info(`[Skill Manager] AI 匹配到 ${matchedSkills.length} 个 Skills`);
-    
-    return matchedSkills;
-  } catch (error) {
-    console.error('[Skill Manager] 解析 Awesome Skills 失败:', error);
-    if (error instanceof Error) {
-      console.error(`[Skill Manager] 错误详情: ${error.message}`);
-      console.error(`[Skill Manager] 错误堆栈:`, error.stack);
-    }
-    // 🔥 添加日志确认抛出错误
-    console.error('[Skill Manager] ⚠️ 抛出错误到上层函数');
-    // 抛出错误而不是返回空数组，让上层函数处理
-    throw error;
-  }
-}
-
-/**
- * 使用 AI 进行语义搜索
- */
-async function semanticSearchWithAI(
-  query: string,
-  skills: Array<{ name: string; description: string; url: string; author: string }>
-): Promise<SkillSearchResult[]> {
-  try {
-    // 构造 Prompt
-    const skillList = skills.map((s, i) => `${i + 1}. ${s.name}: ${s.description}`).join('\n');
-    
-    const prompt = `你是一个 Skill 搜索助手。用户正在搜索: "${query}"
-
-可用的 Skills:
-${skillList}
-
-请分析用户的查询意图，返回最相关的 3-5 个 Skills。
-
-要求：
-1. 理解用户的真实需求（如"下载视频"应该匹配"video-transcript-downloader"）
-2. 按相关性排序（最相关的放前面）
-3. 只返回 JSON 数组，格式：[1, 3, 5]（数字是 Skill 的序号）
-4. 如果没有相关的 Skill，返回空数组 []
-
-只返回 JSON，不要其他文字。`;
-    
-    console.info('[Skill Manager] 调用 AI 进行匹配...');
-    
-    // 使用公共 AI 客户端（🔥 使用快速模型）
-    const response = await callAI([
-      { role: 'user', content: prompt }
-    ], { 
-      temperature: 0.1,
-      useFastModel: true, // 🔥 使用快速模型（语义搜索是轻量级任务）
-    });
-    let responseText = response.content;
-    console.info(`[Skill Manager] AI 响应: ${responseText}`);
-    
-    // 注意：<think> 标签已在 callAI 中统一处理，这里不需要再处理
-    
-    // 解析 AI 返回的索引
-    const { safeJsonParse } = await import('../../../shared/utils/json-utils');
-    const indices = safeJsonParse<number[]>(responseText.trim(), []);
-    
-    // 转换为 SkillSearchResult
-    const results: SkillSearchResult[] = indices
-      .filter(i => i >= 1 && i <= skills.length)
-      .map(i => {
-        const skill = skills[i - 1];
-        return {
-          name: skill.name,
-          description: skill.description,
-          version: 'latest',
-          author: skill.author,
-          repository: skill.url,
-          stars: 0,
-          downloads: 0,
-          tags: [],
-          lastUpdated: new Date(),
-        };
-      });
-    
-    return results;
-  } catch (error) {
-    console.error('[Skill Manager] AI 搜索失败，回退到关键词搜索:', error);
-    return fallbackKeywordSearch(query, skills);
-  }
-}
-
-/**
- * 回退到关键词搜索
- */
-function fallbackKeywordSearch(
-  query: string,
-  skills: Array<{ name: string; description: string; url: string; author: string }>
-): SkillSearchResult[] {
-  const queryLower = query.toLowerCase();
-  
-  const matchedSkills = skills
-    .filter(skill => {
-      const nameMatch = skill.name.toLowerCase().includes(queryLower);
-      const descMatch = skill.description.toLowerCase().includes(queryLower);
-      return nameMatch || descMatch;
-    })
-    .map(skill => ({
-      name: skill.name,
-      description: skill.description,
-      version: 'latest',
-      author: skill.author,
-      repository: skill.url,
-      stars: 0,
-      downloads: 0,
-      tags: [],
-      lastUpdated: new Date(),
-    }));
-  
-  return matchedSkills;
 }

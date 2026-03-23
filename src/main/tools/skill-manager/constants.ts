@@ -16,18 +16,14 @@ export const getSkillsDir = () => getDefaultSkillPath();
 export const SKILLS_DB_PATH = expandUserPath('~/.agents/skills.db');
 
 /**
- * GitHub API 基础 URL
+ * ClawHub 搜索 API
+ * 返回格式：{ results: [{ slug, displayName, summary, score, version, updatedAt }] }
  */
-export const GITHUB_API_BASE = 'https://api.github.com';
+export const CLAWHUB_SEARCH_API = 'https://clawhub.ai/api/search';
 
 /**
- * GitHub 搜索 topic
+ * ClawHub 下载 API
+ * 用法：${CLAWHUB_DOWNLOAD_API}?slug={slug}
+ * 返回：zip 文件
  */
-export const SKILL_TOPIC = 'openclaw-skill';
-
-/**
- * Awesome OpenClaw Skills README URL
- * 
- * 这个 README.md 包含了 700+ 精选 Skills 的列表和链接
- */
-export const AWESOME_SKILLS_README_URL = 'https://raw.githubusercontent.com/VoltAgent/awesome-openclaw-skills/main/README.md';
+export const CLAWHUB_DOWNLOAD_API = 'https://wry-manatee-359.convex.site/api/v1/download';

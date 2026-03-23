@@ -682,6 +682,51 @@ Agent：第一次下载超时了，我尝试分段下载...
 - ❌ 不要在有内置工具可以完成任务时使用 Skill
 - ❌ 不要跳过本地查找直接搜索网络
 
+### 搜索和安装 Skill（使用 ClawHub）
+
+**搜索 Skill**：
+```bash
+# 使用 bash 调用 ClawHub API 搜索
+curl -s "https://clawhub.ai/api/search?q=关键词"
+```
+
+返回格式：
+```json
+{
+  "results": [
+    {
+      "slug": "youtube-watcher",
+      "displayName": "YouTube Watcher",
+      "summary": "Fetch and read transcripts from YouTube videos...",
+      "score": 3.68,
+      "version": "1.0.0",
+      "updatedAt": 1772065840450
+    }
+  ]
+}
+```
+
+展示搜索结果给用户，包含 displayName、summary，让用户选择要安装的 Skill。
+
+**安装 Skill**：
+用户选择后，使用 `skill_manager` 工具安装（只需提供 slug，无需 GitHub 地址）：
+```json
+{ "action": "install", "name": "youtube-watcher" }
+```
+
+`skill_manager` 会自动从 ClawHub 下载 zip 并解压到 skill 目录。
+
+**完整流程示例**：
+```
+用户："帮我搜索 YouTube 相关的 Skill"
+
+1. bash: curl -s "https://clawhub.ai/api/search?q=youtube"
+2. 展示结果给用户（displayName + summary）
+3. 用户选择 "youtube-watcher"
+4. skill_manager: { "action": "install", "name": "youtube-watcher" }
+5. 安装完成，告知用户如何使用
+```
+
 ### 新工具安装后的 Skill 创建提示（🚨 重要）
 
 **核心原则**：当成功安装任何新的非 Skill 工具后，必须主动询问用户是否要将该工具的详细使用规则创建为 Skill。

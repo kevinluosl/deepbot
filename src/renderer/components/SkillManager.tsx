@@ -8,12 +8,14 @@ import '../styles/settings.css';
 import { api } from '../api';
 
 interface Skill {
-  name: string;
+  name: string;        // slug
+  displayName?: string;
   description: string;
   version: string;
   author?: string;
   repository?: string;
   stars?: number;
+  downloads?: number;
   enabled?: boolean;
   installedAt?: Date;
   usageCount?: number;
@@ -118,15 +120,15 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
   };
 
   // 安装 Skill
-  const handleInstall = async (skillName: string, repository: string) => {
+  const handleInstall = async (skillName: string) => {
     setInstallingSkill(skillName);
     setInstallProgress(0);
     
     // 模拟进度条
     const progressInterval = setInterval(() => {
       setInstallProgress(prev => {
-        if (prev >= 90) return prev; // 最多到 90%，等待真实完成
-        return prev + Math.random() * 15; // 随机增加 0-15%
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 15;
       });
     }, 300);
     
@@ -134,23 +136,16 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
       const result = await api.skillManager({
         action: 'install',
         name: skillName,
-        repository: repository,
       });
       
       clearInterval(progressInterval);
-      setInstallProgress(100); // 完成时设为 100%
+      setInstallProgress(100);
       
-      // 等待一下让用户看到 100%
       await new Promise(resolve => setTimeout(resolve, 500));
       
       if (result.success) {
-        // 从可用列表中移除已安装的 Skill
         setAvailableSkills(prev => prev.filter(s => s.name !== skillName));
-        
-        // 重新加载已安装列表
         await loadInstalledSkills();
-        
-        // 切换到已安装标签页
         setActiveTab('installed');
       }
     } catch (error) {
@@ -282,7 +277,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
             marginTop: '8px',
             lineHeight: '1.5'
           }}>
-            💡 Skill 是可扩展的功能模块，可以帮助 DeepBot 完成 PDF 处理、视频下载、图片编辑等专业任务。输入关键词搜索，选择合适的 Skill 点击"安装"即可使用。⚠️ 需要能正常访问 GitHub。
+            💡 Skill 是可扩展的功能模块，可以帮助 DeepBot 完成 PDF 处理、视频下载、图片编辑等专业任务。输入关键词搜索，选择合适的 Skill 点击"安装"即可使用。
           </p>
         </div>
 
@@ -413,7 +408,7 @@ interface SkillCardProps {
   skill: Skill;
   index?: number;
   isInstalled: boolean;
-  onInstall: (name: string, repository: string) => void;
+  onInstall: (name: string) => void;
   onUninstall: (name: string) => void;
   onViewDetails: (name: string, isInstalled: boolean) => void;
   installingSkill?: string | null;
@@ -431,6 +426,8 @@ const SkillCard: React.FC<SkillCardProps> = ({
   installProgress = 0,
 }) => {
   const isInstalling = installingSkill === skill.name;
+  // 优先展示 displayName，没有则用 name
+  const title = skill.displayName || skill.name;
   
   return (
     <div className="bg-bg-secondary border border-border-medium rounded-lg p-4 hover:border-border-dark transition-colors">
@@ -441,13 +438,20 @@ const SkillCard: React.FC<SkillCardProps> = ({
               <span className="text-xs text-text-tertiary w-3 shrink-0">{index}.</span>
             )}
             <Package size={16} className="text-brand-500 mr-1" />
-            <h3 className="text-base font-semibold text-text-primary">{skill.name}</h3>
+            <h3 className="text-base font-semibold text-text-primary">{title}</h3>
+            {/* 搜索结果显示 slug */}
+            {!isInstalled && skill.displayName && (
+              <span className="text-xs text-text-tertiary ml-1">({skill.name})</span>
+            )}
           </div>
           <p className="text-sm text-text-secondary mb-2">{skill.description}</p>
           <div className="flex items-center gap-3 text-xs text-text-tertiary">
             <span>v{skill.version}</span>
             {skill.author && <span>• {skill.author}</span>}
             {skill.stars !== undefined && skill.stars > 0 && <span>• ⭐ {skill.stars}</span>}
+            {skill.downloads !== undefined && skill.downloads > 0 && (
+              <span>• ⬇️ {skill.downloads >= 1000 ? `${(skill.downloads / 1000).toFixed(1)}k` : skill.downloads}</span>
+            )}
           </div>
           {skill.tags && skill.tags.length > 0 && (
             <div className="flex gap-2 mt-2">
@@ -494,7 +498,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
           </div>
         ) : (
           <button
-            onClick={() => onInstall(skill.name, skill.repository || '')}
+            onClick={() => onInstall(skill.name)}
             className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-500 text-white hover:bg-brand-600 rounded transition-colors"
           >
             <Download size={14} />

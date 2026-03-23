@@ -3,18 +3,20 @@
  */
 
 /**
- * Skill 搜索结果
+ * Skill 搜索结果（来自 clawhub API）
  */
 export interface SkillSearchResult {
-  name: string;
+  name: string;          // slug，用于安装
+  displayName: string;   // 展示名称
   description: string;
   version: string;
   author: string;
-  repository: string;
   stars: number;
   downloads: number;
   tags: string[];
   lastUpdated: Date;
+  // 兼容旧字段
+  repository: string;
 }
 
 /**

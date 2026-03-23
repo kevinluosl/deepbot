@@ -35,8 +35,8 @@ export function createSkillManagerTool(): AgentTool {
     description: `Skill 管理工具，用于搜索、安装、管理 DeepBot Skills。
 
 功能：
-- search: 搜索 GitHub 上的 Skill
-- install: 安装 Skill
+- search: 从 ClawHub 搜索 Skill（返回 slug、displayName、description、stars 等）
+- install: 安装 Skill（从 ClawHub 下载，只需提供 slug）
 - list: 列出已安装的 Skill
 - enable: 启用 Skill
 - disable: 禁用 Skill
@@ -45,7 +45,7 @@ export function createSkillManagerTool(): AgentTool {
 
 使用示例：
 - 搜索: { "action": "search", "query": "PDF" }
-- 安装: { "action": "install", "name": "pdf-editor", "repository": "https://github.com/..." }
+- 安装: { "action": "install", "name": "youtube-watcher" }
 - 列出: { "action": "list" }
 - 启用: { "action": "enable", "name": "pdf-editor" }
 - 禁用: { "action": "disable", "name": "pdf-editor" }
@@ -63,14 +63,13 @@ export function createSkillManagerTool(): AgentTool {
         Type.Literal('info'),
       ], { description: '操作类型' }),
       query: Type.Optional(Type.String({ description: '搜索关键词（search 操作）' })),
-      name: Type.Optional(Type.String({ description: 'Skill 名称（install/enable/disable/uninstall/info 操作）' })),
-      repository: Type.Optional(Type.String({ description: 'GitHub 仓库 URL（install 操作）' })),
+      name: Type.Optional(Type.String({ description: 'Skill 名称/slug（install/enable/disable/uninstall/info 操作）' })),
       enabled: Type.Optional(Type.Boolean({ description: '是否只列出已启用的 Skill（list 操作）' })),
     }),
     
     execute: async (toolCallId, params, signal, onUpdate) => {
       try {
-        const { action, query, name, repository, enabled } = params as any;
+        const { action, query, name, enabled } = params as any;
         
         let result: any;
         
@@ -92,10 +91,10 @@ export function createSkillManagerTool(): AgentTool {
             break;
           
           case 'install':
-            if (!name || !repository) {
-              throw new Error('缺少参数: name 或 repository');
+            if (!name) {
+              throw new Error('缺少参数: name（skill slug）');
             }
-            result = await installSkill(name, repository, db);
+            result = await installSkill(name, db);
             break;
           
           case 'list':
