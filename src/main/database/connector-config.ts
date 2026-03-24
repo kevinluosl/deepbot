@@ -2,7 +2,7 @@
  * 连接器配置管理
  */
 
-import type Database from 'better-sqlite3';
+import type Database from '../../shared/utils/sqlite-adapter';
 import { safeJsonParse, safeJsonStringify } from '../../shared/utils/json-utils';
 
 // ========== 连接器配置管理 ==========

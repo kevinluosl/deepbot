@@ -63,7 +63,8 @@ async function main(): Promise<void> {
   
   // 静态文件服务（前端）
   if (NODE_ENV === 'production') {
-    const staticPath = path.join(__dirname, '../dist-web');
+    // __dirname 在编译后是 dist-server/server/，需要回退两级到项目根目录
+    const staticPath = path.join(__dirname, '../../dist-web');
     app.use(express.static(staticPath));
     console.log(`📁 静态文件目录: ${staticPath}`);
   }
@@ -90,10 +91,10 @@ async function main(): Promise<void> {
   app.use('/api/files', authMiddleware, createFilesRouter(gatewayAdapter));
   app.use('/api/skills', authMiddleware, createSkillsRouter(gatewayAdapter));
   
-  // SPA 路由（生产环境）
+  // SPA 路由（生产环境）- 必须放在所有 API 路由之后
   if (NODE_ENV === 'production') {
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, '../dist-web/index.html'));
+    app.get(/^\/(?!api).*/, (req, res) => {
+      res.sendFile(path.join(__dirname, '../../dist-web/index.html'));
     });
   }
   

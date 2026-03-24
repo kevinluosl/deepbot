@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import type Database from 'better-sqlite3';
+import type Database from '../../../shared/utils/sqlite-adapter';
 import type { InstalledSkill, SkillInfo } from './types';
 import { getAllSkillPaths } from '../../config/skill-paths';
 import { parseSkillMetadata, scanDirectory } from './utils';

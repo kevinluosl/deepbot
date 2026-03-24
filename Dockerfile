@@ -4,31 +4,40 @@
 # ---- 构建阶段 ----
 FROM node:22-bookworm-slim AS builder
 
-# 安装编译工具（better-sqlite3 原生编译需要）
+# 安装 git（pnpm 需要）
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# 复制 package 文件，利用 Docker 层缓存
-COPY package.json pnpm-lock.yaml .npmrc ./
+# 复制 package 文件
+COPY package.json pnpm-lock.yaml .npmrc .pnpmfile.cjs ./
 
 # 安装 pnpm
 RUN npm install -g pnpm@10.23.0 --registry=https://registry.npmmirror.com
 
-# 安装依赖（跳过 postinstall 中的 electron-rebuild，服务端不需要 Electron）
-RUN SKIP_ELECTRON_REBUILD=1 pnpm install --frozen-lockfile \
-    --ignore-scripts \
-    && pnpm rebuild better-sqlite3
+# 配置 git 将 SSH 协议重写为 HTTPS（避免 Docker 环境中 SSH 密钥问题）
+RUN git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+# 从 package.json 中移除 @electron/rebuild 和 electron-rebuild（Web 版不需要）
+RUN node -e "const pkg=require('./package.json'); \
+    delete pkg.devDependencies['@electron/rebuild']; \
+    delete pkg.devDependencies['electron-rebuild']; \
+    require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+
+# 安装依赖（使用 BuildKit cache mount 加速 pnpm 下载）
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --ignore-scripts
 
 # 复制源码
 COPY . .
 
 # 构建 web server 和前端
 RUN pnpm run build:web
+
+# Docker 环境下 mock electron 包（避免运行时加载失败）
+RUN echo "module.exports = new Proxy({}, { get: () => {} });" > /app/node_modules/electron/index.js
 
 # ---- 运行阶段 ----
 FROM node:22-bookworm-slim
@@ -69,20 +78,24 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/src/main/prompts ./src/main/prompts
 
-# 安装 Playwright 并下载 Chromium（构建时预装，避免运行时下载）
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN npx playwright install chromium --with-deps 2>/dev/null || \
-    node -e "require('playwright').chromium.launch().then(b=>b.close())" 2>/dev/null || true
-
 # 创建数据目录（volume 挂载点）
 RUN mkdir -p /data/workspace /data/skills /data/memory /data/sessions /data/db
 
 # 设置 Docker 模式标识
 ENV DEEPBOT_DOCKER=true
 ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 # Web server 端口
 EXPOSE 3000
 
+# 创建启动脚本
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# 启动服务\n\
+exec node -r dotenv/config dist-server/server/index.js dotenv_config_path=/app/.env\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
 # 启动命令
-CMD ["node", "-r", "dotenv/config", "dist-server/server/index.js", "dotenv_config_path=/app/.env"]
+CMD ["/app/start.sh"]

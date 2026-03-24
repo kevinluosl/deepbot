@@ -2,7 +2,7 @@
  * 名字配置管理
  */
 
-import type Database from 'better-sqlite3';
+import type Database from '../../shared/utils/sqlite-adapter';
 
 /**
  * 获取名字配置

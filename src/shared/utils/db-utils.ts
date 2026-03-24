@@ -4,7 +4,7 @@
  * 提供通用的数据库操作辅助函数，减少重复代码
  */
 
-import type Database from 'better-sqlite3';
+import type Database from './sqlite-adapter';
 
 /**
  * 从键值对表中批量获取配置

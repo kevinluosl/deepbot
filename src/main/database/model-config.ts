@@ -2,7 +2,7 @@
  * 模型配置管理
  */
 
-import type Database from 'better-sqlite3';
+import type Database from '../../shared/utils/sqlite-adapter';
 import type { ModelConfig } from './config-types';
 
 // 内存缓存，避免每次调用都重复查数据库和打印日志

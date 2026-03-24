@@ -45,6 +45,9 @@ services:
       # 数据库目录（SQLite 文件）
       - ${DB_DIR:-~/.deepbot}:/data/db
 
+      # Playwright Chromium 浏览器（持久化，避免重复下载）
+      - ${PLAYWRIGHT_CACHE_DIR:-~/.deepbot/playwright}:/ms-playwright
+
     restart: unless-stopped
 
     # 健康检查

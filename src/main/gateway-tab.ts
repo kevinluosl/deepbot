@@ -9,7 +9,7 @@
  */
 
 import { BrowserWindow } from 'electron';
-import type Database from 'better-sqlite3';
+import type Database from '../shared/utils/sqlite-adapter';
 import type { AgentTab } from '../types/agent-tab';
 import type { Message } from '../types/message';
 import { getErrorMessage } from '../shared/utils/error-handler';

@@ -4,7 +4,7 @@
  * 管理 Agent Tab 的持久化配置
  */
 
-import type Database from 'better-sqlite3';
+import type Database from '../../shared/utils/sqlite-adapter';
 
 /**
  * Tab 配置数据结构（数据库）

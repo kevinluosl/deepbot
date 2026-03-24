@@ -4,7 +4,7 @@
  * 使用 SQLite 持久化任务数据
  */
 
-import Database from 'better-sqlite3';
+import Database from '../../shared/utils/sqlite-adapter';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { mkdirSync, existsSync } from 'node:fs';

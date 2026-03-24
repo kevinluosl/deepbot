@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { getErrorMessage } from '../../../shared/utils/error-handler';
 import { downloadFile } from '../../../shared/utils/http-utils';
-import type Database from 'better-sqlite3';
+import type Database from '../../../shared/utils/sqlite-adapter';
 import type { InstallResult, InstalledSkill } from './types';
 import { getSkillsDir, CLAWHUB_DOWNLOAD_API } from './constants';
 import { ensureDirectoryExists, safeRemove } from '../../../shared/utils/fs-utils';

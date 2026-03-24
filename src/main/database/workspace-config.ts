@@ -2,7 +2,7 @@
  * 工作目录配置管理
  */
 
-import type Database from 'better-sqlite3';
+import type Database from '../../shared/utils/sqlite-adapter';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { getKeyValueBatch, setKeyValue } from '../../shared/utils/db-utils';

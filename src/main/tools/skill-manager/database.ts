@@ -3,7 +3,7 @@
  */
 
 import * as path from 'path';
-import Database from 'better-sqlite3';
+import Database from '../../../shared/utils/sqlite-adapter';
 import { SKILLS_DB_PATH } from './constants';
 import { ensureDirectoryExists } from '../../../shared/utils/fs-utils';
 
