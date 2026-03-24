@@ -515,38 +515,177 @@ export class GatewayAdapter extends EventEmitter {
   }
   
   /**
+   * 文件上传基础方法（私有）
+   * 
+   * @param fileName - 文件名
+   * @param dataUrl - base64 数据
+   * @param fileSize - 文件大小
+   * @param maxSize - 最大文件大小
+   * @param type - 文件类型（'file' 或 'image'）
+   * @returns 上传结果
+   */
+  private async uploadFileBase(
+    fileName: string,
+    dataUrl: string,
+    fileSize: number,
+    maxSize: number,
+    type: 'file' | 'image'
+  ): Promise<any> {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const crypto = await import('crypto');
+      const { SystemConfigStore } = await import('../main/database/system-config-store');
+      const { ensureDirectoryExists } = await import('../shared/utils/fs-utils');
+      
+      // 检查文件大小
+      if (fileSize > maxSize) {
+        const sizeMB = maxSize / (1024 * 1024);
+        throw new Error(`${type === 'image' ? '图片' : '文件'}大小不能超过 ${sizeMB}MB`);
+      }
+      
+      // 获取工作目录配置
+      const store = SystemConfigStore.getInstance();
+      const settings = store.getWorkspaceSettings();
+      
+      // 创建临时目录（在工作目录下）
+      const tempDir = path.join(settings.workspaceDir, '.deepbot', 'temp', 'uploads');
+      ensureDirectoryExists(tempDir);
+      
+      // 生成唯一文件名
+      const id = crypto.randomBytes(8).toString('hex');
+      const ext = path.extname(fileName);
+      const safeFileName = `${id}${ext}`;
+      const filePath = path.join(tempDir, safeFileName);
+      
+      // 解析 base64 数据
+      const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!matches) {
+        throw new Error(`无效的${type === 'image' ? '图片' : '文件'}数据格式`);
+      }
+      
+      const base64Data = matches[2];
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      // 保存文件
+      fs.writeFileSync(filePath, buffer);
+      
+      console.log(`[GatewayAdapter] ${type === 'image' ? '图片' : '文件'}上传成功:`, filePath);
+      
+      // 构建返回结果
+      const result: any = {
+        id,
+        path: filePath,
+        name: fileName,
+        size: fileSize,
+      };
+      
+      if (type === 'image') {
+        result.dataUrl = dataUrl; // 图片保留 dataUrl 用于缩略图
+        return { success: true, image: result };
+      } else {
+        return { success: true, file: result };
+      }
+    } catch (error) {
+      console.error(`[GatewayAdapter] 上传${type === 'image' ? '图片' : '文件'}失败:`, error);
+      const { getErrorMessage } = await import('../shared/utils/error-handler');
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+  
+  /**
    * 文件上传
    */
-  async uploadFile(_fileName: string, _dataUrl: string, _fileSize: number, _fileType: string): Promise<any> {
-    // Web 模式下，文件上传功能需要通过主进程实现
-    // 这里返回一个占位符实现
-    return { 
-      success: false, 
-      error: 'Web 模式暂不支持文件上传，请使用 Electron 版本' 
-    };
+  async uploadFile(fileName: string, dataUrl: string, fileSize: number, fileType: string): Promise<any> {
+    const result = await this.uploadFileBase(fileName, dataUrl, fileSize, 500 * 1024 * 1024, 'file');
+    if (result.success && result.file) {
+      result.file.type = fileType;
+    }
+    return result;
   }
   
-  async uploadImage(_fileName: string, _dataUrl: string, _fileSize: number): Promise<any> {
-    // Web 模式下，图片上传功能需要通过主进程实现
-    return { 
-      success: false, 
-      error: 'Web 模式暂不支持图片上传，请使用 Electron 版本' 
-    };
+  /**
+   * 图片上传
+   */
+  async uploadImage(fileName: string, dataUrl: string, fileSize: number): Promise<any> {
+    return this.uploadFileBase(fileName, dataUrl, fileSize, 5 * 1024 * 1024, 'image');
   }
   
-  async readImage(_filePath: string): Promise<any> {
-    // Web 模式下，图片读取功能需要通过主进程实现
-    return { 
-      success: false, 
-      error: 'Web 模式暂不支持图片读取，请使用 Electron 版本' 
-    };
+  async readImage(filePath: string): Promise<any> {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const { isPathAllowed } = await import('../main/utils/path-security');
+      
+      // 使用统一的路径安全检查（和 Electron 模式一致）
+      if (!isPathAllowed(filePath)) {
+        throw new Error('只能读取配置的工作目录及其子目录中的图片');
+      }
+      
+      // 读取文件
+      if (!fs.existsSync(filePath)) {
+        throw new Error('图片文件不存在');
+      }
+      
+      const buffer = fs.readFileSync(filePath);
+      const ext = path.extname(filePath);
+      
+      // 使用 MIME 工具函数转换为 Data URL
+      const { imageToDataUrl } = await import('../shared/utils/mime-utils');
+      const dataUrl = imageToDataUrl(buffer, ext);
+      
+      console.log('[GatewayAdapter] 图片读取成功:', filePath);
+      
+      return {
+        success: true,
+        data: dataUrl,  // 字段名改为 data，和 Electron 模式保持一致
+      };
+    } catch (error) {
+      console.error('[GatewayAdapter] 读取图片失败:', error);
+      const { getErrorMessage } = await import('../shared/utils/error-handler');
+      return {
+        success: false,
+        error: getErrorMessage(error),
+      };
+    }
   }
   
-  async deleteTempFile(_filePath: string): Promise<any> {
-    // Web 模式下，文件删除功能需要通过主进程实现
-    return { 
-      success: true 
-    };
+  async deleteTempFile(filePath: string): Promise<any> {
+    try {
+      const path = await import('path');
+      const { SystemConfigStore } = await import('../main/database/system-config-store');
+      const { safeRemove } = await import('../shared/utils/fs-utils');
+      
+      // 获取工作目录配置
+      const store = SystemConfigStore.getInstance();
+      const settings = store.getWorkspaceSettings();
+      
+      // 验证文件路径在临时目录内
+      const tempDir = path.join(settings.workspaceDir, '.deepbot', 'temp', 'uploads');
+      const normalizedPath = path.normalize(filePath);
+      const normalizedTempDir = path.normalize(tempDir);
+      
+      if (!normalizedPath.startsWith(normalizedTempDir)) {
+        throw new Error('只能删除临时目录中的文件');
+      }
+      
+      // 删除文件
+      const deleted = safeRemove(filePath);
+      if (deleted) {
+        console.log('[GatewayAdapter] 删除临时文件成功:', filePath);
+      }
+      
+      return {
+        success: true,
+      };
+    } catch (error) {
+      console.error('[GatewayAdapter] 删除临时文件失败:', error);
+      const { getErrorMessage } = await import('../shared/utils/error-handler');
+      return {
+        success: false,
+        error: getErrorMessage(error),
+      };
+    }
   }
   
   /**

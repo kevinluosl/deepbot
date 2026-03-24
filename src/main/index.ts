@@ -574,6 +574,7 @@ function registerIpcHandlers() {
       const fs = await import('fs');
       const path = await import('path');
       const { assertPathAllowed } = await import('./utils/path-security');
+      const { imageToDataUrl } = await import('../shared/utils/mime-utils');
       
       // 安全检查：只允许读取配置的目录下的文件
       assertPathAllowed(imagePath);
@@ -586,24 +587,14 @@ function registerIpcHandlers() {
         throw new Error('图片文件不存在');
       }
       
-      // 读取文件并转换为 base64
+      // 读取文件并转换为 Data URL
       const imageBuffer = fs.readFileSync(resolvedPath);
-      const base64 = imageBuffer.toString('base64');
-      
-      // 获取文件扩展名，确定 MIME 类型
-      const ext = path.extname(resolvedPath).toLowerCase();
-      const mimeTypes: Record<string, string> = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-      };
-      const mimeType = mimeTypes[ext] || 'image/jpeg';
+      const ext = path.extname(resolvedPath);
+      const dataUrl = imageToDataUrl(imageBuffer, ext);
       
       return {
         success: true,
-        data: `data:${mimeType};base64,${base64}`,
+        data: dataUrl,
       };
     } catch (error) {
       return {

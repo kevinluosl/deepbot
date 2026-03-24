@@ -11,6 +11,7 @@ import { mkdirSync, existsSync } from 'node:fs';
 import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
 import { generateTaskId } from '../../shared/utils/id-generator';
 import { safeJsonParse } from '../../shared/utils/json-utils';
+import { isDockerMode, getDbDir } from '../../shared/utils/docker-utils';
 import type {
   ScheduledTask,
   TaskExecution,
@@ -24,12 +25,16 @@ export class TaskStore {
   private static instance: TaskStore | null = null;
 
   private constructor(dbPath?: string) {
-    // 默认路径：~/.deepbot/scheduled-tasks.db
-    const defaultPath = join(homedir(), '.deepbot', 'scheduled-tasks.db');
+    // Docker 模式：使用 DB_DIR 环境变量，fallback 到 /data/db
+    // 普通模式：默认 ~/.deepbot/scheduled-tasks.db
+    const dbDir = getDbDir();
+    const defaultPath = isDockerMode()
+      ? join(dbDir, 'scheduled-tasks.db')
+      : join(homedir(), '.deepbot', 'scheduled-tasks.db');
     const path = dbPath || defaultPath;
 
     // 确保目录存在
-    const dir = join(homedir(), '.deepbot');
+    const dir = isDockerMode() ? dbDir : join(homedir(), '.deepbot');
     ensureDirectoryExists(dir);
 
     // 🔥 检查并清理孤立的 WAL 锁文件

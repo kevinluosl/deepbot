@@ -7,14 +7,8 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { getKeyValueBatch, setKeyValue } from '../../shared/utils/db-utils';
 import { safeJsonParse, safeJsonStringify } from '../../shared/utils/json-utils';
+import { isDockerMode } from '../../shared/utils/docker-utils';
 import type { WorkspaceSettings } from './config-types';
-
-/**
- * 是否运行在 Docker 容器中
- */
-export function isDockerMode(): boolean {
-  return process.env.DEEPBOT_DOCKER === 'true';
-}
 
 /**
  * 获取默认工作目录配置（绝对路径）
@@ -27,12 +21,14 @@ export function getDefaultWorkspaceSettings(): WorkspaceSettings {
     const skillsDir = process.env.SKILLS_DIR || '/data/skills';
     const memoryDir = process.env.MEMORY_DIR || '/data/memory';
     const sessionsDir = process.env.SESSIONS_DIR || '/data/sessions';
+    const scriptDir = process.env.SCRIPTS_DIR || '/data/scripts';
+    const imageDir = process.env.IMAGES_DIR || '/data/images';
     return {
       workspaceDir,
-      scriptDir: join(workspaceDir, '.deepbot', 'scripts'),
+      scriptDir,
       skillDirs: [skillsDir],
       defaultSkillDir: skillsDir,
-      imageDir: join(workspaceDir, '.deepbot', 'generated-images'),
+      imageDir,
       memoryDir,
       sessionDir: sessionsDir,
     };

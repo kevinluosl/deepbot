@@ -40,6 +40,12 @@ services:
       # 对话历史目录
       - ${SESSIONS_DIR:-~/.deepbot/sessions}:/data/sessions
 
+      # 脚本目录（AI 生成的脚本文件）
+      - ${SCRIPTS_DIR:-~/.deepbot/scripts}:/data/scripts
+
+      # 图片生成目录（AI 生成的图片文件）
+      - ${IMAGES_DIR:-~/.deepbot/generated-images}:/data/images
+
       # 数据库目录（SQLite 文件）
       - ${DB_DIR:-~/.deepbot}:/data/db
 

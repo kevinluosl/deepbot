@@ -18,7 +18,7 @@ import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 import { AgentBrowserWrapper } from '../browser/agent-browser-wrapper';
 import { getErrorMessage } from '../../shared/utils/error-handler';
 import { expandUserPath } from '../../shared/utils/path-utils';
-import { isDockerMode } from '../database/workspace-config';
+import { isDockerMode } from '../../shared/utils/docker-utils';
 import { TOOL_NAMES } from './tool-names';
 import { tmpdir } from 'os';
 import { join } from 'path';

@@ -6,6 +6,7 @@
 
 import * as path from 'path';
 import { SystemConfigStore } from '../database/system-config-store';
+import { getDbDir } from '../../shared/utils/docker-utils';
 
 /**
  * 展开路径中的 ~ 为用户主目录
@@ -29,13 +30,12 @@ export function getAllowedDirectories(): string[] {
   const store = SystemConfigStore.getInstance();
   const settings = store.getWorkspaceSettings();
   
-  // 获取用户主目录
-  const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
-  const deepbotDir = path.join(homeDir, '.deepbot');
-  
+  // Docker 模式下用 /data/db，Electron 模式下用 ~/.deepbot
+  const extraDir = getDbDir();
+
   return [
     path.resolve(settings.workspaceDir),
-    path.resolve(deepbotDir), // 🔥 添加 ~/.deepbot/ 目录
+    path.resolve(extraDir),
     path.resolve(settings.scriptDir),
     ...settings.skillDirs.map(dir => path.resolve(dir)),
     path.resolve(settings.imageDir),
@@ -94,14 +94,13 @@ export function assertPathAllowed(filePath: string): void {
     const expandedPath = expandHomePath(filePath);
     const resolvedPath = path.resolve(expandedPath);
     
-    // 🔥 获取用户主目录并展开 ~/.deepbot/ 为绝对路径
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
-    const deepbotDir = path.join(homeDir, '.deepbot');
-    
+    // Docker 模式用 /data/db，Electron 模式用 ~/.deepbot
+    const extraDir = getDbDir();
+
     throw new Error(
       `安全限制：只能访问配置的目录及其子目录内的文件\n` +
       `允许的目录：\n` +
-      `  - 默认工作目录: ${deepbotDir}\n` +
+      `  - 默认工作目录: ${extraDir}\n` +
       `  - 用户工作目录: ${settings.workspaceDir}\n` +
       `  - 脚本目录: ${settings.scriptDir}\n` +
       `  - Skill 目录: ${settings.skillDirs.join(', ')}\n` +

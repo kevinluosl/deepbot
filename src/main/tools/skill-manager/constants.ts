@@ -4,6 +4,7 @@
 
 import { expandUserPath } from '../../../shared/utils/path-utils';
 import { getDefaultSkillPath } from '../../config/skill-paths';
+import { isDockerMode } from '../../../shared/utils/docker-utils';
 
 /**
  * Skill 存储目录（使用默认路径）
@@ -12,8 +13,12 @@ export const getSkillsDir = () => getDefaultSkillPath();
 
 /**
  * Skill 数据库路径
+ * Docker 模式：放在 /data/skills/ 目录下（随 skills volume 持久化）
+ * 普通模式：~/.agents/skills.db
  */
-export const SKILLS_DB_PATH = expandUserPath('~/.agents/skills.db');
+export const SKILLS_DB_PATH = isDockerMode()
+  ? '/data/skills/skills.db'
+  : expandUserPath('~/.agents/skills.db');
 
 /**
  * ClawHub 搜索 API

@@ -12,6 +12,7 @@ import Database from '../../shared/utils/sqlite-adapter';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
+import { isDockerMode, getDbDir } from '../../shared/utils/docker-utils';
 
 // 导入类型定义
 import type {
@@ -40,15 +41,14 @@ export class SystemConfigStore {
   constructor(dbPath?: string) {
     // Docker 模式：优先读 DB_DIR 环境变量（本地调试用），fallback 到 /data/db（生产容器）
     // 普通模式：默认 ~/.deepbot/system-config.db
-    const isDocker = process.env.DEEPBOT_DOCKER === 'true';
-    const dockerDbDir = process.env.DB_DIR || '/data/db';
-    const defaultPath = isDocker
-      ? join(dockerDbDir, 'system-config.db')
+    const dbDir = getDbDir();
+    const defaultPath = isDockerMode()
+      ? join(dbDir, 'system-config.db')
       : join(homedir(), '.deepbot', 'system-config.db');
     const path = dbPath || defaultPath;
 
     // 确保目录存在
-    const dir = isDocker ? dockerDbDir : join(homedir(), '.deepbot');
+    const dir = isDockerMode() ? dbDir : join(homedir(), '.deepbot');
     ensureDirectoryExists(dir);
 
     // 打开数据库
