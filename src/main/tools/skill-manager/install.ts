@@ -139,8 +139,9 @@ async function extractZip(zipPath: string, targetDir: string): Promise<void> {
     // 如果目标目录已存在，先删除
     safeRemove(targetDir);
 
-    // 移动到目标位置
-    fs.renameSync(sourceDir, targetDir);
+    // 移动到目标位置（使用 cpSync + rmSync 替代 renameSync，避免跨文件系统 EXDEV 错误）
+    fs.cpSync(sourceDir, targetDir, { recursive: true });
+    safeRemove(sourceDir);
   } finally {
     // 清理临时解压目录（如果还存在）
     safeRemove(tmpExtractDir);

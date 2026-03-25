@@ -200,9 +200,10 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
         name: skillName,
       });
       
-      // info action 返回格式: { success: true, skill: {...} }
-      if (result.success && result.skill) {
-        setSelectedSkill(result.skill);
+      // info action 返回格式: { success: true, skill: {...} } 或 { success: true, name, readme, ... }
+      const skillData = result.skill || (result.success && result.name ? result : null);
+      if (skillData) {
+        setSelectedSkill(skillData);
       } else {
         console.error('[SkillManager] 获取详情失败，返回数据格式不正确:', result);
         // 如果获取失败，尝试从已安装列表中获取基本信息
