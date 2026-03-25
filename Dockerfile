@@ -73,8 +73,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 pnpm（运行时不需要，可以删除这行以进一步减小镜像）
-# RUN npm install -g pnpm@10.23.0 --registry=https://registry.npmmirror.com
+# 移除 PEP 668 限制标记，允许 pip install --user 正常工作
+RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
 WORKDIR /app
 
@@ -92,6 +92,16 @@ RUN mkdir -p /data/workspace /data/skills /data/memory /data/sessions /data/db
 ENV DEEPBOT_DOCKER=true
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Python 包持久化：安装到 /data/scripts，通过 volume 挂载保留
+ENV PYTHONUSERBASE=/data/scripts
+ENV PIP_USER=1
+
+# npm 全局包持久化：安装到 /data/scripts/npm-global，通过 volume 挂载保留
+ENV NPM_CONFIG_PREFIX=/data/scripts/npm-global
+
+# 统一 PATH：包含 Python 用户包和 npm 全局包的可执行目录
+ENV PATH="/data/scripts/bin:/data/scripts/npm-global/bin:$PATH"
 
 # Web server 端口
 EXPOSE 3000
