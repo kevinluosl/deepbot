@@ -727,6 +727,8 @@ export function AppWeb() {
         activeTabId={activeTabId}
         onClose={() => {
           setIsSystemSettingsOpen(false);
+          // 关闭设置面板后重新检查模型配置（首次配置场景）
+          checkModelConfig();
         }}
       />
 

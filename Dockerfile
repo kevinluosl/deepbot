@@ -85,6 +85,9 @@ COPY --from=builder /tmp/prod/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/src/main/prompts ./src/main/prompts
 
+# 修复 agent-browser 二进制执行权限
+RUN chmod +x /app/node_modules/agent-browser/bin/agent-browser-linux-*
+
 # 创建数据目录（volume 挂载点）
 RUN mkdir -p /data/workspace /data/skills /data/memory /data/sessions /data/db
 

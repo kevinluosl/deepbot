@@ -7,7 +7,8 @@
 import type { AgentTab } from '../../types/agent-tab';
 import type { Message } from '../../types/message';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3008';
+// 动态获取 API 地址：优先使用环境变量，否则使用当前页面的 host
+const API_BASE_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.host}`;
 
 /**
  * 获取 Token（从 localStorage）

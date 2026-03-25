@@ -155,7 +155,8 @@ export class AgentBrowserWrapper {
     // 生产环境：将 app 目录加入 PATH
     // Windows：app 目录里有打包进来的 node.exe（构建时由 download-node-win.js 下载）
     // macOS/Linux：app 目录里有 node 包装脚本（运行时动态创建）
-    if (process.env.NODE_ENV !== 'development' && !process.env.VITE_DEV_SERVER_URL) {
+    // Docker 模式：node 已在系统 PATH 中，跳过此逻辑
+    if (process.env.NODE_ENV !== 'development' && !process.env.VITE_DEV_SERVER_URL && !process.env.DEEPBOT_DOCKER) {
       const resourcesPath = process.resourcesPath || process.cwd();
       const appDir = join(resourcesPath, 'app');
       const sep = process.platform === 'win32' ? ';' : ':';

@@ -252,19 +252,31 @@ export const browserToolPlugin: ToolPlugin = {
               // 先尝试获取当前 URL 来测试连接
               await wrapper.getUrl();
             } catch (connectError) {
-              // Docker 模式：启动 Playwright Chromium headless
+              // Docker 模式：直接启动 Playwright Chromium 二进制，暴露 CDP 端口
               if (dockerMode) {
                 try {
-                  const { spawn } = await import('child_process');
-                  // 使用 Playwright 内置 Chromium，headless 模式，暴露 CDP
-                  spawn('npx', [
-                    'playwright', 'launch-server',
-                    '--browser', 'chromium',
-                    '--port', String(cdpPort),
+                  const { spawn, execSync } = await import('child_process');
+                  // 查找 Playwright 安装的 Chromium 可执行文件
+                  const chromiumPath = execSync(
+                    'find /ms-playwright -name "chrome" -path "*/chrome-linux/*" 2>/dev/null | head -1',
+                    { encoding: 'utf-8' }
+                  ).trim();
+                  
+                  if (!chromiumPath) {
+                    throw new Error('未找到 Chromium，请先执行: npx playwright install chromium --with-deps');
+                  }
+                  
+                  spawn(chromiumPath, [
+                    '--headless',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-gpu',
+                    '--disable-dev-shm-usage',
+                    `--remote-debugging-port=${cdpPort}`,
+                    `--user-data-dir=${join(tmpdir(), 'deepbot-chromium')}`,
                   ], {
                     detached: true,
                     stdio: 'ignore',
-                    env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: '/ms-playwright' },
                   }).unref();
                   
                   // 等待启动（最多 15 秒）

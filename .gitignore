@@ -49,3 +49,4 @@ temp/
 /DeveloperIDG2CA.cer
 /dist-web
 /dist-server
+*.gz

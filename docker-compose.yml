@@ -27,6 +27,7 @@ services:
     volumes:
       # 数据持久化：容器路径 → 宿主机路径（由 .env 配置，默认值见下方）
       # 修改 .env 后需要 docker-compose down && docker-compose up -d 重建容器
+      # ⚠️ 部署时必须在 .env 中设置路径变量（使用绝对路径），~ 在部分环境下无法正确展开
 
       # 工作目录（AI 文件操作的根目录）
       - ${WORKSPACE_DIR:-~}:/data/workspace
@@ -56,7 +57,7 @@ services:
 
     # 健康检查
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get(`http://localhost:${process.env.PORT||3008}/health`, r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get(`http://localhost:$${process.env.PORT||3008}/health`, r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
