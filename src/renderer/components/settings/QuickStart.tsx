@@ -970,7 +970,7 @@ export function QuickStart(_props: QuickStartProps) {
                   </a> 注册账号，获取免费 API Key
                 </div>
                 <div>
-                  <strong>第三步：</strong>💬 告诉 DeepBot："按照 Tavily Search skill 的说明配置好 API Key"
+                  <strong>第三步：</strong>💬 告诉 DeepBot："按照 Tavily Search skill 的说明配置好 API Key，我的 API Key 是 [粘贴你的 API Key]"
                 </div>
               </div>
             </div>
