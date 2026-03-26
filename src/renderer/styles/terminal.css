@@ -1459,8 +1459,7 @@ ul.terminal-list {
   box-shadow: 0 -4px 12px var(--terminal-accent-glow);
   backdrop-filter: blur(10px);
   z-index: 1000;
-  max-height: 200px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .command-suggestion-item {
@@ -1494,24 +1493,6 @@ ul.terminal-list {
   font-size: 11px;
   color: var(--terminal-text-dim);
   opacity: 0.8;
-}
-
-/* 命令提示滚动条样式 */
-.command-suggestions::-webkit-scrollbar {
-  width: 6px;
-}
-
-.command-suggestions::-webkit-scrollbar-track {
-  background: var(--terminal-accent-bg);
-}
-
-.command-suggestions::-webkit-scrollbar-thumb {
-  background: var(--terminal-text-dim);
-  border-radius: 3px;
-}
-
-.command-suggestions::-webkit-scrollbar-thumb:hover {
-  background: var(--terminal-text);
 }
 
 /* ==================== 自定义 Tooltip 样式 ==================== */

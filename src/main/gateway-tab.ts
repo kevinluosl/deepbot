@@ -363,7 +363,6 @@ export class GatewayTabManager {
 - /new — 清空当前会话历史，开始新对话
 - /memory — 查看和管理记忆
 - /history — 查看对话历史统计
-- /reload-env — 刷新环境变量（安装 Skill 配置 API Key 后使用）
 - /stop — 停止当前正在执行的任务（从外部通讯，比如飞书发送支持）
 - /status — 查看当前任务执行状态和正在输出的内容（从外部通讯，比如飞书发送支持）
 

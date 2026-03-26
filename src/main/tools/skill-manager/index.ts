@@ -18,7 +18,8 @@ import { TOOL_NAMES } from '../tool-names';
 import { initDatabase } from './database';
 import { searchSkillsOnGitHub } from './search';
 import { installSkill } from './install';
-import { listInstalledSkills, uninstallSkill, getSkillInfo } from './manage';
+import { listInstalledSkills, uninstallSkill, getSkillInfo, getSkillEnv, setSkillEnv } from './manage';
+import { resetShellPathCache } from '../shell-env';
 
 /**
  * 创建 Skill Manager Tool
@@ -42,6 +43,8 @@ export function createSkillManagerTool(): AgentTool {
 - disable: 禁用 Skill
 - uninstall: 卸载 Skill
 - info: 查看 Skill 详情
+- set-env: 设置 Skill 的环境变量配置（写入 skill 目录的 .env 文件）
+- get-env: 获取 Skill 的环境变量配置
 
 使用示例：
 - 搜索: { "action": "search", "query": "PDF" }
@@ -50,7 +53,9 @@ export function createSkillManagerTool(): AgentTool {
 - 启用: { "action": "enable", "name": "pdf-editor" }
 - 禁用: { "action": "disable", "name": "pdf-editor" }
 - 卸载: { "action": "uninstall", "name": "pdf-editor" }
-- 详情: { "action": "info", "name": "pdf-editor" }`,
+- 详情: { "action": "info", "name": "pdf-editor" }
+- 设置环境变量: { "action": "set-env", "name": "tavily-search", "env": "TAVILY_API_KEY=tvly-xxx" }
+- 获取环境变量: { "action": "get-env", "name": "tavily-search" }`,
     
     parameters: Type.Object({
       action: Type.Union([
@@ -61,15 +66,18 @@ export function createSkillManagerTool(): AgentTool {
         Type.Literal('disable'),
         Type.Literal('uninstall'),
         Type.Literal('info'),
+        Type.Literal('get-env'),
+        Type.Literal('set-env'),
       ], { description: '操作类型' }),
       query: Type.Optional(Type.String({ description: '搜索关键词（search 操作）' })),
-      name: Type.Optional(Type.String({ description: 'Skill 名称/slug（install/enable/disable/uninstall/info 操作）' })),
+      name: Type.Optional(Type.String({ description: 'Skill 名称/slug（install/enable/disable/uninstall/info/get-env/set-env 操作）' })),
       enabled: Type.Optional(Type.Boolean({ description: '是否只列出已启用的 Skill（list 操作）' })),
+      env: Type.Optional(Type.String({ description: '环境变量内容，格式：KEY=VALUE，每行一个（set-env 操作）' })),
     }),
     
     execute: async (toolCallId, params, signal, onUpdate) => {
       try {
-        const { action, query, name, enabled } = params as any;
+        const { action, query, name, enabled, env } = params as any;
         
         let result: any;
         
@@ -123,6 +131,20 @@ export function createSkillManagerTool(): AgentTool {
               throw new Error('缺少参数: name');
             }
             result = getSkillInfo(name, db);
+            break;
+          
+          case 'get-env':
+            if (!name) throw new Error('缺少参数: name');
+            result = { name, env: getSkillEnv(name) };
+            break;
+          
+          case 'set-env':
+            if (!name) throw new Error('缺少参数: name');
+            if (env === undefined) throw new Error('缺少参数: env');
+            setSkillEnv(name, env);
+            // 自动清除环境变量缓存，下次执行命令时重新加载
+            resetShellPathCache();
+            result = { success: true, message: `Skill "${name}" 环境变量已保存` };
             break;
           
           default:

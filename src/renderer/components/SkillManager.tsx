@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, Package, Download, Trash2, RefreshCw, Info } from 'lucide-react';
+import { X, Search, Package, Download, Trash2, Info, Settings } from 'lucide-react';
 import '../styles/settings.css';
 import { api } from '../api';
 
@@ -50,6 +50,11 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<SkillInfo | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  
+  // 环境变量编辑状态
+  const [envEditSkill, setEnvEditSkill] = useState<string | null>(null);
+  const [envContent, setEnvContent] = useState('');
+  const [envSaving, setEnvSaving] = useState(false);
   
   // 安装进度状态
   const [installingSkill, setInstallingSkill] = useState<string | null>(null);
@@ -175,6 +180,32 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
       console.error('卸载 Skill 失败:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 打开环境变量编辑
+  const handleOpenEnvEdit = async (skillName: string) => {
+    try {
+      const result = await api.skillManager({ action: 'get-env', name: skillName });
+      setEnvContent(result.env || '');
+      setEnvEditSkill(skillName);
+    } catch (error) {
+      setEnvContent('');
+      setEnvEditSkill(skillName);
+    }
+  };
+
+  // 保存环境变量
+  const handleSaveEnv = async () => {
+    if (!envEditSkill) return;
+    setEnvSaving(true);
+    try {
+      await api.skillManager({ action: 'set-env', name: envEditSkill, env: envContent });
+      setEnvEditSkill(null);
+    } catch (error) {
+      console.error('保存环境变量失败:', error);
+    } finally {
+      setEnvSaving(false);
     }
   };
 
@@ -332,6 +363,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
                     onInstall={() => {}}
                     onUninstall={handleUninstall}
                     onViewDetails={(name) => handleViewDetails(name, true)}
+                    onEnvEdit={handleOpenEnvEdit}
                     installingSkill={installingSkill}
                     installProgress={installProgress}
                   />
@@ -400,6 +432,51 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
           onClose={() => setSelectedSkill(null)}
         />
       )}
+
+      {/* 环境变量编辑对话框 */}
+      {envEditSkill && (
+        <div className="settings-overlay">
+          <div className="bg-bg-primary rounded-lg shadow-xl w-[560px] flex flex-col" style={{ maxHeight: '80vh' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-medium">
+              <div className="flex items-center gap-2">
+                <Settings size={18} className="text-brand-500" />
+                <h2 className="text-base font-semibold text-text-primary">{envEditSkill} — 环境变量</h2>
+              </div>
+              <button onClick={() => setEnvEditSkill(null)} className="text-text-secondary hover:text-text-primary">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <p className="text-xs text-text-tertiary mb-3">
+                每行一个变量，格式：<code className="bg-bg-secondary px-1 rounded">KEY=VALUE</code>，支持 <code className="bg-bg-secondary px-1 rounded"># 注释</code>
+              </p>
+              <textarea
+                value={envContent}
+                onChange={(e) => setEnvContent(e.target.value)}
+                placeholder={'示例：\n# API Key 配置\nTAVILY_API_KEY=tvly-your-key-here\nANOTHER_KEY=your-value'}
+                className="w-full font-mono text-sm bg-bg-secondary border border-border-medium rounded-lg p-3 text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:border-brand-500"
+                style={{ minHeight: '240px' }}
+                spellCheck={false}
+              />
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-border-medium">
+              <button
+                onClick={() => setEnvEditSkill(null)}
+                className="flex-1 px-4 py-2 bg-bg-secondary text-text-primary rounded-md hover:bg-bg-tertiary transition-colors text-sm"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveEnv}
+                disabled={envSaving}
+                className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 disabled:opacity-50 transition-colors text-sm"
+              >
+                {envSaving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -412,6 +489,7 @@ interface SkillCardProps {
   onInstall: (name: string) => void;
   onUninstall: (name: string) => void;
   onViewDetails: (name: string, isInstalled: boolean) => void;
+  onEnvEdit?: (name: string) => void;
   installingSkill?: string | null;
   installProgress?: number;
 }
@@ -423,6 +501,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
   onInstall,
   onUninstall,
   onViewDetails,
+  onEnvEdit,
   installingSkill,
   installProgress = 0,
 }) => {
@@ -475,6 +554,16 @@ const SkillCard: React.FC<SkillCardProps> = ({
           <Info size={14} />
           <span>详情</span>
         </button>
+        
+        {isInstalled && onEnvEdit && (
+          <button
+            onClick={() => onEnvEdit(skill.name)}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors"
+          >
+            <Settings size={14} />
+            <span>环境变量</span>
+          </button>
+        )}
         
         {isInstalled ? (
           <button

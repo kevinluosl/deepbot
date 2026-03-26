@@ -102,6 +102,24 @@ function getEnvFromShellConfigs(): Map<string, string> {
       allEnv.set(key, value);
     }
   }
+  const configEnvCount = allEnv.size;
+  
+  // 补充：读取所有 Skill 的 .env 文件（优先级最高，覆盖系统配置）
+  let skillEnvCount = 0;
+  try {
+    const { getAllSkillEnvVars } = require('./skill-manager/manage');
+    const skillEnv: Map<string, string> = getAllSkillEnvVars();
+    skillEnvCount = skillEnv.size;
+    for (const [key, value] of skillEnv) {
+      allEnv.set(key, value);
+    }
+  } catch (error) {
+    // skill-manager 模块不可用时静默忽略
+  }
+
+  if (allEnv.size > 0) {
+    console.info(`[Shell Env] 📝 配置文件补充: ${configEnvCount} 个变量，Skill .env 补充: ${skillEnvCount} 个变量`);
+  }
   
   return allEnv;
 }
@@ -142,8 +160,6 @@ function extractPathFromShellConfig(configFile: string): string[] {
         paths.push(appendMatch[1].replace(/^~/, process.env.HOME || '~'));
       }
     }
-    
-    console.info(`[Shell Env] 📝 从 ${configFile} 提取了 ${paths.length} 个 PATH`);
   } catch (error) {
     console.warn(`[Shell Env] ⚠️ 读取 ${configFile} 失败:`, getErrorMessage(error));
   }
@@ -162,16 +178,8 @@ function getNvmPath(): string[] {
     const homeDir = process.env.HOME;
     if (!homeDir) return paths;
     
-    console.info('[Shell Env] 🔍 开始检测 nvm PATH...');
-    
     // 优先使用 NVM_BIN 环境变量
     const nvmBin = process.env.NVM_BIN;
-    console.info(`[Shell Env] 📝 NVM_BIN 环境变量: ${nvmBin || '(不存在)'}`);
-    if (nvmBin && fs.existsSync(nvmBin)) {
-      paths.push(nvmBin);
-      console.info(`[Shell Env] ✅ 使用 NVM_BIN 环境变量: ${nvmBin}`);
-      return paths;
-    }
     
     // 从环境变量或配置文件获取 NVM_DIR
     let nvmDir = process.env.NVM_DIR;
@@ -213,7 +221,7 @@ function getNvmPath(): string[] {
     const nvmNodeBin = `${nvmDir}/versions/node/${version}/bin`;
     if (fs.existsSync(nvmNodeBin)) {
       paths.push(nvmNodeBin);
-      console.info(`[Shell Env] ✅ 使用 NVM_BIN 环境变量: ${nvmNodeBin}`);
+      console.info(`[Shell Env] ✅ nvm PATH: ${nvmNodeBin}`);
     }
   } catch (error) {
     console.error('[Shell Env] ❌ 检测 nvm PATH 失败:', getErrorMessage(error));
@@ -295,7 +303,7 @@ export function getShellPathFromLoginShell(opts: {
   let shellPath: string | null = null;
   
   try {
-    const stdout = execFileSync(shell, ['-l', '-i', '-c', 'env -0'], {
+    const stdout = execFileSync(shell, ['-l', '-c', 'env -0'], {
       encoding: 'buffer',
       timeout: timeoutMs,
       maxBuffer: DEFAULT_MAX_BUFFER_BYTES,
@@ -307,8 +315,6 @@ export function getShellPathFromLoginShell(opts: {
     
     if (shellPath) {
       console.info('[Shell Env] ✅ 成功获取登录 shell PATH');
-      console.info(`  Shell PATH 长度: ${shellPath.length} 字符`);
-      console.info(`  Shell PATH 包含: ${shellPath.split(':').length} 个路径`);
     }
   } catch (error) {
     console.warn('[Shell Env] ⚠️ 获取登录 shell PATH 失败:', getErrorMessage(error));
@@ -316,11 +322,6 @@ export function getShellPathFromLoginShell(opts: {
   
   const configPaths = getPathFromShellConfigs();
   cachedShellPath = mergePaths(currentPath, shellPath, configPaths);
-  
-  console.info('[Shell Env] ✅ 最终 PATH 配置完成');
-  console.info(`  最终 PATH 长度: ${cachedShellPath.length} 字符`);
-  console.info(`  最终 PATH 包含: ${cachedShellPath.split(':').length} 个路径`);
-  console.info(`  配置文件贡献: ${configPaths.length} 个路径`);
   
   return cachedShellPath;
 }
@@ -349,7 +350,7 @@ export function resetShellPathCacheForTests(): void {
  * - macOS 通过 Dock/Finder 启动时不会加载 ~/.zshrc
  * - 导致 TAVILY_API_KEY 等用户自定义环境变量缺失
  * 
- * 降级策略：zsh -l -i → zsh -l → 手动解析配置文件
+ * 降级策略：zsh -l → 手动解析配置文件
  */
 export function getShellEnvFromLoginShell(opts: {
   env: NodeJS.ProcessEnv;
@@ -378,30 +379,18 @@ export function getShellEnvFromLoginShell(opts: {
 
   try {
     // 第一优先：-l -i（登录 + 交互式，加载 .zshrc）
-    const result = require('child_process').spawnSync(shell, ['-l', '-i', '-c', 'env -0'], {
+    const result = require('child_process').spawnSync(shell, ['-l', '-c', 'env -0'], {
       timeout: timeoutMs,
       maxBuffer: DEFAULT_MAX_BUFFER_BYTES,
       env: opts.env,
     });
 
     if (result.error || result.status !== 0 || !result.stdout) {
-      // 降级：-l（仅登录，不加载 .zshrc）
-      console.warn('[Shell Env] ⚠️ shell -l -i 失败，降级到 -l 模式');
-      const result2 = require('child_process').spawnSync(shell, ['-l', '-c', 'env -0'], {
-        timeout: timeoutMs,
-        maxBuffer: DEFAULT_MAX_BUFFER_BYTES,
-        env: opts.env,
-      });
-      if (result2.error || result2.status !== 0 || !result2.stdout) {
-        throw new Error(result2.error?.message || `shell 退出码: ${result2.status}`);
-      }
-      for (const [key, value] of parseShellEnv(result2.stdout as Buffer)) {
-        baseEnv[key] = value;
-      }
-    } else {
-      for (const [key, value] of parseShellEnv(result.stdout as Buffer)) {
-        baseEnv[key] = value;
-      }
+      throw new Error(result.error?.message || `shell 退出码: ${result.status}`);
+    }
+
+    for (const [key, value] of parseShellEnv(result.stdout as Buffer)) {
+      baseEnv[key] = value;
     }
 
     // 补充：手动解析配置文件（补充 shell 未返回的简单静态变量）
@@ -412,8 +401,7 @@ export function getShellEnvFromLoginShell(opts: {
     // 确保 PATH 使用合并后的完整版本
     baseEnv.PATH = getShellPathFromLoginShell(opts);
 
-    console.info('[Shell Env] ✅ 成功获取登录 shell 完整环境变量');
-    console.info(`  环境变量数量: ${Object.keys(baseEnv).length}`);
+    console.info(`[Shell Env] ✅ 环境变量加载完成: 共 ${Object.keys(baseEnv).length} 个`);
   } catch (error) {
     console.warn('[Shell Env] ⚠️ 获取登录 shell 环境变量失败，使用配置文件 fallback:', getErrorMessage(error));
     // 最终 fallback：手动解析配置文件

@@ -147,8 +147,82 @@ export function uninstallSkill(name: string, db: Database.Database): void {
 }
 
 /**
- * 获取 Skill 详情
+ * 获取 Skill 的 .env 文件内容
  */
+export function getSkillEnv(name: string): string {
+  const allPaths = getAllSkillPaths();
+  for (const basePath of allPaths) {
+    const envPath = path.join(basePath, name, '.env');
+    if (isFile(envPath)) {
+      return safeReadFile(envPath, '');
+    }
+  }
+  return '';
+}
+
+/**
+ * 保存 Skill 的 .env 文件
+ */
+export function setSkillEnv(name: string, envContent: string): void {
+  const allPaths = getAllSkillPaths();
+  let skillDir: string | null = null;
+  
+  for (const basePath of allPaths) {
+    const candidatePath = path.join(basePath, name);
+    if (isDirectory(candidatePath)) {
+      skillDir = candidatePath;
+      break;
+    }
+  }
+  
+  if (!skillDir) {
+    throw new Error(`Skill "${name}" 的目录不存在`);
+  }
+  
+  const envPath = path.join(skillDir, '.env');
+  fs.writeFileSync(envPath, envContent, 'utf-8');
+  console.info(`[Skill Manager] ✅ Skill "${name}" 环境变量已保存: ${envPath}`);
+}
+
+/**
+ * 读取所有已安装 Skill 的 .env 文件，合并为环境变量 Map
+ */
+export function getAllSkillEnvVars(): Map<string, string> {
+  const allEnv = new Map<string, string>();
+  const allPaths = getAllSkillPaths();
+  
+  for (const basePath of allPaths) {
+    if (!isDirectory(basePath)) continue;
+    
+    try {
+      const dirs = fs.readdirSync(basePath);
+      for (const dir of dirs) {
+        const envPath = path.join(basePath, dir, '.env');
+        if (!isFile(envPath)) continue;
+        
+        const content = safeReadFile(envPath, '');
+        for (const line of content.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          // 支持 KEY=VALUE 和 export KEY=VALUE 格式
+          const match = trimmed.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=["']?([^"']*)["']?$/);
+          if (match) {
+            const [, key, value] = match;
+            if (key && value !== undefined) {
+              allEnv.set(key, value);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`[Skill Manager] 读取 Skill 环境变量失败: ${basePath}`, error);
+    }
+  }
+  
+  return allEnv;
+}
+
+
 export function getSkillInfo(name: string, db: Database.Database): SkillInfo {
   // 1. 从数据库获取基本信息
   const row = db.prepare('SELECT * FROM skills WHERE name = ?').get(name) as any;

@@ -663,6 +663,26 @@ google-chrome --remote-debugging-port=9222
 }
 ```
 
+**配置 Skill 环境变量**：
+```json
+// 获取当前配置
+{ "action": "get-env", "name": "skill-name" }
+
+// 设置 API Key（写入 Skill 目录的 .env 文件，持久化保存，Docker 环境也有效）
+{
+  "action": "set-env",
+  "name": "skill-name",
+  "env": "API_KEY=your-key-here"
+}
+
+// 多个变量用换行分隔
+{
+  "action": "set-env",
+  "name": "skill-name",
+  "env": "API_KEY=xxx\nAPI_SECRET=yyy"
+}
+```
+
 ### 🔴 强制要求：执行 Skill 的完整流程（5 步，缺一不可）
 
 **步骤 1：调用 `info` 获取 SKILL.md**
@@ -744,9 +764,11 @@ google-chrome --remote-debugging-port=9222
 // 步骤 3: 检查配置
 // 发现需要 OPENAI_API_KEY，询问用户：
 // "这个 Skill 需要 OpenAI API Key，请提供您的 API Key"
-// 用户提供后，设置环境变量：
+// 用户提供后，使用 set-env 保存到 Skill 的 .env 文件（持久化，Docker 环境也有效）：
 {
-  "command": "export OPENAI_API_KEY='sk-xxx'"
+  "action": "set-env",
+  "name": "image-processor",
+  "env": "OPENAI_API_KEY=sk-xxx"
 }
 
 // 步骤 4: 从 readme 提取执行命令
@@ -849,10 +871,11 @@ google-chrome --remote-debugging-port=9222
 **配置检查流程**：
 ```
 1. 从 SKILL.md 的 configuration 字段中查找配置要求
-2. 检查是否已配置（查询环境变量、配置文件等）
+2. 调用 get-env 检查 Skill 是否已有配置：{ "action": "get-env", "name": "skill-name" }
 3. 如果未配置：
-   - 能自动配置的：先自动完成（如设置环境变量）
    - 需要用户提供的：明确告知用户需要什么（如"需要 OpenAI API Key"）
+   - 用户提供后，调用 set-env 保存：{ "action": "set-env", "name": "skill-name", "env": "KEY=VALUE" }
+   - set-env 会写入 Skill 目录的 .env 文件，持久化保存，Docker 环境也有效
 4. 配置完成后再执行 Skill
 ```
 

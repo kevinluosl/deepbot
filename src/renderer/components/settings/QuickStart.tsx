@@ -584,7 +584,7 @@ export function QuickStart(_props: QuickStartProps) {
             fontSize: '11px',
             fontWeight: '600'
           }}>
-            6
+            5
           </span>
         </h4>
         <div style={{ 
@@ -731,31 +731,6 @@ export function QuickStart(_props: QuickStartProps) {
             </div>
             <div style={{ marginLeft: '12px', fontSize: '12px' }}>
               查看当前任务执行状态和正在输出的内容。仅支持通过飞书等外部通讯渠道发送
-            </div>
-          </div>
-
-          <div style={{ 
-            padding: '10px 12px',
-            background: 'var(--settings-input-bg)',
-            borderRadius: '6px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-              <code style={{ 
-                padding: '2px 8px', 
-                background: 'rgba(0,0,0,0.2)', 
-                borderRadius: '4px',
-                fontFamily: 'monospace',
-                fontSize: '12px',
-                fontWeight: '600',
-                color: 'var(--settings-accent)',
-                marginRight: '8px'
-              }}>
-                /reload-env
-              </code>
-              <span style={{ color: 'var(--settings-text)', fontWeight: '600' }}>刷新环境变量</span>
-            </div>
-            <div style={{ marginLeft: '12px', fontSize: '12px' }}>
-              安装 Skill 并配置 API Key 后，执行此指令刷新环境变量，无需重启
             </div>
           </div>
         </div>

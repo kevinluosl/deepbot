@@ -54,7 +54,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
     { name: 'new', description: '清空当前会话历史，开始新对话' },
     { name: 'memory', description: '查看和管理记忆' },
     { name: 'history', description: '查看对话历史统计' },
-    { name: 'reload-env', description: '刷新环境变量（安装 Skill 配置 API Key 后使用）' },
     ...(isConnectorTab ? [{ name: 'stop', description: '停止当前正在执行的任务' }] : []),
   ];
 
