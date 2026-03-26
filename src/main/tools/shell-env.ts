@@ -421,7 +421,8 @@ export function applyShellPath(
  */
 export function resetShellPathCache(): void {
   cachedShellPath = undefined;
-  console.info('[Shell Env] 🔄 PATH 缓存已重置');
+  cachedShellEnv = undefined;
+  console.info('[Shell Env] 🔄 PATH 和环境变量缓存已重置');
 }
 
 /**
@@ -429,4 +430,82 @@ export function resetShellPathCache(): void {
  */
 export function resetShellPathCacheForTests(): void {
   cachedShellPath = undefined;
+  cachedShellEnv = undefined;
+}
+
+// 缓存完整的 shell 环境变量
+let cachedShellEnv: Record<string, string> | undefined;
+
+/**
+ * 从登录 shell 获取完整环境变量
+ * 
+ * 解决 Electron 主进程环境变量不完整的问题：
+ * - macOS 通过 Dock/Finder 启动时不会加载 ~/.zshrc
+ * - 导致 TAVILY_API_KEY 等用户自定义环境变量缺失
+ * 
+ * @param opts - 选项
+ * @returns 合并后的完整环境变量（process.env + shell env）
+ */
+export function getShellEnvFromLoginShell(opts: {
+  env: NodeJS.ProcessEnv;
+  timeoutMs?: number;
+}): Record<string, string> {
+  // 使用缓存
+  if (cachedShellEnv !== undefined) {
+    return cachedShellEnv;
+  }
+
+  // 基础环境变量：从 process.env 复制（过滤 undefined）
+  const baseEnv: Record<string, string> = {};
+  for (const [key, value] of Object.entries(opts.env)) {
+    if (value !== undefined) {
+      baseEnv[key] = value;
+    }
+  }
+
+  // Windows 直接使用当前环境变量
+  if (process.platform === 'win32') {
+    cachedShellEnv = baseEnv;
+    return cachedShellEnv;
+  }
+
+  const timeoutMs =
+    typeof opts.timeoutMs === 'number' && Number.isFinite(opts.timeoutMs)
+      ? Math.max(0, opts.timeoutMs)
+      : DEFAULT_TIMEOUT_MS;
+
+  const shell = resolveShell(opts.env);
+
+  try {
+    const stdout = execFileSync(shell, ['-l', '-c', 'env -0'], {
+      encoding: 'buffer',
+      timeout: timeoutMs,
+      maxBuffer: DEFAULT_MAX_BUFFER_BYTES,
+      env: opts.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    const shellEnv = parseShellEnv(stdout);
+
+    // 合并：shell 环境变量覆盖 process.env（shell 中的更完整）
+    // 但保留 process.env 中 shell 没有的变量
+    for (const [key, value] of shellEnv) {
+      baseEnv[key] = value;
+    }
+
+    // 确保 PATH 使用合并后的版本（包含配置文件补充的路径）
+    const shellPath = getShellPathFromLoginShell(opts);
+    baseEnv.PATH = shellPath;
+
+    console.info('[Shell Env] ✅ 成功获取登录 shell 完整环境变量');
+    console.info(`  环境变量数量: ${Object.keys(baseEnv).length}`);
+  } catch (error) {
+    console.warn('[Shell Env] ⚠️ 获取登录 shell 环境变量失败:', getErrorMessage(error));
+    // 失败时仍然确保 PATH 是合并后的
+    const shellPath = getShellPathFromLoginShell(opts);
+    baseEnv.PATH = shellPath;
+  }
+
+  cachedShellEnv = baseEnv;
+  return cachedShellEnv;
 }

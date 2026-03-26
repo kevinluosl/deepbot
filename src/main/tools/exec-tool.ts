@@ -27,7 +27,7 @@
  */
 
 import type { AgentTool } from '@mariozechner/pi-agent-core';
-import { getShellPathFromLoginShell, applyShellPath } from './shell-env';
+import { applyShellPath, getShellEnvFromLoginShell } from './shell-env';
 import { isBlockingInteractiveCommand, getBlockingCommandSuggestion } from './exec-blocking-check';
 import { TIMEOUTS } from '../config/timeouts';
 import { assertPathAllowed } from '../utils/path-security';
@@ -302,7 +302,7 @@ function isDangerousCommand(command: string): boolean {
  * @param shellPath - 合并后的 PATH
  * @returns 包装后的工具
  */
-function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
+function wrapToolWithSecurity(tool: AgentTool, shellPath: string, fullShellEnv?: Record<string, string>): AgentTool {
   return {
     ...tool,
     execute: async (toolCallId, params, signal, onUpdate) => {
@@ -322,11 +322,13 @@ function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
         checkCommandPathSecurity(command);
       }
       
-      // 🔥 应用 shell PATH 到环境变量
-      // 如果用户没有提供自定义 env，则应用合并后的 PATH
+      // 🔥 应用完整的 shell 环境变量
+      // 如果用户没有提供自定义 env，则使用完整的 shell 环境变量
       if (record && !record.env) {
-        const env = { ...process.env } as Record<string, string>;
-        applyShellPath(env, shellPath);
+        const env = fullShellEnv ? { ...fullShellEnv } : { ...process.env } as Record<string, string>;
+        if (!fullShellEnv) {
+          applyShellPath(env, shellPath);
+        }
         record.env = env;
       }
       
@@ -384,12 +386,15 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
   // eslint-disable-next-line no-eval
   const { createBashTool } = await eval('import("@mariozechner/pi-coding-agent")');
   
-  // 🔥 从登录 shell 获取完整 PATH
-  // 解决 Electron 主进程 PATH 不完整的问题（pnpm、nvm 等工具不在 PATH 中）
-  const shellPath = getShellPathFromLoginShell({
+  // 🔥 从登录 shell 获取完整环境变量
+  // 解决 Electron 主进程环境变量不完整的问题（TAVILY_API_KEY 等用户自定义变量缺失）
+  const shellEnv = getShellEnvFromLoginShell({
     env: process.env,
     timeoutMs: 15_000,
   });
+  
+  // 兼容：保留 shellPath 变量供其他地方使用
+  const shellPath = shellEnv.PATH || process.env.PATH || '';
   
   // 创建基础工具（使用 pi-coding-agent）
   // 🔥 使用 operations 自定义命令执行，添加阻塞命令检查
@@ -412,44 +417,31 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
         // 🔥 检查命令中的路径是否安全（严格模式）
         checkCommandPathSecurity(command);
         
-        // 🔥 强制应用合并后的 PATH
-        const env: Record<string, string> = { ...process.env, PATH: shellPath };
+        // 🔥 使用完整的 shell 环境变量（包含用户在 .zshrc 中定义的变量）
+        const env: Record<string, string> = { ...shellEnv };
         
         // 🔥 Windows 中文编码处理：设置代码页为 UTF-8
         if (process.platform === 'win32') {
-          env.CHCP = '65001'; // UTF-8 代码页
+          env.CHCP = '65001';
         }
-        
-        // 使用 Node.js spawn 执行命令
-        const { spawn } = require('node:child_process');
         
         // 🔥 Windows 中文编码处理：在命令前添加 chcp 65001
         let finalCommand = command;
         if (process.platform === 'win32') {
-          // 在 Windows 上，先设置代码页为 UTF-8，然后执行原命令
           finalCommand = `chcp 65001 >nul 2>&1 && ${command}`;
         }
         
         // 🔥 使用统一的超时配置
         const timeoutMs = TIMEOUTS.EXEC_TOOL_TIMEOUT;
+        const { spawn } = require('node:child_process');
         
         return new Promise((resolve) => {
-          // 使用 Node.js spawn 执行命令
-          const { spawn } = require('node:child_process');
-          
-          // 🔥 Windows 中文编码处理：在命令前添加 chcp 65001
-          let finalCommand = command;
-          if (process.platform === 'win32') {
-            // 在 Windows 上，先设置代码页为 UTF-8，然后执行原命令
-            finalCommand = `chcp 65001 >nul 2>&1 && ${command}`;
-          }
-          
           const child = spawn(finalCommand, [], {
             cwd,
             env,
             shell: true,
             stdio: ['ignore', 'pipe', 'pipe'],
-            timeout: timeoutMs, // 🔥 使用统一的超时配置
+            timeout: timeoutMs,
           });
           
           child.on('error', (error: Error) => {
@@ -522,7 +514,7 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
   }) as unknown as AgentTool;
   
   // 包装安全检查和 PATH 处理
-  const secureBashTool = wrapToolWithSecurity(bashTool, shellPath);
+  const secureBashTool = wrapToolWithSecurity(bashTool, shellPath, shellEnv);
   
   return [secureBashTool];
 }
