@@ -141,11 +141,13 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   const handleSend = () => {
     const trimmedContent = content.trim();
     if (trimmedContent && !disabled) {
-      // 🔥 保存到历史记录（避免重复）
-      setHistory(prev => {
-        const newHistory = prev.filter(item => item !== trimmedContent);
-        return [...newHistory, trimmedContent];
-      });
+      // 🔥 保存到历史记录（避免重复，不记录系统指令）
+      if (!trimmedContent.startsWith('/')) {
+        setHistory(prev => {
+          const newHistory = prev.filter(item => item !== trimmedContent);
+          return [...newHistory, trimmedContent];
+        });
+      }
       setHistoryIndex(-1); // 重置历史索引
       setTempContent(''); // 清空临时内容
       
@@ -228,11 +230,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
           setShowCommandSuggestions(false);
           setContent('');
           
-          // 保存到历史记录
-          setHistory(prev => {
-            const newHistory = prev.filter(item => item !== commandText);
-            return [...newHistory, commandText];
-          });
           setHistoryIndex(-1);
           setTempContent('');
           
@@ -350,11 +347,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
                   setShowCommandSuggestions(false);
                   setContent('');
                   
-                  // 保存到历史记录
-                  setHistory(prev => {
-                    const newHistory = prev.filter(item => item !== commandText);
-                    return [...newHistory, commandText];
-                  });
                   setHistoryIndex(-1);
                   setTempContent('');
                   
