@@ -14,8 +14,13 @@ import { LoginPage } from './components/LoginPage';
 import { Message } from '../types/message';
 import type { AgentTab } from '../types/agent-tab';
 import { api } from './api';
+import { ThemeContext } from './App';
+import { useTheme } from './hooks/useTheme';
 
 export function AppWeb() {
+  // 主题管理
+  const { mode: themeMode, setThemeMode } = useTheme();
+
   // 登录状态
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -694,7 +699,7 @@ export function AppWeb() {
   }
 
   return (
-    <>
+    <ThemeContext.Provider value={{ mode: themeMode, setThemeMode }}>
       <ChatWindow
         messages={messages}
         onSendMessage={handleSendMessage}
@@ -773,6 +778,6 @@ export function AppWeb() {
           </button>
         </div>
       )}
-    </>
+    </ThemeContext.Provider>
   );
 }
