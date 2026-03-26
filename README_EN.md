@@ -41,7 +41,7 @@ DeepBot is a system-level AI assistant that focuses on exploring enterprise prod
 - **Python**: 3.11 or higher
 - **Node.js**: 20.0.0 or higher (optional, for running JS scripts)
 - **pnpm**: 10.23.0 or higher (optional, for running JS scripts)
-- **OS**: macOS, Windows, Linux
+- **OS**: macOS, Windows (desktop), Linux/Docker
 
 ### Installation
 
@@ -57,7 +57,7 @@ pnpm install
 pnpm run dev
 ```
 
-### Build
+### Build Desktop App
 
 ```bash
 # Build for all platforms
@@ -68,10 +68,32 @@ pnpm run dist:mac
 
 # Build for Windows only
 pnpm run dist:win
-
-# Build for Linux only
-pnpm run dist:linux
 ```
+
+### Docker Deployment
+
+For Linux servers or any Docker-supported environment:
+
+```bash
+# Build Docker image
+docker build -t deepbot:latest .
+
+# Start with docker-compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop service
+docker-compose down
+```
+
+Access `http://localhost:3008` after startup to use the web interface.
+
+Configuration:
+- Copy `.env.example` to `.env` and fill in model API keys
+- Adjust port mapping and volume mounts in `docker-compose.yml`
+- Data is persisted to `./data` directory by default
 
 **Note for macOS builds**: The build process automatically performs ad-hoc signing on macOS apps. This prevents the "app is damaged" message but users will still see "cannot verify developer" on first launch (which is normal and can be bypassed with right-click → Open).
 

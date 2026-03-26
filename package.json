@@ -24,7 +24,6 @@
     "dist": "pnpm run build && electron-builder",
     "dist:mac": "node scripts/load-env-build.js --mac",
     "dist:win": "node scripts/load-env-build.js --win",
-    "dist:linux": "pnpm run build && electron-builder --linux",
     "reset-dev": "bash scripts/reset-dev-data.sh",
 
     "dev:web": "concurrently \"pnpm run dev:web-server\" \"pnpm run dev:web-renderer\" \"wait-on dist-server/server/index.js --delay 2000 && pnpm run start:web-dev\"",
@@ -205,14 +204,6 @@
       "verifyUpdateCodeSignature": false,
       "requestedExecutionLevel": "asInvoker",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
-    },
-    "linux": {
-      "icon": "icon.png",
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Utility"
     },
     "nsis": {
       "oneClick": false,
