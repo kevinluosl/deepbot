@@ -92,7 +92,7 @@ export function QuickStart(_props: QuickStartProps) {
             { id: 'external-tools', icon: '🔧', text: '外部工具使用' },
             { id: 'memory-guide', icon: '🧠', text: '记忆使用指南' },
             { id: 'command-system', icon: '⌨️', text: '指令系统' },
-            { id: 'recommended', icon: '⭐', text: '推荐工具' },
+            { id: 'recommended', icon: '⭐', text: '推荐工具和 Skill' },
             { id: 'tips', icon: '💡', text: '使用技巧' },
             { id: 'examples', icon: '💬', text: '示例对话' },
           ].map((item) => (
@@ -768,7 +768,7 @@ export function QuickStart(_props: QuickStartProps) {
             fontSize: '11px',
             fontWeight: '600'
           }}>
-            3
+            4
           </span>
         </h4>
         <div style={{ 
@@ -925,6 +925,53 @@ export function QuickStart(_props: QuickStartProps) {
                 >
                   github.com/steipete/mcporter
                 </a>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>🔍</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>Tavily Search - AI 搜索引擎 Skill</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              专为 AI Agent 设计的搜索引擎，提供高质量、结构化的搜索结果，让 DeepBot 获得强大的实时信息检索能力
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>核心优势：</strong>
+              <div style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
+                <div>• 专为 AI 优化的搜索结果</div>
+                <div>• 返回结构化数据，减少幻觉</div>
+                <div>• 支持深度搜索和快速搜索</div>
+                <div>• 免费额度足够日常使用</div>
+              </div>
+            </div>
+            <div style={{ marginLeft: '28px', marginTop: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>安装方式：</strong>
+              <div style={{ 
+                marginTop: '4px',
+                padding: '8px',
+                background: 'rgba(0,0,0,0.1)',
+                borderRadius: '4px',
+                fontSize: '12px',
+                lineHeight: '1.8'
+              }}>
+                <div style={{ marginBottom: '6px' }}>
+                  <strong>第一步：</strong>打开聊天界面的 <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>[skill]</code> 按钮，搜索「Tavily Search」，点击安装
+                </div>
+                <div style={{ marginBottom: '6px' }}>
+                  <strong>第二步：</strong>前往 <a 
+                    href="https://app.tavily.com/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--settings-accent)', textDecoration: 'none' }}
+                  >
+                    app.tavily.com
+                  </a> 注册账号，获取免费 API Key
+                </div>
+                <div>
+                  <strong>第三步：</strong>💬 告诉 DeepBot："按照 Tavily Search skill 的说明配置好 API Key"
+                </div>
               </div>
             </div>
           </div>
