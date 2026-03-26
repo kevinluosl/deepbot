@@ -640,6 +640,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       "contact:user.basic_profile:readonly",
       "docs:document.comment:create",
       "docx:document",
+      "docx:document.block:convert",
       "drive:drive",
       "drive:file",
       "im:chat",

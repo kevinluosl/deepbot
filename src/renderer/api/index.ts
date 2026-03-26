@@ -300,6 +300,13 @@ export const api = {
     return webClient.get(`/api/files/read-image?path=${encodeURIComponent(filePath)}`);
   },
 
+  // 用系统默认应用打开本地文件（仅 Electron）
+  // Web 模式返回 { success: false }，由前端降级处理
+  async openPath(filePath: string): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.openPath(filePath);
+    return { success: false, error: 'web' };
+  },
+
   async deleteTempFile(filePath: string): Promise<any> {
     if (isElectron()) return (window as any).deepbot.deleteTempFile(filePath);
     return webClient.delete(`/api/files/temp?path=${encodeURIComponent(filePath)}`);

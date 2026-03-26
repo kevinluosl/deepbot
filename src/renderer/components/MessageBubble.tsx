@@ -19,6 +19,24 @@ interface MessageBubbleProps {
 // 图片缓存（避免重复加载）
 const imageCache = new Map<string, string>();
 
+/**
+ * 将 data URL 转为 Blob URL 并在新标签页打开
+ * Chrome 限制了 data URL 的导航，Blob URL 没有长度限制
+ */
+function openImageInNewTab(dataUrl: string) {
+  const arr = dataUrl.split(',');
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+  const bstr = atob(arr[1]);
+  const u8arr = new Uint8Array(bstr.length);
+  for (let i = 0; i < bstr.length; i++) {
+    u8arr[i] = bstr.charCodeAt(i);
+  }
+  const blob = new Blob([u8arr], { type: mime });
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, '_blank');
+}
+
 // 图片加载组件（通过 IPC 读取本地文件）
 const ImageLoader: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
   // 处理路径格式
@@ -96,13 +114,25 @@ const ImageLoader: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
     );
   }
 
+  // 点击图片查看大图
+  const handleImageClick = async () => {
+    // 先尝试用系统应用打开（Electron 模式）
+    const result = await api.openPath(filePath);
+    // 如果失败（Web 模式），转 Blob URL 在新标签页打开
+    if (!result?.success && imageData) {
+      openImageInNewTab(imageData);
+    }
+  };
+
   return (
     <div className="terminal-image-container">
       <img 
         src={imageData} 
         alt={alt} 
-        className="terminal-image"
+        className="terminal-image terminal-image-clickable"
         loading="lazy"
+        onClick={handleImageClick}
+        title="点击查看大图"
       />
       {alt && <div className="terminal-image-caption">{alt}</div>}
     </div>
@@ -296,8 +326,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                   <img
                     src={image.dataUrl}
                     alt={image.name}
-                    className="terminal-image"
+                    className="terminal-image terminal-image-clickable"
                     loading="lazy"
+                    onClick={async () => {
+                      if (image.path) {
+                        const result = await api.openPath(image.path);
+                        if (!result?.success && image.dataUrl) {
+                          openImageInNewTab(image.dataUrl);
+                        }
+                      } else if (image.dataUrl) {
+                        openImageInNewTab(image.dataUrl);
+                      }
+                    }}
+                    title="点击查看大图"
                   />
                   <div className="terminal-image-caption">{image.name}</div>
                 </div>
@@ -371,8 +412,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                     <img 
                       src={src} 
                       alt={alt || '图片'} 
-                      className="terminal-image"
+                      className="terminal-image terminal-image-clickable"
                       loading="lazy"
+                      onClick={() => window.open(src, '_blank')}
+                      title="点击查看大图"
                     />
                     {alt && <div className="terminal-image-caption">{alt}</div>}
                   </div>

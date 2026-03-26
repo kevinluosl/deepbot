@@ -197,7 +197,9 @@ function createWindow() {
 
   // 拦截外部链接，使用系统默认浏览器打开
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (!url.startsWith('data:')) {
+      shell.openExternal(url).catch(() => {});
+    }
     return { action: 'deny' };
   });
 
@@ -207,7 +209,7 @@ function createWindow() {
     // 如果不是当前页面的刷新/内部导航，用系统浏览器打开
     if (url !== currentUrl && !url.startsWith('file://') && !url.startsWith('http://localhost')) {
       event.preventDefault();
-      shell.openExternal(url);
+      shell.openExternal(url).catch(() => {});
     }
   });
 
@@ -617,6 +619,17 @@ function registerIpcHandlers() {
         success: false,
         error: getErrorMessage(error),
       };
+    }
+  });
+
+  // 用系统默认应用打开本地文件
+  ipcMain.handle(IPC_CHANNELS.OPEN_PATH, async (_event, { filePath }) => {
+    try {
+      const resolvedPath = filePath.replace(/^~/, process.env.HOME || '~');
+      await shell.openPath(resolvedPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
     }
   });
 

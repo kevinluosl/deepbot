@@ -47,6 +47,9 @@ export const IPC_CHANNELS = {
   // 图片读取
   READ_IMAGE: 'image:read',
   
+  // 用系统默认应用打开文件
+  OPEN_PATH: 'shell:open-path',
+  
   // 图片上传
   UPLOAD_IMAGE: 'image:upload',
   

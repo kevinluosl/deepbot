@@ -844,6 +844,14 @@ ul.terminal-list {
   transform: scale(1.02);
 }
 
+.terminal-image-clickable {
+  cursor: pointer;
+}
+
+.terminal-image-clickable:hover {
+  box-shadow: 0 0 8px rgba(100, 200, 255, 0.4);
+}
+
 .terminal-image-caption {
   margin-top: 4px;
   font-size: 11px;

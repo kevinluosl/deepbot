@@ -126,6 +126,11 @@ contextBridge.exposeInMainWorld('deepbot', {
     return ipcRenderer.invoke(IPC_CHANNELS.READ_IMAGE, { path });
   },
 
+  // 用系统默认应用打开本地文件
+  openPath: (filePath: string) => {
+    return ipcRenderer.invoke('shell:open-path', { filePath });
+  },
+
   // 上传图片
   uploadImage: (name: string, dataUrl: string, size: number) => {
     return ipcRenderer.invoke(IPC_CHANNELS.UPLOAD_IMAGE, { name, dataUrl, size });
