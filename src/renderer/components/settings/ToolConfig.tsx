@@ -304,102 +304,100 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
       {activeTab === 'email' && (
         <div className="space-y-4">
           <div>
-            <h4 className="text-base font-medium text-gray-900 mb-2">邮件发送工具配置</h4>
+            <h4 className="text-base font-medium text-gray-900 mb-2">邮件收发工具</h4>
             <p className="text-sm text-gray-600 mb-4">
-              邮件工具需要通过配置文件进行设置。你可以直接告诉 Agent 配置信息，它会帮你创建配置文件。
+              推荐使用 <strong>imap-smtp-email-chinese</strong> Skill，支持 IMAP 收件、SMTP 发件，兼容 Gmail、Outlook、163、QQ 等主流邮箱。
             </p>
           </div>
 
-          {/* 配置说明 */}
+          {/* 安装 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-blue-900 mb-2">📝 配置方法</h5>
-            <p className="text-sm text-blue-800 mb-3">
-              直接在聊天中告诉 Agent 你的邮箱配置信息，例如：
+            <h5 className="text-sm font-semibold text-blue-900 mb-2">📦 安装</h5>
+            <p className="text-sm text-blue-800 mb-2">
+              打开聊天界面的 <code className="bg-blue-100 px-1 rounded">[skill]</code> 按钮，搜索「imap-smtp-email-chinese」，点击安装。
             </p>
-            <div className="bg-white border border-blue-200 rounded p-3 text-sm font-mono text-gray-800">
-              帮我配置邮件工具：<br/>
-              - 邮箱：your-email@qq.com<br/>
-              - 授权码：your-authorization-code<br/>
-              - SMTP服务器：smtp.qq.com<br/>
-              - 端口：465<br/>
-              - 使用SSL：是<br/>
-              - 发件人名称：你的名字
+          </div>
+
+          {/* 配置 */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h5 className="text-sm font-semibold text-gray-900 mb-2">⚙️ 配置</h5>
+            <p className="text-sm text-gray-700 mb-3">
+              三种方式任选其一：
+            </p>
+            <div className="space-y-2 mb-3">
+              <div className="text-sm text-gray-700">
+                <strong>方式一：</strong>直接告诉 DeepBot 配置信息，它会自动写入 .env 文件
+              </div>
+              <div className="bg-white border border-gray-200 rounded p-2 text-xs font-mono text-gray-800">
+                帮我配置 imap-smtp-email-chinese skill，邮箱是 your@163.com，授权码是 xxxx，使用 163 邮箱
+              </div>
+              <div className="text-sm text-gray-700 mt-2">
+                <strong>方式二：</strong>在 Skill 管理器中点击「环境变量」按钮编辑，配置会保存到 Skill 目录下的 <code className="bg-gray-200 px-1 rounded">.env</code> 文件
+              </div>
             </div>
-          </div>
-
-          {/* 配置文件位置 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-2">📂 配置文件位置</h5>
             <p className="text-sm text-gray-700 mb-2">
-              配置文件将保存在：
+              .env 文件格式参考：
             </p>
-            <code className="block bg-gray-800 text-gray-100 px-3 py-2 rounded text-xs font-mono">
-              ~/.deepbot/tools/email-tool/config.json
-            </code>
-          </div>
+            <pre className="bg-gray-800 text-gray-100 px-3 py-2 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+{`# IMAP 收件配置
+IMAP_HOST=imap.163.com
+IMAP_PORT=993
+IMAP_USER=your@163.com
+IMAP_PASS=your_auth_code
+IMAP_TLS=true
 
-          {/* 配置文件格式 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-2">📋 配置文件格式</h5>
-            <pre className="bg-gray-800 text-gray-100 px-3 py-2 rounded text-xs font-mono overflow-x-auto">
-{`{
-  "user": "your-email@example.com",
-  "password": "your-password-or-auth-code",
-  "smtpServer": "smtp.example.com",
-  "smtpPort": 465,
-  "useSsl": true,
-  "fromName": "Your Name"
-}`}
+# SMTP 发件配置
+SMTP_HOST=smtp.163.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your@163.com
+SMTP_PASS=your_auth_code
+SMTP_FROM=your@163.com`}
             </pre>
           </div>
 
-          {/* 常见邮箱配置 */}
+          {/* 常见邮箱服务器 */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-3">📮 常见邮箱配置</h5>
-            <div className="space-y-3">
-              {/* QQ 邮箱 */}
-              <details className="bg-white border border-gray-200 rounded p-3">
-                <summary className="text-sm font-medium text-gray-900 cursor-pointer">QQ 邮箱</summary>
-                <div className="mt-2 text-xs text-gray-700 space-y-1">
-                  <p>• SMTP服务器：smtp.qq.com</p>
-                  <p>• 端口：465</p>
-                  <p>• 使用SSL：是</p>
-                  <p className="text-orange-600">⚠️ 密码必须使用授权码，不是QQ密码</p>
-                  <p className="text-blue-600">💡 获取授权码：QQ邮箱设置 → 账户 → POP3/IMAP/SMTP服务 → 生成授权码</p>
-                </div>
-              </details>
+            <h5 className="text-sm font-semibold text-gray-900 mb-3">📮 常见邮箱服务器</h5>
+            <div className="overflow-x-auto">
+              <table className="text-xs w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="text-left p-2 border border-gray-300">邮箱</th>
+                    <th className="text-left p-2 border border-gray-300">IMAP 服务器</th>
+                    <th className="text-left p-2 border border-gray-300">SMTP 服务器</th>
+                    <th className="text-left p-2 border border-gray-300">SMTP 端口</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700">
+                  {[
+                    ['163.com', 'imap.163.com', 'smtp.163.com', '465'],
+                    ['126.com', 'imap.126.com', 'smtp.126.com', '465'],
+                    ['QQ Mail', 'imap.qq.com', 'smtp.qq.com', '587'],
+                    ['腾讯企业邮', 'imap.exmail.qq.com', 'smtp.exmail.qq.com', '465'],
+                    ['Gmail', 'imap.gmail.com', 'smtp.gmail.com', '587'],
+                    ['Outlook', 'outlook.office365.com', 'smtp.office365.com', '587'],
+                  ].map(([name, imap, smtp, port]) => (
+                    <tr key={name} className="border-b border-gray-200">
+                      <td className="p-2 border border-gray-300 font-medium">{name}</td>
+                      <td className="p-2 border border-gray-300 font-mono">{imap}</td>
+                      <td className="p-2 border border-gray-300 font-mono">{smtp}</td>
+                      <td className="p-2 border border-gray-300">{port}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              {/* Gmail */}
-              <details className="bg-white border border-gray-200 rounded p-3">
-                <summary className="text-sm font-medium text-gray-900 cursor-pointer">Gmail</summary>
-                <div className="mt-2 text-xs text-gray-700 space-y-1">
-                  <p>• SMTP服务器：smtp.gmail.com</p>
-                  <p>• 端口：465</p>
-                  <p>• 使用SSL：是</p>
-                  <p className="text-orange-600">⚠️ 需要开启两步验证并使用应用专用密码</p>
-                </div>
-              </details>
-
-              {/* 163 邮箱 */}
-              <details className="bg-white border border-gray-200 rounded p-3">
-                <summary className="text-sm font-medium text-gray-900 cursor-pointer">163 邮箱</summary>
-                <div className="mt-2 text-xs text-gray-700 space-y-1">
-                  <p>• SMTP服务器：smtp.163.com</p>
-                  <p>• 端口：465</p>
-                  <p>• 使用SSL：是</p>
-                  <p className="text-orange-600">⚠️ 密码必须使用授权码</p>
-                </div>
-              </details>
-
-              {/* Outlook */}
-              <details className="bg-white border border-gray-200 rounded p-3">
-                <summary className="text-sm font-medium text-gray-900 cursor-pointer">Outlook / Hotmail</summary>
-                <div className="mt-2 text-xs text-gray-700 space-y-1">
-                  <p>• SMTP服务器：smtp-mail.outlook.com</p>
-                  <p>• 端口：587</p>
-                  <p>• 使用SSL：否（使用STARTTLS）</p>
-                </div>
-              </details>
+          {/* 使用示例 */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h5 className="text-sm font-semibold text-gray-900 mb-2">💬 使用示例</h5>
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件给 xxx@163.com，主题"会议纪要"，内容是今天的会议记录</div>
+              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">检查收件箱最新 10 封未读邮件</div>
+              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">搜索来自 boss@company.com 的邮件</div>
+              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件并附上 /path/to/report.pdf</div>
             </div>
           </div>
 
@@ -407,9 +405,9 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <h5 className="text-sm font-semibold text-yellow-900 mb-2">🔒 安全提示</h5>
             <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-              <li>使用授权码而非邮箱登录密码</li>
-              <li>配置文件会保存在本地，请妥善保管</li>
-              <li>定期更换授权码以提高安全性</li>
+              <li>163/QQ 邮箱需使用<strong>授权码</strong>，不是登录密码</li>
+              <li>Gmail 需开启两步验证并使用<strong>应用专用密码</strong></li>
+              <li>配置保存在 Skill 目录的 .env 文件中，请妥善保管</li>
             </ul>
           </div>
         </div>

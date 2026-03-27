@@ -401,12 +401,12 @@ google-chrome --remote-debugging-port=9222
 
 **触发时的执行方式**：
 - 系统在新 Tab 中创建 Agent 实例执行 `description` 中的任务
-- Agent 可以使用所有工具（`web_search`、`send_email`、`browser`、`exec` 等）
+- Agent 可以使用所有工具（`web_search`、`browser`、`exec` 等）
 - 唯一限制：不能创建新的定时任务（防止无限递归）
 
-**示例**：任务描述"搜索今天的科技新闻并发送邮件"
+**示例**：任务描述"搜索今天的科技新闻并整理成报告"
 - Agent 会使用 `web_search` 搜索新闻
-- 然后使用 `send_email` 发送邮件
+- 然后使用 `exec` 将结果保存到文件
 
 **定时任务工具操作权限**：
 - ✅ 可执行：`list`、`delete`、`pause`、`resume`、`trigger`、`history`

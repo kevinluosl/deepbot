@@ -192,24 +192,8 @@ export class ToolLoader {
         tools.push(chatTool);
       }
       
-      // 邮件工具
-      // 配置文件在工具执行时从 ~/.deepbot/tools/email-tool/config.json 读取
-      const emailToolsResult = emailToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
-      
-      // 处理可能的 Promise 返回值
-      const emailTools = emailToolsResult instanceof Promise 
-        ? await emailToolsResult 
-        : emailToolsResult;
-      
-      if (Array.isArray(emailTools)) {
-        tools.push(...emailTools);
-      } else {
-        tools.push(emailTools);
-      }
+      // 邮件工具（已屏蔽，推荐使用 imap-smtp-email-chinese skill 代替）
+      // const emailToolsResult = emailToolPlugin.create({...});
       
       // API 工具（系统配置访问）
       const apiToolsResult = apiToolPlugin.create({

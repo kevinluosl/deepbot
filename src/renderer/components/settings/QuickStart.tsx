@@ -768,7 +768,7 @@ export function QuickStart(_props: QuickStartProps) {
             fontSize: '11px',
             fontWeight: '600'
           }}>
-            4
+            5
           </span>
         </h4>
         <div style={{ 
@@ -971,6 +971,43 @@ export function QuickStart(_props: QuickStartProps) {
                 </div>
                 <div>
                   <strong>第三步：</strong>💬 告诉 DeepBot："按照 Tavily Search skill 的说明配置好 API Key，我的 API Key 是 [粘贴你的 API Key]"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>📧</span>
+              <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>imap-smtp-email-chinese - 中文邮件收发 Skill</span>
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              支持 IMAP 收件、SMTP 发件，完美兼容 QQ、163、Gmail 等主流邮箱，中文友好
+            </div>
+            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>核心功能：</strong>
+              <div style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
+                <div>• 发送邮件（支持附件）</div>
+                <div>• 读取收件箱</div>
+                <div>• 搜索邮件</div>
+                <div>• 支持 HTML 格式</div>
+              </div>
+            </div>
+            <div style={{ marginLeft: '28px', marginTop: '8px' }}>
+              <strong style={{ color: 'var(--settings-text)' }}>安装方式：</strong>
+              <div style={{ 
+                marginTop: '4px',
+                padding: '8px',
+                background: 'rgba(0,0,0,0.1)',
+                borderRadius: '4px',
+                fontSize: '12px',
+                lineHeight: '1.8'
+              }}>
+                <div style={{ marginBottom: '6px' }}>
+                  <strong>第一步：</strong>打开聊天界面的 <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>[skill]</code> 按钮，搜索「imap-smtp-email-chinese」，点击安装
+                </div>
+                <div>
+                  <strong>第二步：</strong>💬 告诉 DeepBot："按照 imap-smtp-email-chinese skill 的说明配置好邮箱信息"
                 </div>
               </div>
             </div>

@@ -5,6 +5,9 @@
  * 提供 HTTP API 和 WebSocket 服务
  */
 
+// 设置进程名称，方便在 ps/top 中识别
+process.title = 'deepbot';
+
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';

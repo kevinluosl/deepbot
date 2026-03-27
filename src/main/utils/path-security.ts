@@ -6,7 +6,7 @@
 
 import * as path from 'path';
 import { SystemConfigStore } from '../database/system-config-store';
-import { getDbDir } from '../../shared/utils/docker-utils';
+import { getDbDir, isDockerMode } from '../../shared/utils/docker-utils';
 
 /**
  * 展开路径中的 ~ 为用户主目录
@@ -57,6 +57,9 @@ export function getAllowedDirectories(): string[] {
  * @returns 是否允许访问
  */
 export function isPathAllowed(filePath: string): boolean {
+  // Docker 模式下跳过路径检查（容器内目录已固定，无需限制）
+  if (isDockerMode()) return true;
+
   // 展开 ~ 为用户主目录
   const expandedPath = expandHomePath(filePath);
   

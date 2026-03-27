@@ -115,7 +115,7 @@
     "icon": "icon.png",
     "publish": {
       "provider": "generic",
-      "url": "http://localhost:3000/downloads"
+      "url": "https://glint-mvt.com/deepbot/downloads"
     },
     "electronDownload": {
       "mirror": "https://npmmirror.com/mirrors/electron/",
