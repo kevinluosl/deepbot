@@ -13,6 +13,7 @@ import { Message } from '../types/message';
 import type { AgentTab } from '../types/agent-tab';
 import { api } from './api';
 import { useTheme, ThemeMode } from './hooks/useTheme';
+import { setPendingUpdate } from './utils/update-store';
 
 // 主题 Context
 export const ThemeContext = createContext<{
@@ -36,6 +37,12 @@ function App() {
   const [isSystemSettingsOpen, setIsSystemSettingsOpen] = useState(false);
   const [hasModelConfig, setHasModelConfig] = useState(true);
   const [pendingPairingCount, setPendingPairingCount] = useState(0);
+
+  // 监听自动更新（App 层注册，确保不丢失）
+  useEffect(() => {
+    const unsub = api.onUpdateAvailable((info) => setPendingUpdate(info));
+    return unsub;
+  }, []);
 
   // 加载所有 Tab
   useEffect(() => {

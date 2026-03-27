@@ -403,5 +403,13 @@ contextBridge.exposeInMainWorld('electron', {
     invoke: (channel: string, ...args: any[]) => {
       return ipcRenderer.invoke(channel, ...args);
     },
+    on: (channel: string, listener: (...args: any[]) => void) => {
+      const wrappedListener = (_event: any, ...args: any[]) => listener(...args);
+      ipcRenderer.on(channel, wrappedListener);
+      return wrappedListener;
+    },
+    removeListener: (channel: string, listener: (...args: any[]) => void) => {
+      ipcRenderer.removeListener(channel, listener);
+    },
   },
 });

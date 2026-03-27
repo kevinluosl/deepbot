@@ -66,6 +66,13 @@ interface DeepBotAPI {
   onSubAgentNotification: (callback: (notification: any) => void) => () => void;
   onExecutionStepUpdate?: (callback: (data: any) => void) => () => void;
   onClearAllMessages: (callback: () => void) => () => void;
+  // 自动更新
+  checkForUpdates: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => Promise<void>;
+  onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string }) => void) => () => void;
+  onUpdateDownloadProgress: (callback: (progress: { percent: number }) => void) => () => void;
+  onUpdateDownloaded: (callback: () => void) => () => void;
   taskMonitor: {
     onMainTaskCreated: (callback: (task: any) => void) => () => void;
     onMainTaskUpdated: (callback: (updates: any) => void) => () => void;

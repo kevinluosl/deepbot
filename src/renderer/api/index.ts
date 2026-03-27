@@ -490,4 +490,51 @@ export const api = {
       if (listeners.size === 0) webEventListeners.delete(eventType);
     };
   },
+
+  // ==================== 自动更新（仅 Electron）====================
+
+  async checkForUpdates(): Promise<void> {
+    if (isElectron()) {
+      return (window as any).electron.ipcRenderer.invoke('update:check');
+    }
+  },
+
+  async downloadUpdate(): Promise<void> {
+    if (isElectron()) {
+      return (window as any).electron.ipcRenderer.invoke('update:download');
+    }
+  },
+
+  async installUpdate(): Promise<void> {
+    if (isElectron()) {
+      return (window as any).electron.ipcRenderer.invoke('update:install');
+    }
+  },
+
+  onUpdateAvailable(callback: (info: { version: string; releaseNotes?: string }) => void): () => void {
+    if (isElectron()) {
+      const handler = (info: any) => callback(info);
+      (window as any).electron.ipcRenderer.on('update-available', handler);
+      return () => (window as any).electron.ipcRenderer.removeListener('update-available', handler);
+    }
+    return () => {};
+  },
+
+  onUpdateDownloadProgress(callback: (progress: { percent: number }) => void): () => void {
+    if (isElectron()) {
+      const handler = (progress: any) => callback(progress);
+      (window as any).electron.ipcRenderer.on('update-download-progress', handler);
+      return () => (window as any).electron.ipcRenderer.removeListener('update-download-progress', handler);
+    }
+    return () => {};
+  },
+
+  onUpdateDownloaded(callback: () => void): () => void {
+    if (isElectron()) {
+      const handler = () => callback();
+      (window as any).electron.ipcRenderer.on('update-downloaded', handler);
+      return () => (window as any).electron.ipcRenderer.removeListener('update-downloaded', handler);
+    }
+    return () => {};
+  },
 };

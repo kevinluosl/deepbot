@@ -9,15 +9,17 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { APP_VERSION } from '../../shared/constants/version';
+import { getPendingUpdate, onPendingUpdateChange, clearPendingUpdate } from '../utils/update-store';
 import { QuickStart } from './settings/QuickStart';
 import { ModelConfig } from './settings/ModelConfig';
 import { EnvironmentConfig } from './settings/EnvironmentConfig';
 import { WorkspaceConfig } from './settings/WorkspaceConfig';
 import { ToolConfig } from './settings/ToolConfig';
 import { ConnectorConfig } from './settings/ConnectorConfig';
+import { AppVersion } from './settings/AppVersion';
 import '../styles/settings.css';
 
-type SettingsTab = 'quickstart' | 'model' | 'environment' | 'workspace' | 'tools' | 'connectors';
+type SettingsTab = 'quickstart' | 'model' | 'environment' | 'workspace' | 'tools' | 'connectors' | 'version';
 
 interface SystemSettingsProps {
   isOpen: boolean;
@@ -27,7 +29,23 @@ interface SystemSettingsProps {
 
 export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('quickstart');
-  const appVersion = APP_VERSION; // 直接使用常量
+  const [hasUpdate, setHasUpdate] = useState(false);
+  const [pendingUpdateInfo, setPendingUpdateInfo] = useState<{ version: string } | null>(null);
+
+  useEffect(() => {
+    // 初始化时读取已有的更新信息
+    const existing = getPendingUpdate();
+    if (existing) {
+      setHasUpdate(true);
+      setPendingUpdateInfo(existing);
+    }
+    // 监听后续的更新通知
+    const unsub = onPendingUpdateChange((info) => {
+      setHasUpdate(true);
+      setPendingUpdateInfo(info);
+    });
+    return unsub;
+  }, []);
 
   if (!isOpen) return null;
 
@@ -83,13 +101,32 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
               >
                 外部通讯
               </button>
+              <button
+                onClick={() => { setActiveTab('version'); setHasUpdate(false); clearPendingUpdate(); }}
+                className={`settings-nav-item ${activeTab === 'version' ? 'active' : ''}`}
+                style={{ position: 'relative' }}
+              >
+                系统版本
+                {hasUpdate && (
+                  <span style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: 'var(--settings-accent)',
+                  }} />
+                )}
+              </button>
             </nav>
             
             {/* 版本号显示 */}
-            {appVersion && (
+            {APP_VERSION && (
               <div className="settings-footer">
                 <span className="text-text-tertiary" style={{ fontSize: '12px' }}>
-                  v{appVersion}
+                  v{APP_VERSION}
                 </span>
               </div>
             )}
@@ -103,6 +140,7 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
             {activeTab === 'tools' && <ToolConfig onClose={onClose} />}
             {activeTab === 'workspace' && <WorkspaceConfig onClose={onClose} />}
             {activeTab === 'connectors' && <ConnectorConfig onClose={onClose} />}
+            {activeTab === 'version' && <AppVersion initialUpdateInfo={pendingUpdateInfo} />}
           </div>
         </div>
       </div>

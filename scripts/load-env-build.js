@@ -36,34 +36,3 @@ const buildCmd = platform === '--win'
 console.log(`\n🚀 开始打包: ${buildCmd}\n`);
 
 execSync(buildCmd, { stdio: 'inherit', env: process.env });
-
-// 打包完成后重命名文件为友好名称
-const releaseDir = path.join(__dirname, '..', 'release');
-const version = require('../package.json').version;
-
-if (platform === '--mac') {
-  // x64 → intel，arm64 → silicon
-  const renameMap = {
-    '-mac-x64.': '-mac-intel.',
-    '-mac-arm64.': '-mac-silicon.',
-  };
-  const files = fs.readdirSync(releaseDir);
-  for (const file of files) {
-    for (const [from, to] of Object.entries(renameMap)) {
-      if (file.includes(from)) {
-        const newName = file.replace(from, to);
-        fs.renameSync(path.join(releaseDir, file), path.join(releaseDir, newName));
-        console.log(`✅ 重命名: ${file} → ${newName}`);
-      }
-    }
-  }
-} else if (platform === '--win') {
-  // nsis 安装包：DeepBot Terminal-Setup-x.x.x.exe → DeepBot-Terminal-x.x.x-windows.exe
-  const setupName = `DeepBot Terminal-Setup-${version}.exe`;
-  const targetName = `DeepBot-Terminal-${version}-windows.exe`;
-  const setupPath = path.join(releaseDir, setupName);
-  if (fs.existsSync(setupPath)) {
-    fs.renameSync(setupPath, path.join(releaseDir, targetName));
-    console.log(`✅ 重命名: ${setupName} → ${targetName}`);
-  }
-}

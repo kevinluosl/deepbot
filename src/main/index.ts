@@ -22,6 +22,7 @@ if (typeof globalThis.File === 'undefined') {
 
 import { app, BrowserWindow, ipcMain, Menu, MenuItem, dialog, Tray, nativeImage, shell } from 'electron';
 import path from 'path';
+import { autoUpdater } from 'electron-updater';
 import { Gateway } from './gateway';
 import { IPC_CHANNELS } from '../types/ipc';
 import { registerModelConfigHandlers, setGatewayForModelConfig } from './ipc/model-config-handler';
@@ -1156,6 +1157,31 @@ function registerIpcHandlers() {
       };
     }
   });
+
+  // 下载更新
+  ipcMain.handle('update:download', async () => {
+    if (!process.env.VITE_DEV_SERVER_URL) {
+      autoUpdater.downloadUpdate();
+    }
+  });
+
+  // 安装更新并重启
+  ipcMain.handle('update:install', async () => {
+    if (!process.env.VITE_DEV_SERVER_URL) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+
+  // 手动检查更新
+  ipcMain.handle('update:check', async () => {
+    if (!process.env.VITE_DEV_SERVER_URL) {
+      try {
+        await autoUpdater.checkForUpdates();
+      } catch (error) {
+        console.error('[Updater] checkForUpdates 失败:', error);
+      }
+    }
+  });
 }
 
 /**
@@ -1182,6 +1208,44 @@ app.whenReady().then(() => {
   
   // 创建窗口
   createWindow();
+
+  // 🔥 自动更新（生产环境）
+  if (!process.env.VITE_DEV_SERVER_URL) {
+    autoUpdater.autoDownload = false;
+    
+    autoUpdater.on('error', (error) => {
+      console.error('[Updater] 错误:', error?.message);
+    });
+
+    autoUpdater.on('checking-for-update', () => {
+      console.info('[Updater] 正在检查更新...');
+    });
+
+    autoUpdater.on('update-not-available', (info) => {
+      console.info('[Updater] 已是最新版本:', info?.version);
+    });
+    
+    autoUpdater.on('update-available', (info: any) => {
+      if (mainWindow) {
+        mainWindow.webContents.send('update-available', info);
+      }
+    });
+    
+    autoUpdater.on('download-progress', (progress: any) => {
+      if (mainWindow) {
+        mainWindow.webContents.send('update-download-progress', progress);
+      }
+    });
+    
+    autoUpdater.on('update-downloaded', () => {
+      if (mainWindow) {
+        mainWindow.webContents.send('update-downloaded');
+      }
+    });
+    
+    // 启动后延迟 10 秒检查更新，避免影响启动速度
+    setTimeout(() => autoUpdater.checkForUpdates(), 10_000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -26,7 +26,6 @@
     "dist:mac:local": "pnpm run build && electron-builder --mac --config.mac.identity=null --config.mac.notarize=false",
     "dist:win": "node scripts/load-env-build.js --win",
     "reset-dev": "bash scripts/reset-dev-data.sh",
-
     "dev:web": "concurrently \"pnpm run dev:web-server\" \"pnpm run dev:web-renderer\" \"wait-on dist-server/server/index.js --delay 2000 && pnpm run start:web-dev\"",
     "dev:web-docker": "concurrently \"pnpm run dev:web-server\" \"pnpm run dev:web-renderer\" \"wait-on dist-server/server/index.js --delay 2000 && pnpm run start:web-docker-dev\"",
     "dev:web-server": "tsc -p tsconfig.server.json --watch",
@@ -55,12 +54,12 @@
     "adm-zip": "^0.5.16",
     "agent-browser": "^0.15.1",
     "ajv": "^8.12.0",
-
     "body-parser": "^2.2.2",
     "chokidar": "^3.5.3",
     "cors": "^2.8.5",
     "cron": "^4.4.0",
     "dotenv": "^16.4.7",
+    "electron-updater": "^6.8.3",
     "express": "^5.2.1",
     "iconv-lite": "^0.7.2",
     "jsonwebtoken": "^9.0.2",
@@ -78,7 +77,6 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^3.4.0",
-
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.6",
     "@types/iconv-lite": "^0.0.1",
@@ -115,6 +113,10 @@
     "appId": "com.deepbot.app",
     "productName": "DeepBot Terminal",
     "icon": "icon.png",
+    "publish": {
+      "provider": "generic",
+      "url": "http://localhost:3000/downloads"
+    },
     "electronDownload": {
       "mirror": "https://npmmirror.com/mirrors/electron/",
       "cache": "~/Library/Caches/electron"
