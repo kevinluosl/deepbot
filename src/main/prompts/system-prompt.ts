@@ -12,6 +12,8 @@ import { buildTimeSection } from './sections/time';
 import { buildContextSection } from './sections/context';
 import { buildRuntimeSection } from './sections/runtime';
 import { getMemoryContent } from '../tools/memory-tool';
+import { listInstalledSkills } from '../tools/skill-manager/manage';
+import { initDatabase } from '../tools/skill-manager/database';
 
 /**
  * 构建系统提示词
@@ -71,7 +73,7 @@ export async function buildSystemPrompt(params: SystemPromptParams, sessionId?: 
     lines.push(...buildContextSection(params.contextFiles));
   }
 
-  // 4. 核心记忆（从 memory.md 或 memory-{tabId}.md 加载）
+  // 5. 核心记忆（从 memory.md 或 memory-{tabId}.md 加载）
   try {
     const memoryContent = await getMemoryContent(sessionId);
     
@@ -100,6 +102,22 @@ export async function buildSystemPrompt(params: SystemPromptParams, sessionId?: 
 
   // 6. 运行时信息
   lines.push(...buildRuntimeSection(params.runtimeInfo));
+
+  // 7. 已安装的 Skills（放在最后，框架会在此之后追加 ## Tools）
+  try {
+    const db = initDatabase();
+    const skills = listInstalledSkills(db, { enabled: true });
+    if (skills.length > 0) {
+      lines.push('## Skills', '');
+      lines.push('```json');
+      lines.push(JSON.stringify(
+        skills.map(s => ({ name: s.name, description: s.description || '', type: 'skill' })),
+        null, 2
+      ));
+    }
+  } catch (error) {
+    // Skills 加载失败不影响主流程
+  }
 
   const prompt = lines.filter(Boolean).join('\n');
 

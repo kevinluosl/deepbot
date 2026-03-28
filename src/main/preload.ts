@@ -38,6 +38,8 @@ const IPC_CHANNELS = {
   SAVE_IMAGE_GENERATION_TOOL_CONFIG: 'tool-config:image-generation:save',
   GET_WEB_SEARCH_TOOL_CONFIG: 'tool-config:web-search:get',
   SAVE_WEB_SEARCH_TOOL_CONFIG: 'tool-config:web-search:save',
+  GET_DISABLED_TOOLS: 'tool-config:disabled:get',
+  SAVE_DISABLED_TOOLS: 'tool-config:disabled:save',
   LAUNCH_CHROME_WITH_DEBUG: 'browser:launch-chrome-with-debug',
   GET_NAME_CONFIG: 'name-config:get',
   GET_TAB_AGENT_NAME: 'name-config:get-tab-agent-name',
@@ -167,6 +169,15 @@ contextBridge.exposeInMainWorld('deepbot', {
 
   saveWebSearchToolConfig: (config: { model: string; apiUrl: string; apiKey: string }) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SAVE_WEB_SEARCH_TOOL_CONFIG, { config });
+  },
+
+  // 工具禁用管理
+  getDisabledTools: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.GET_DISABLED_TOOLS);
+  },
+
+  saveDisabledTools: (disabledTools: string[]) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SAVE_DISABLED_TOOLS, { disabledTools });
   },
 
   launchChromeWithDebug: (port: number) => {

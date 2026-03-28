@@ -163,6 +163,13 @@ export class SystemConfigStore {
       )
     `);
 
+    // 工具禁用配置表
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS tool_disabled (
+        tool_name TEXT PRIMARY KEY
+      )
+    `);
+
     // 连接器配置表
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS connector_config (
@@ -522,6 +529,23 @@ export class SystemConfigStore {
     approvedAt?: number;
   }> {
     return ConnectorConfigModule.getAllPairingRecords(this.db, connectorId);
+  }
+
+  // ========== 工具禁用管理 ==========
+
+  /** 获取所有被禁用的工具名称列表 */
+  getDisabledTools(): string[] {
+    const rows = this.db.prepare('SELECT tool_name FROM tool_disabled').all() as { tool_name: string }[];
+    return rows.map(r => r.tool_name);
+  }
+
+  /** 设置工具的禁用状态 */
+  setToolDisabled(toolName: string, disabled: boolean): void {
+    if (disabled) {
+      this.db.prepare('INSERT OR IGNORE INTO tool_disabled (tool_name) VALUES (?)').run(toolName);
+    } else {
+      this.db.prepare('DELETE FROM tool_disabled WHERE tool_name = ?').run(toolName);
+    }
   }
 
   // ========== 数据库管理 ==========

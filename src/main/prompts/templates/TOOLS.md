@@ -575,12 +575,8 @@ google-chrome --remote-debugging-port=9222
 ```
 
 ### 使用时机
-用户说了以下关键词时使用：
-- **搜索 Skill**："搜索 Skill"、"查找 Skill"、"有什么 Skill"
-- **安装 Skill**："安装 Skill"、"添加 Skill"
-- **列出 Skill**："列出已安装的 Skill"、"查看 Skill"
-- **卸载 Skill**："卸载/删除 Skill"
-- **查看 Skill 详情**："查看 Skill 详情"、"Skill 使用说明"
+- **搜索/安装/管理 Skill**：用户提到搜索、安装、查看、卸载 Skill 时使用
+- **执行任务时**：`## Skills` 中有匹配的 Skill → 优先使用；Skill 失败 → 改用内置工具重试
 
 ⚠️ **重要**：当用户提供 URL 要求安装时，不要直接假设是 Skill！
 - 先用 `web_fetch` 获取内容判断项目类型
@@ -608,6 +604,7 @@ google-chrome --remote-debugging-port=9222
 - ✅ 查看已安装的 Skills
 - ✅ 获取 Skill 使用说明
 - ✅ 卸载不需要的 Skills
+- ✅ 执行任务时，如果已安装的 Skill 适合当前需求，直接使用
 
 ### 正确执行流程（3 步）
 ```

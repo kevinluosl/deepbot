@@ -210,6 +210,17 @@ export class Gateway {
   }
 
   /**
+   * 重新加载工具配置（禁用/启用工具）
+   * 
+   * 当用户修改工具禁用配置时调用，销毁所有现有的 AgentRuntime（下次使用时用新工具列表重新创建）
+   */
+  async reloadToolConfig(): Promise<void> {
+    console.log('[Gateway] 🔄 重新加载工具配置...');
+    this.destroyAllRuntimes();
+    console.log('[Gateway] ✅ 工具配置已重新加载，AgentRuntime 已重置');
+  }
+
+  /**
    * 重新加载工作目录配置
    * 
    * 当用户修改工作目录配置时调用，重新初始化 SessionManager 和 AgentRuntime

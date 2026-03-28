@@ -94,6 +94,16 @@ export const api = {
     return { success: true };
   },
 
+  async getDisabledTools(): Promise<{ success: boolean; disabledTools?: string[]; error?: string }> {
+    if (isElectron()) return (window as any).deepbot.getDisabledTools();
+    return { success: true, disabledTools: [] };
+  },
+
+  async saveDisabledTools(disabledTools: string[]): Promise<{ success: boolean; error?: string }> {
+    if (isElectron()) return (window as any).deepbot.saveDisabledTools(disabledTools);
+    return { success: true };
+  },
+
   async getWorkspaceSettings(): Promise<any> {
     if (isElectron()) return (window as any).deepbot.getWorkspaceSettings();
     const config = await webClient.getConfig();

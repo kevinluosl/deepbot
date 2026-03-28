@@ -13,6 +13,15 @@ import { WebSearchToolConfig } from './WebSearchToolConfig';
 import { BrowserToolConfig } from './BrowserToolConfig';
 import { api } from '../../api';
 
+// 可供用户禁用的工具列表
+const TOGGLEABLE_TOOLS: Array<{ name: string; label: string; description: string }> = [
+  { name: 'image_generation', label: '图片生成', description: '内置 Gemini/Qwen 图片生成工具' },
+  { name: 'web_search', label: '网络搜索', description: '内置网络搜索工具' },
+  { name: 'browser', label: '浏览器控制', description: '通过 Chrome 远程调试控制浏览器' },
+  { name: 'calendar_get_events', label: '日历读取', description: '读取 macOS 日历事件' },
+  { name: 'calendar_create_event', label: '日历创建', description: '在 macOS 日历中创建事件' },
+];
+
 interface ToolConfigProps {
   onClose: () => void;
 }
@@ -25,13 +34,14 @@ interface ImageGenerationConfig {
 }
 
 export function ToolConfig({ onClose }: ToolConfigProps) {
-  const [activeTab, setActiveTab] = useState<'image' | 'websearch' | 'email' | 'browser'>('image');
+  const [activeTab, setActiveTab] = useState<'image' | 'websearch' | 'email' | 'browser' | 'manage'>('image');
   const [imageGenConfig, setImageGenConfig] = useState<ImageGenerationConfig>({
     provider: DEFAULT_IMAGE_GENERATION_CONFIG.provider,
     model: DEFAULT_IMAGE_GENERATION_CONFIG.model,
     apiUrl: DEFAULT_IMAGE_GENERATION_CONFIG.apiUrl,
     apiKey: DEFAULT_IMAGE_GENERATION_CONFIG.apiKey,
   });
+  const [disabledTools, setDisabledTools] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -48,30 +58,57 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   const loadConfig = async () => {
     try {
       setLoading(true);
-      const config = await api.getImageGenerationToolConfig();
-      if (config) {
+      const [imageConfig, disabledResult] = await Promise.all([
+        api.getImageGenerationToolConfig(),
+        api.getDisabledTools(),
+      ]);
+      if (imageConfig) {
         // 兼容旧配置格式，添加默认 provider 字段
         let provider: 'gemini' | 'qwen' = 'gemini';
-        
-        // 根据模型名称或已有的 provider 字段判断提供商
-        if ((config as any).provider) {
-          provider = (config as any).provider;
-        } else if (config.model && config.model.includes('qwen-image')) {
+        if ((imageConfig as any).provider) {
+          provider = (imageConfig as any).provider;
+        } else if (imageConfig.model && imageConfig.model.includes('qwen-image')) {
           provider = 'qwen';
         }
-        
-        const configWithProvider = {
+        setImageGenConfig({
           provider,
-          model: config.model,
-          apiUrl: config.apiUrl,
-          apiKey: config.apiKey,
-        };
-        setImageGenConfig(configWithProvider);
+          model: imageConfig.model,
+          apiUrl: imageConfig.apiUrl,
+          apiKey: imageConfig.apiKey,
+        });
+      }
+      if (disabledResult.success && disabledResult.disabledTools) {
+        setDisabledTools(new Set(disabledResult.disabledTools));
       }
     } catch (error) {
       console.error('加载工具配置失败:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleTool = (toolName: string, currentlyDisabled: boolean) => {
+    setDisabledTools(prev => {
+      const next = new Set(prev);
+      if (currentlyDisabled) next.delete(toolName);
+      else next.add(toolName);
+      return next;
+    });
+  };
+
+  const handleSaveToolManage = async () => {
+    setSaving(true);
+    try {
+      const result = await api.saveDisabledTools(Array.from(disabledTools));
+      if (result.success) {
+        showMessage('success', '已保存，Agent 将在下次对话时使用新工具配置');
+      } else {
+        showMessage('error', result.error || '保存失败');
+      }
+    } catch (error) {
+      showMessage('error', '保存失败');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -177,6 +214,16 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             }`}
           >
             邮件发送
+          </button>
+          <button
+            onClick={() => setActiveTab('manage')}
+            className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'manage'
+                ? 'border-blue-500 text-blue-600 bg-blue-50'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            工具管理
           </button>
         </nav>
       </div>
@@ -410,6 +457,55 @@ SMTP_FROM=your@163.com`}
               <li>配置保存在 Skill 目录的 .env 文件中，请妥善保管</li>
             </ul>
           </div>
+        </div>
+      )}
+      {/* 工具管理 */}
+      {activeTab === 'manage' && (
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-base font-medium text-gray-900 mb-1">工具管理</h4>
+            <p className="text-sm text-gray-500">
+              勾选表示启用，取消勾选表示禁用。点击保存后立即生效，Agent 将重新加载工具列表。如果你已安装对应功能的 Skill，可以关闭内置工具，优先使用 Skill。
+            </p>
+          </div>
+          <div className="space-y-2">
+            {TOGGLEABLE_TOOLS.map(tool => {
+              const isDisabled = disabledTools.has(tool.name);
+              return (
+                <label
+                  key={tool.name}
+                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={!isDisabled}
+                    onChange={() => handleToggleTool(tool.name, isDisabled)}
+                    className="w-4 h-4 accent-blue-500 cursor-pointer flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900">{tool.label}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{tool.description}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          <div className="flex justify-end pt-4 border-t">
+            <button
+              onClick={handleSaveToolManage}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
+            >
+              {saving ? '保存中...' : '保存配置'}
+            </button>
+          </div>
+          {message && (
+            <div className={`p-3 rounded-md text-sm ${
+              message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            }`}>
+              {message.text}
+            </div>
+          )}
         </div>
       )}
     </div>

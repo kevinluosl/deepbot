@@ -12,6 +12,7 @@ import type { AgentTool } from '@mariozechner/pi-agent-core';
 import { getToolRegistry, ToolRegistry } from './tool-registry';
 import type { ToolConfig } from './tool-interface';
 import { safeJsonParse } from '../../../shared/utils/json-utils';
+import { TOOL_NAMES } from '../tool-names';
 
 // 导入内置工具
 import { getFileTools } from '../file-tool';
@@ -108,6 +109,10 @@ export class ToolLoader {
   private async loadBuiltinTools(configStore?: any): Promise<AgentTool[]> {
     const tools: AgentTool[] = [];
     
+    // 获取禁用工具列表
+    const disabledTools = new Set<string>(configStore ? configStore.getDisabledTools() : []);
+    const isEnabled = (name: string) => !disabledTools.has(name);
+    
     try {
       // 文件工具
       const fileTools = await getFileTools(this.workspaceDir);
@@ -118,27 +123,30 @@ export class ToolLoader {
       tools.push(...execTools);
       
       // 浏览器工具
-      // 使用 agent-browser CLI，无需配置文件
-      const browserToolsResult = browserToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
-      
-      // 处理可能的 Promise 返回值
-      const browserTools = browserToolsResult instanceof Promise 
-        ? await browserToolsResult 
-        : browserToolsResult;
-      
-      if (Array.isArray(browserTools)) {
-        tools.push(...browserTools);
-      } else {
-        tools.push(browserTools);
+      if (isEnabled(TOOL_NAMES.BROWSER)) {
+        const browserToolsResult = browserToolPlugin.create({
+          workspaceDir: this.workspaceDir,
+          sessionId: this.sessionId,
+          configStore,
+        });
+        const browserTools = browserToolsResult instanceof Promise
+          ? await browserToolsResult
+          : browserToolsResult;
+        if (Array.isArray(browserTools)) {
+          tools.push(...browserTools);
+        } else {
+          tools.push(browserTools);
+        }
       }
-      
+
       // 日历工具
-      const calendarTools = getCalendarTools();
-      tools.push(...calendarTools);
+      if (isEnabled(TOOL_NAMES.CALENDAR_GET_EVENTS) || isEnabled(TOOL_NAMES.CALENDAR_CREATE_EVENT)) {
+        const calendarTools = getCalendarTools();
+        // 按各自开关过滤
+        for (const t of calendarTools) {
+          if (isEnabled(t.name)) tools.push(t);
+        }
+      }
       
       // Skill 管理工具
       const skillManagerTool = createSkillManagerTool();
@@ -153,13 +161,13 @@ export class ToolLoader {
       tools.push(environmentCheckTool);
       
       // 图片生成工具
-      if (configStore) {
+      if (configStore && isEnabled(TOOL_NAMES.IMAGE_GENERATION)) {
         const imageGenerationTool = createImageGenerationTool(configStore);
         tools.push(imageGenerationTool);
       }
       
       // 网络搜索工具
-      if (configStore) {
+      if (configStore && isEnabled(TOOL_NAMES.WEB_SEARCH)) {
         const webSearchTool = createWebSearchTool(configStore);
         tools.push(webSearchTool);
       }

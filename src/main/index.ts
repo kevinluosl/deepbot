@@ -865,6 +865,39 @@ function registerIpcHandlers() {
     }
   });
 
+  // 获取禁用工具列表
+  ipcMain.handle(IPC_CHANNELS.GET_DISABLED_TOOLS, async () => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      return { success: true, disabledTools: store.getDisabledTools() };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
+  // 批量保存工具禁用配置并 reset AgentRuntime
+  ipcMain.handle(IPC_CHANNELS.SAVE_DISABLED_TOOLS, async (_event, { disabledTools }: { disabledTools: string[] }) => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+
+      // 先清空所有禁用，再写入新的
+      const current = store.getDisabledTools();
+      for (const name of current) store.setToolDisabled(name, false);
+      for (const name of disabledTools) store.setToolDisabled(name, true);
+
+      // 重置所有 AgentRuntime，下次对话时用新工具列表重建
+      const { getGatewayInstance } = await import('./gateway');
+      const gateway = getGatewayInstance();
+      if (gateway) await gateway.reloadToolConfig();
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
   // ==================== 浏览器工具 ====================
   
   // 启动 Chrome 浏览器（带远程调试）
