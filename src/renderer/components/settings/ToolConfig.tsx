@@ -12,6 +12,7 @@ import {
 import { WebSearchToolConfig } from './WebSearchToolConfig';
 import { BrowserToolConfig } from './BrowserToolConfig';
 import { api } from '../../api';
+import { showToast } from '../../utils/toast';
 
 // 可供用户禁用的工具列表
 const TOGGLEABLE_TOOLS: Array<{ name: string; label: string; description: string }> = [
@@ -44,7 +45,6 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   const [disabledTools, setDisabledTools] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const hasLoadedRef = React.useRef(false);
 
   // 加载配置（防止 Strict Mode 重复执行）
@@ -101,20 +101,15 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
     try {
       const result = await api.saveDisabledTools(Array.from(disabledTools));
       if (result.success) {
-        showMessage('success', '已保存，Agent 将在下次对话时使用新工具配置');
+        showToast('success', '已保存，Agent 将在下次对话时使用新工具配置');
       } else {
-        showMessage('error', result.error || '保存失败');
+        showToast('error', result.error || '保存失败');
       }
     } catch (error) {
-      showMessage('error', '保存失败');
+      showToast('error', '保存失败');
     } finally {
       setSaving(false);
     }
-  };
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
   };
 
   // 当提供商改变时，更新默认 API 地址和模型
@@ -131,15 +126,15 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
 
   const handleSave = async () => {
     if (!imageGenConfig.model.trim()) {
-      showMessage('error', '请输入模型名称');
+      showToast('error', '请输入模型名称');
       return;
     }
     if (!imageGenConfig.apiUrl.trim()) {
-      showMessage('error', '请输入 API 地址');
+      showToast('error', '请输入 API 地址');
       return;
     }
     if (!imageGenConfig.apiKey.trim()) {
-      showMessage('error', '请输入 API Key');
+      showToast('error', '请输入 API Key');
       return;
     }
 
@@ -147,9 +142,9 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
 
     try {
       await api.saveImageGenerationToolConfig(imageGenConfig);
-      showMessage('success', '配置保存成功');
+      showToast('success', '配置保存成功');
     } catch (error) {
-      showMessage('error', `保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setSaving(false);
     }
@@ -325,15 +320,6 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               {saving ? '保存中...' : '保存配置'}
             </button>
           </div>
-
-          {/* 消息提示 */}
-          {message && (
-            <div className={`p-4 rounded-md ${
-              message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}>
-              {message.text}
-            </div>
-          )}
         </div>
       )}
 
@@ -499,13 +485,6 @@ SMTP_FROM=your@163.com`}
               {saving ? '保存中...' : '保存配置'}
             </button>
           </div>
-          {message && (
-            <div className={`p-3 rounded-md text-sm ${
-              message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}>
-              {message.text}
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
+import { showToast } from '../../utils/toast';
 
 interface ConnectorConfigProps {
   onClose: () => void;
@@ -54,7 +55,6 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   const [saving, setSaving] = useState(false);
   const [starting, setStarting] = useState(false);
   const [loadingPairing, setLoadingPairing] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   // 连接器健康状态：connectorId -> 'healthy' | 'unhealthy' | 'checking'
   const [connectorHealthMap, setConnectorHealthMap] = useState<Record<string, 'healthy' | 'unhealthy' | 'checking'>>({});
   const hasLoadedRef = useRef(false);
@@ -183,13 +183,13 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success) {
-        showMessage('success', '配对已批准');
+        showToast('success', '配对已批准');
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showMessage('error', actualResult.error || '批准失败');
+        showToast('error', actualResult.error || '批准失败');
       }
     } catch (error) {
-      showMessage('error', `批准失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `批准失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 
@@ -198,13 +198,13 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       const result = await api.connectorSetAdminPairing(connectorId, userId, isAdmin);
       const actualResult = result.data || result;
       if (actualResult.success) {
-        showMessage('success', isAdmin ? '已设为管理员' : '已取消管理员');
+        showToast('success', isAdmin ? '已设为管理员' : '已取消管理员');
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showMessage('error', actualResult.error || '操作失败');
+        showToast('error', actualResult.error || '操作失败');
       }
     } catch (error) {
-      showMessage('error', `操作失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `操作失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 
@@ -219,30 +219,25 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success) {
-        showMessage('success', '配对记录已删除');
+        showToast('success', '配对记录已删除');
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showMessage('error', actualResult.error || '删除失败');
+        showToast('error', actualResult.error || '删除失败');
       }
     } catch (error) {
-      showMessage('error', `删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
-  };
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
   };
 
   const handleSave = async () => {
     if (!selectedConnector) return;
 
     if (!feishuConfig.appId.trim()) {
-      showMessage('error', '请输入 App ID');
+      showToast('error', '请输入 App ID');
       return;
     }
     if (!feishuConfig.appSecret.trim()) {
-      showMessage('error', '请输入 App Secret');
+      showToast('error', '请输入 App Secret');
       return;
     }
 
@@ -253,10 +248,10 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
         ...feishuConfig,
         enabled: false, // 保存时不自动启用
       });
-      showMessage('success', '配置保存成功');
+      showToast('success', '配置保存成功');
       await loadConnectors(); // 重新加载列表
     } catch (error) {
-      showMessage('error', `保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setSaving(false);
     }
@@ -267,7 +262,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
 
     const connector = connectors.find(c => c.id === selectedConnector);
     if (!connector?.hasConfig) {
-      showMessage('error', '请先保存配置');
+      showToast('error', '请先保存配置');
       return;
     }
 
@@ -275,10 +270,10 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
 
     try {
       await api.connectorStart(selectedConnector);
-      showMessage('success', '连接器已启动');
+      showToast('success', '连接器已启动');
       await loadConnectors(); // 重新加载列表
     } catch (error) {
-      showMessage('error', `启动失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `启动失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setStarting(false);
     }
@@ -291,10 +286,10 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
 
     try {
       await api.connectorStop(selectedConnector);
-      showMessage('success', '连接器已停止');
+      showToast('success', '连接器已停止');
       await loadConnectors(); // 重新加载列表
     } catch (error) {
-      showMessage('error', `停止失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `停止失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setStarting(false);
     }
@@ -310,17 +305,6 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
           配置飞书、钉钉等外部通讯工具，让 AI 助手可以在这些平台上响应消息
         </p>
       </div>
-
-      {/* 消息提示 */}
-      {message && (
-        <div
-          className={`p-3 rounded-md ${
-            message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
 
       {/* 连接器列表 */}
       <div className="border-b border-gray-200">

@@ -9,6 +9,7 @@ import {
   WEB_SEARCH_PROVIDER_PRESETS 
 } from '../../../shared/config/default-configs';
 import { api } from '../../api';
+import { showToast } from '../../utils/toast';
 
 interface WebSearchToolConfig {
   provider: 'qwen' | 'gemini';  // 提供商类型（仅支持 Qwen 和 Gemini）
@@ -29,7 +30,6 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
     apiKey: '',
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const hasLoadedRef = React.useRef(false);
 
   // 加载当前配置（防止 Strict Mode 重复执行）
@@ -66,37 +66,33 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   const handleSave = async () => {
     // 验证配置
     if (!config.apiUrl) {
-      setSaveMessage({ type: 'error', text: '请输入 API 地址' });
+      showToast('error', '请输入 API 地址');
       return;
     }
 
     if (!config.model) {
-      setSaveMessage({ type: 'error', text: '请输入模型 ID' });
+      showToast('error', '请输入模型 ID');
       return;
     }
 
     if (!config.apiKey) {
-      setSaveMessage({ type: 'error', text: '请输入 API Key' });
+      showToast('error', '请输入 API Key');
       return;
     }
 
     setIsSaving(true);
-    setSaveMessage(null);
 
     try {
       const result = await api.saveWebSearchToolConfig(config);
       
       if (result.success) {
-        setSaveMessage({ 
-          type: 'success', 
-          text: '✅ 保存成功！' 
-        });
+        showToast('success', '✅ 保存成功！');
       } else {
-        setSaveMessage({ type: 'error', text: result.error || '保存失败' });
+        showToast('error', result.error || '保存失败');
       }
     } catch (error) {
       console.error('保存 Web Search 工具配置失败:', error);
-      setSaveMessage({ type: 'error', text: '保存失败，请重试' });
+      showToast('error', '保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
@@ -209,19 +205,6 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
             : 'Google Gemini API Key'}
         </p>
       </div>
-
-      {/* 保存消息 */}
-      {saveMessage && (
-        <div
-          className={`p-3 rounded-md ${
-            saveMessage.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}
-        >
-          {saveMessage.text}
-        </div>
-      )}
 
       {/* 保存按钮 */}
       <div className="flex justify-end pt-4 border-t">

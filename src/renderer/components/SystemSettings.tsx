@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { APP_VERSION } from '../../shared/constants/version';
 import { getPendingUpdate, onPendingUpdateChange, clearPendingUpdate } from '../utils/update-store';
+import { onToast } from '../utils/toast';
 import { QuickStart } from './settings/QuickStart';
 import { ModelConfig } from './settings/ModelConfig';
 import { EnvironmentConfig } from './settings/EnvironmentConfig';
@@ -31,18 +32,26 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
   const [activeTab, setActiveTab] = useState<SettingsTab>('quickstart');
   const [hasUpdate, setHasUpdate] = useState(false);
   const [pendingUpdateInfo, setPendingUpdateInfo] = useState<{ version: string } | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    // 初始化时读取已有的更新信息
     const existing = getPendingUpdate();
     if (existing) {
       setHasUpdate(true);
       setPendingUpdateInfo(existing);
     }
-    // 监听后续的更新通知
     const unsub = onPendingUpdateChange((info) => {
       setHasUpdate(true);
       setPendingUpdateInfo(info);
+    });
+    return unsub;
+  }, []);
+
+  // 订阅全局 Toast 事件
+  useEffect(() => {
+    const unsub = onToast(({ type, text }) => {
+      setToast({ type, text });
+      setTimeout(() => setToast(null), 3000);
     });
     return unsub;
   }, []);
@@ -51,7 +60,28 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
 
   return (
     <div className="settings-overlay">
-      <div className="settings-container">
+      <div className="settings-container" style={{ position: 'relative' }}>
+        {/* 悬浮 Toast 提示 */}
+        {toast && (
+          <div style={{
+            position: 'absolute',
+            top: '16px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            backgroundColor: toast.type === 'success' ? '#f0fdf4' : '#fef2f2',
+            color: toast.type === 'success' ? '#166534' : '#991b1b',
+            border: `1px solid ${toast.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+          }}>
+            {toast.text}
+          </div>
+        )}
         {/* 标题栏 */}
         <div className="settings-header">
           <h2 className="settings-title">系统设置</h2>

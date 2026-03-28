@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
+import { showToast } from '../../utils/toast';
 
 interface BrowserToolConfigProps {
   onClose?: () => void;
@@ -11,7 +12,6 @@ interface BrowserToolConfigProps {
 
 export function BrowserToolConfig({ onClose: _onClose }: BrowserToolConfigProps) {
   const [launching, setLaunching] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isDocker, setIsDocker] = useState(false);
 
   useEffect(() => {
@@ -20,22 +20,17 @@ export function BrowserToolConfig({ onClose: _onClose }: BrowserToolConfigProps)
     }).catch(() => {});
   }, []);
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
-  };
-
   const handleLaunchChrome = async () => {
     setLaunching(true);
     try {
       const result = await api.launchChromeWithDebug(9222);
       if (result.success) {
-        showMessage('success', 'Chrome 已启动，可以开始使用浏览器工具');
+        showToast('success', 'Chrome 已启动，可以开始使用浏览器工具');
       } else {
-        showMessage('error', result.message || '启动失败');
+        showToast('error', result.message || '启动失败');
       }
     } catch (error) {
-      showMessage('error', `启动失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', `启动失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setLaunching(false);
     }
@@ -109,15 +104,6 @@ export function BrowserToolConfig({ onClose: _onClose }: BrowserToolConfigProps)
               点击此按钮将自动启动 Chrome 浏览器并开启远程调试端口 9222
             </p>
           </div>
-
-          {/* 消息提示 */}
-          {message && (
-            <div className={`p-4 rounded-md ${
-              message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}>
-              {message.text}
-            </div>
-          )}
 
           {/* 手动启动 */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">

@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { PROVIDER_PRESETS } from '../../../shared/config/default-configs';
 import { api } from '../../api';
+import { showToast } from '../../utils/toast';
 
 interface ModelConfig {
   providerType: 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom';
@@ -39,7 +40,6 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
     apiKey: '',
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const hasLoadedRef = React.useRef(false);
   const [isFirstTimeConfig, setIsFirstTimeConfig] = useState(false);
   const [isFromEnv, setIsFromEnv] = useState(false); // 当前配置是否来自环境变量
@@ -101,22 +101,21 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   const handleSave = async () => {
     // 验证配置
     if (!config.baseUrl) {
-      setSaveMessage({ type: 'error', text: '请输入 API 地址' });
+      showToast('error', '请输入 API 地址');
       return;
     }
 
     if (!config.modelId) {
-      setSaveMessage({ type: 'error', text: '请输入模型 ID' });
+      showToast('error', '请输入模型 ID');
       return;
     }
 
     if (!config.apiKey) {
-      setSaveMessage({ type: 'error', text: '请输入 API Key' });
+      showToast('error', '请输入 API Key');
       return;
     }
 
     setIsSaving(true);
-    setSaveMessage(null);
 
     try {
       const result = await api.saveModelConfig(config);
@@ -124,10 +123,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success) {
-        setSaveMessage({ 
-          type: 'success', 
-          text: '✅ 保存成功！配置已生效' 
-        });
+        showToast('success', '✅ 保存成功！配置已生效');
         
         // 保存成功后，配置已写入数据库，不再是 env 来源
         setIsFromEnv(false);
@@ -139,11 +135,11 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           }, 1000); // 延迟 1 秒关闭，让用户看到成功提示
         }
       } else {
-        setSaveMessage({ type: 'error', text: actualResult.error || '保存失败' });
+        showToast('error', actualResult.error || '保存失败');
       }
     } catch (error) {
       console.error('保存模型配置失败:', error);
-      setSaveMessage({ type: 'error', text: '保存失败，请重试' });
+      showToast('error', '保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
@@ -361,19 +357,6 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           留空则根据模型 ID 自动推断（推荐）。如需精确值，请手动输入
         </p>
       </div>
-
-      {/* 保存消息 */}
-      {saveMessage && (
-        <div
-          className={`p-3 rounded-md ${
-            saveMessage.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}
-        >
-          {saveMessage.text}
-        </div>
-      )}
 
       {/* 操作按钮 */}
       <div className="flex justify-end pt-4 border-t">

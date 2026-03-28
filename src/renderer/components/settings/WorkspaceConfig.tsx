@@ -9,6 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { isElectron } from '../../utils/platform';
+import { showToast } from '../../utils/toast';
 
 interface WorkspaceConfigProps {
   onClose: () => void;
@@ -46,7 +47,6 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
   const [isDocker, setIsDocker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [newSkillDir, setNewSkillDir] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
   const hasLoadedRef = React.useRef(false);
@@ -104,7 +104,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       }
     } catch (error) {
       console.error('加载工作目录配置失败:', error);
-      showMessage('error', '加载配置失败');
+      showToast('error', '加载配置失败');
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
 
   const handleSaveWorkspaceDir = async () => {
     if (!settings.workspaceDir.trim()) {
-      showMessage('error', '默认工作目录不能为空');
+      showToast('error', '默认工作目录不能为空');
       return;
     }
 
@@ -121,14 +121,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showMessage('success', '默认工作目录已保存');
+        showToast('success', '默认工作目录已保存');
         clearDirty('workspaceDir');
       } else {
-        showMessage('error', result.error || '保存失败');
+        showToast('error', result.error || '保存失败');
       }
     } catch (error) {
       console.error('保存默认工作目录失败:', error);
-      showMessage('error', '保存失败');
+      showToast('error', '保存失败');
     } finally {
       setSaving(false);
     }
@@ -140,14 +140,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showMessage('success', 'Python 脚本目录已保存');
+        showToast('success', 'Python 脚本目录已保存');
         clearDirty('scriptDir');
       } else {
-        showMessage('error', result.error || '保存失败');
+        showToast('error', result.error || '保存失败');
       }
     } catch (error) {
       console.error('保存 Python 脚本目录失败:', error);
-      showMessage('error', '保存失败');
+      showToast('error', '保存失败');
     } finally {
       setSaving(false);
     }
@@ -159,14 +159,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showMessage('success', '图片生成目录已保存');
+        showToast('success', '图片生成目录已保存');
         clearDirty('imageDir');
       } else {
-        showMessage('error', result.error || '保存失败');
+        showToast('error', result.error || '保存失败');
       }
     } catch (error) {
       console.error('保存图片生成目录失败:', error);
-      showMessage('error', '保存失败');
+      showToast('error', '保存失败');
     } finally {
       setSaving(false);
     }
@@ -174,7 +174,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
 
   const handleAddSkillDir = async () => {
     if (!newSkillDir.trim()) {
-      showMessage('error', '请输入 Skill 目录路径');
+      showToast('error', '请输入 Skill 目录路径');
       return;
     }
 
@@ -186,13 +186,13 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         setSettings(result.settings);
         setNewSkillDir('');
         setShowAddInput(false);
-        showMessage('success', 'Skill 目录已添加');
+        showToast('success', 'Skill 目录已添加');
       } else {
-        showMessage('error', result.error || '添加失败');
+        showToast('error', result.error || '添加失败');
       }
     } catch (error) {
       console.error('添加 Skill 目录失败:', error);
-      showMessage('error', '添加失败');
+      showToast('error', '添加失败');
     } finally {
       setSaving(false);
     }
@@ -209,13 +209,13 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       
       if (result.success && result.settings) {
         setSettings(result.settings);
-        showMessage('success', 'Skill 目录已删除');
+        showToast('success', 'Skill 目录已删除');
       } else {
-        showMessage('error', result.error || '删除失败');
+        showToast('error', result.error || '删除失败');
       }
     } catch (error) {
       console.error('删除 Skill 目录失败:', error);
-      showMessage('error', '删除失败');
+      showToast('error', '删除失败');
     } finally {
       setSaving(false);
     }
@@ -228,21 +228,16 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       
       if (result.success && result.settings) {
         setSettings(result.settings);
-        showMessage('success', '默认 Skill 目录已设置');
+        showToast('success', '默认 Skill 目录已设置');
       } else {
-        showMessage('error', result.error || '设置失败');
+        showToast('error', result.error || '设置失败');
       }
     } catch (error) {
       console.error('设置默认 Skill 目录失败:', error);
-      showMessage('error', '设置失败');
+      showToast('error', '设置失败');
     } finally {
       setSaving(false);
     }
-  };
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
   };
 
   const handleResetWorkspaceDir = async () => {
@@ -253,7 +248,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('workspaceDir');
       }
     } catch (error) {
-      showMessage('error', '获取默认路径失败');
+      showToast('error', '获取默认路径失败');
     }
   };
 
@@ -265,7 +260,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('scriptDir');
       }
     } catch (error) {
-      showMessage('error', '获取默认路径失败');
+      showToast('error', '获取默认路径失败');
     }
   };
 
@@ -277,7 +272,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('imageDir');
       }
     } catch (error) {
-      showMessage('error', '获取默认路径失败');
+      showToast('error', '获取默认路径失败');
     }
   };
 
@@ -287,14 +282,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showMessage('success', '记忆管理目录已保存');
+        showToast('success', '记忆管理目录已保存');
         clearDirty('memoryDir');
       } else {
-        showMessage('error', result.error || '保存失败');
+        showToast('error', result.error || '保存失败');
       }
     } catch (error) {
       console.error('保存记忆管理目录失败:', error);
-      showMessage('error', '保存失败');
+      showToast('error', '保存失败');
     } finally {
       setSaving(false);
     }
@@ -308,7 +303,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('memoryDir');
       }
     } catch (error) {
-      showMessage('error', '获取默认路径失败');
+      showToast('error', '获取默认路径失败');
     }
   };
 
@@ -318,14 +313,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showMessage('success', '对话历史目录已保存');
+        showToast('success', '对话历史目录已保存');
         clearDirty('sessionDir');
       } else {
-        showMessage('error', result.error || '保存失败');
+        showToast('error', result.error || '保存失败');
       }
     } catch (error) {
       console.error('保存对话历史目录失败:', error);
-      showMessage('error', '保存失败');
+      showToast('error', '保存失败');
     } finally {
       setSaving(false);
     }
@@ -339,7 +334,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('sessionDir');
       }
     } catch (error) {
-      showMessage('error', '获取默认路径失败');
+      showToast('error', '获取默认路径失败');
     }
   };
 
@@ -669,14 +664,6 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         </div>
       </div>
 
-      {/* 消息提示 */}
-      {message && (
-        <div className={`p-4 rounded-md ${
-          message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-        }`}>
-          {message.text}
-        </div>
-      )}
     </div>
   );
 }
