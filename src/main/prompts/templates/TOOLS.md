@@ -439,456 +439,91 @@ google-chrome --remote-debugging-port=9222
 3. **从 `readme` 中提取正确的执行命令**：完整路径、脚本名、参数格式，不要猜测
 4. **适用于所有安装位置**：无论 Skill 安装在配置目录还是其他目录，都遵循相同流程
 
-### ⚠️ search 操作说明（重要）
+### ⚠️ find 操作说明（重要）
 
-`skill_manager` 的 `search` 操作**只能用来搜索可安装的 Skill**，不能用来搜索网络信息。
+`skill_manager` 的 `find` 操作**只能用来查找可安装的 Skill**，不能用来搜索网络信息。
 
-- ✅ `search`：在 Skill 仓库中查找可安装的 Skill（如 `{ "action": "search", "query": "youtube" }`）
-- ❌ `search` 不是网络搜索工具，不要用它来查天气、新闻、汇率等网络信息
+- ✅ `find`：在 Skill 仓库中查找可安装的 Skill（如 `{ "action": "find", "query": "youtube" }`）
+- ❌ `find` 不是网络搜索工具，不要用它来查天气、新闻、汇率等网络信息
 - 搜索网络信息请使用 `web_search` 工具或具有搜索能力的 Skill
-
-### 🔍 URL 安装流程（通用处理）
-
-**场景 1：用户提出需求，但不确定使用哪个 Skill**
-
-1. **先查找本地已安装的 Skill**
-   ```json
-   { "action": "list" }
-   ```
-
-2. **如果本地没有，搜索官方仓库**
-   ```json
-   { "action": "search", "query": "关键词" }
-   ```
-
-**场景 2：用户提供了 URL 并要求安装某个东西**
-
-⚠️ **重要**：用户提供 URL 时，不要直接假设是 Skill！先获取内容判断类型。
-
-**正确流程**：
-
-1. **使用 `web_fetch` 获取 URL 内容**
-   ```json
-   { "tool": "web_fetch", "url": "用户提供的URL", "mode": "full" }
-   ```
-
-2. **分析内容，判断项目类型**
-   - **Python 包**：查找 `setup.py`、`pyproject.toml`、`requirements.txt`
-   - **Node.js 包**：查找 `package.json`、`npm install` 说明
-   - **Skill 包**：查找 `SKILL.md` 文件或 skills/ 目录
-   - **普通软件**：查找安装说明、下载链接
-   - **脚本工具**：查找可执行脚本文件
-
-3. **根据项目类型选择安装方式**
-
-   **类型 A：Skill 包**
-   ```json
-   {
-     "action": "install",
-     "name": "skill-name",
-     "repository": "https://github.com/{owner}/{repo}/tree/{branch}/{skillPath}"
-   }
-   ```
-
-   **类型 B：Python 包**
-   ```json
-   {
-     "tool": "exec",
-     "command": "pip install package-name"
-   }
-   ```
-   或者如果有 requirements.txt：
-   ```json
-   {
-     "tool": "exec", 
-     "command": "pip install -r requirements.txt"
-   }
-   ```
-
-   **类型 C：Node.js 包**
-   ```json
-   {
-     "tool": "exec",
-     "command": "npm install -g package-name"
-   }
-   ```
-
-   **类型 D：需要克隆的项目**
-   ```json
-   {
-     "tool": "exec",
-     "command": "git clone <仓库地址> && cd <项目目录> && <安装命令>"
-   }
-   ```
-
-   **类型 E：直接下载的工具**
-   - 使用 `web_fetch` 下载文件
-   - 使用 `file_write` 保存到合适位置
-   - 使用 `exec` 设置执行权限
-
-**示例 1**（Python 包）：
-
-用户说："安装 https://github.com/microsoft/markitdown"
-
-```
-步骤 1: web_fetch("https://github.com/microsoft/markitdown")
-步骤 2: 分析内容，发现是 Python 包（有 setup.py 和 pip install 说明）
-步骤 3: 执行安装
-{
-  "tool": "exec",
-  "command": "pip install markitdown"
-}
-```
-
-**示例 2**（Skill 包）：
-
-用户说："安装 https://github.com/openclaw/skills"
-
-```
-步骤 1: web_fetch("https://github.com/openclaw/skills")
-步骤 2: 分析内容，发现是 Skill 仓库（有 skills/ 目录和多个 SKILL.md）
-步骤 3: 询问用户要安装哪个具体的 Skill
-步骤 4: 安装指定的 Skill
-{
-  "action": "install",
-  "name": "specific-skill",
-  "repository": "https://github.com/openclaw/skills/tree/main/skills/specific-skill"
-}
-```
-
-**示例 3**（Node.js 工具）：
-
-用户说："安装 https://github.com/some/nodejs-tool"
-
-```
-步骤 1: web_fetch("https://github.com/some/nodejs-tool")
-步骤 2: 分析内容，发现是 Node.js 包（有 package.json 和 npm install 说明）
-步骤 3: 执行安装
-{
-  "tool": "exec",
-  "command": "npm install -g nodejs-tool"
-}
-```
-
-**示例 4**（需要克隆的项目）：
-
-用户说："安装 https://github.com/some/custom-tool"
-
-```
-步骤 1: web_fetch("https://github.com/some/custom-tool")
-步骤 2: 分析内容，发现需要克隆后本地安装（README 说明了安装步骤）
-步骤 3: 执行克隆和安装
-{
-  "tool": "exec",
-  "command": "cd ~/.deepbot/tools && git clone https://github.com/some/custom-tool && cd custom-tool && ./install.sh"
-}
-```
 
 ### 使用时机
 - **搜索/安装/管理 Skill**：用户提到搜索、安装、查看、卸载 Skill 时使用
 - **执行任务时**：`## Skills` 中有匹配的 Skill → 优先使用；Skill 失败 → 改用内置工具重试
 
-⚠️ **重要**：当用户提供 URL 要求安装时，不要直接假设是 Skill！
-- 先用 `web_fetch` 获取内容判断项目类型
-- 根据项目类型选择合适的安装方式（pip、npm、git clone、skill_manager 等）
-- 只有确认是 Skill 包时才使用 `skill_manager` 工具
+### URL 安装流程
+
+用户提供 URL 要求安装时，**不要直接假设是 Skill**：
+1. 用 `web_fetch` 获取 URL 内容
+2. 判断项目类型（查找 `SKILL.md` → Skill 包；`setup.py`/`pyproject.toml` → Python 包；`package.json` → Node.js 包；其他 → 按 README 说明安装）
+3. 只有确认是 Skill 包时才用 `skill_manager install`，其他类型用 `exec` 工具安装（如 `pip install`、`npm install -g`、`git clone`）
 
 ### 安装方式
 
-**支持两种安装方式**：
+**远程安装**：`{ "action": "install", "name": "skill-name", "repository": "https://github.com/..." }`
 
-**1. 从 GitHub 安装（远程）**
-- `repository`: GitHub 仓库 URL
+**本地安装**：`{ "action": "install", "name": "skill-name", "repository": "~/.agents/skills/skill-name" }`
+- 支持 `file://`、绝对路径、`~` 开头路径
+- 已在默认目录中的 Skill 直接注册，不复制文件
 
-**2. 从本地目录安装（本地）**
-- `repository`: 本地路径（支持 `file://`、绝对路径、`~` 开头、相对路径）
+### 环境变量配置
 
-**本地安装行为**：
-- 如果 Skill 已在默认 Skill 目录中：直接注册，不复制文件
-- 如果 Skill 在其他位置：复制到默认 Skill 目录
-- 自动验证 SKILL.md 是否存在
+```json
+// 获取当前配置
+{ "action": "get-env", "name": "skill-name" }
 
-### 使用场景
-- ✅ 搜索可用的 Skills
-- ✅ 安装新的 Skills（远程或本地）
-- ✅ 查看已安装的 Skills
-- ✅ 获取 Skill 使用说明
-- ✅ 卸载不需要的 Skills
-- ✅ 执行任务时，如果已安装的 Skill 适合当前需求，直接使用
-
-### 正确执行流程（3 步）
+// 设置环境变量（写入 Skill 目录的 .env 文件，持久化保存）
+{ "action": "set-env", "name": "skill-name", "env": "API_KEY=xxx\nAPI_SECRET=yyy" }
 ```
-1. skill_manager(info) → 获取 SKILL.md
-2. 阅读 readme 字段 → 提取执行命令
-3. exec(bash) → 执行提取的命令
+
+### 🔴 执行 Skill 的完整流程（5 步）
+
+**步骤 1：调用 `info` 获取 SKILL.md**
+```json
+{ "action": "info", "name": "skill-name" }
+```
+
+**步骤 2：阅读 SKILL.md 内容**
+- `readme` 字段：功能、使用方法、执行命令
+- `configuration` 字段：所需配置（API Key、环境变量、依赖等）
+
+**步骤 3：检查并完成配置**
+- 需要配置 → 调用 `get-env` 检查，缺失则用 `set-env` 保存或询问用户
+- 不需要配置 → 跳过
+
+**步骤 4：从 `readme` 中提取执行命令**
+- 精确匹配 readme 中的脚本名、参数名、执行方式（不要猜测或修改）
+- 使用 `api_get_config` 查询 `defaultSkillDir` 获取安装路径
+
+**步骤 5：使用 `bash` 工具执行**
+```json
+{ "command": "cd <skillPath> && <执行命令>" }
 ```
 
 ### 示例
 
 **安装并使用 Skill**：
 ```json
-// 1. 搜索 Skill
-{ "action": "search", "query": "youtube" }
-
-// 2. 安装 Skill（远程）
-{
-  "action": "install",
-  "name": "video-transcript-downloader",
-  "repository": "https://github.com/openclaw/skills/tree/main/skills/steipete/video-transcript-downloader"
-}
-
-// 3. 查看使用说明
+// 1. 查找可安装的 Skill
+{ "action": "find", "query": "youtube" }
+// 2. 安装
+{ "action": "install", "name": "video-transcript-downloader" }
+// 3. 获取使用说明
 { "action": "info", "name": "video-transcript-downloader" }
-
-// 4. 执行（使用从 readme 中提取的命令）
-{
-  "command": "cd <defaultSkillDir>/video-transcript-downloader && python scripts/download.py --url 'https://youtube.com/watch?v=xxx'"
-}
+// 4. 按 readme 中的命令执行
+{ "command": "cd <skillPath>/video-transcript-downloader && python scripts/download.py --url 'https://youtube.com/watch?v=xxx'" }
 ```
 
-**本地安装示例**：
-```json
-// file:// 协议
-{
-  "action": "install",
-  "name": "split_4_image",
-  "repository": "file://~/.agents/skills/split_4_image"
-}
+### ❌ 常见错误
 
-// 绝对路径
-{
-  "action": "install",
-  "name": "split_4_image",
-  "repository": "~/.agents/skills/split_4_image"
-}
+- ❌ 没有先调用 `info`，直接猜测执行命令（文件名可能错误）
+- ❌ 调用了 `info` 但没按 readme 写的文件名和参数执行（自己编造）
+- ❌ 跳过配置检查直接执行（缺少 API Key 会失败）
+- ❌ 假设 Skill 一定在默认目录（用户可能安装在其他位置，以 `info` 返回的路径为准）
 
-// 用户目录
-{
-  "action": "install",
-  "name": "split_4_image",
-  "repository": "~/.agents/skills/split_4_image"
-}
-```
+### 特殊情况
 
-**配置 Skill 环境变量**：
-```json
-// 获取当前配置
-{ "action": "get-env", "name": "skill-name" }
-
-// 设置 API Key（写入 Skill 目录的 .env 文件，持久化保存，Docker 环境也有效）
-{
-  "action": "set-env",
-  "name": "skill-name",
-  "env": "API_KEY=your-key-here"
-}
-
-// 多个变量用换行分隔
-{
-  "action": "set-env",
-  "name": "skill-name",
-  "env": "API_KEY=xxx\nAPI_SECRET=yyy"
-}
-```
-
-### 🔴 强制要求：执行 Skill 的完整流程（5 步，缺一不可）
-
-**步骤 1：调用 `info` 获取 SKILL.md**
-```json
-{
-  "action": "info",
-  "name": "skill-name"
-}
-```
-
-**步骤 2：阅读 SKILL.md 内容**
-- 查看 `readme` 字段：了解 Skill 的功能、使用方法、执行命令
-- 查看 `configuration` 字段：确认所需配置（API Key、环境变量、依赖等）
-- 查看 `examples` 字段：参考使用示例
-
-**步骤 3：检查并完成配置**
-- 如果 SKILL.md 中说明需要配置（如 API Key、环境变量）：
-  - ✅ 能自动配置的：先自动完成配置（如设置环境变量）
-  - ✅ 需要用户提供的：明确告诉用户需要什么信息（如"需要 OpenAI API Key"），等待用户提供后再配置
-  - ❌ 不要跳过配置直接执行：会导致 Skill 执行失败
-- 如果 SKILL.md 中没有配置要求：直接进入下一步
-
-**步骤 4：从 `readme` 中提取执行命令**
-- **完整路径**：如 `<defaultSkillDir>/skill-name/scripts/main.py`（使用 `api_get_config` 查询 defaultSkillDir）
-- **脚本名称**：精确匹配 readme 中的文件名（不要猜测或修改）
-- **参数格式**：精确使用 readme 中的参数名（如 `--input` 不是 `--file`）
-- **执行方式**：如 `python`、`node`、`bash`（根据 readme 说明）
-
-**步骤 5：使用 `bash` 工具执行命令**
-```json
-{
-  "command": "cd <skillPath> && <执行命令>"
-}
-```
-
-### 📍 Skill 安装位置说明
-
-**无论 Skill 安装在哪里，都遵循相同的 5 步流程**：
-
-**情况 1：Skill 安装在配置的默认目录**
-- 默认目录：`~/.agents/skills/`（通过 `api_get_config` 查询 `defaultSkillDir`）
-- 执行路径：`<defaultSkillDir>/skill-name/`
-
-**情况 2：Skill 安装在其他目录**
-- 用户可能安装在：`~/my-skills/`、`/opt/skills/` 等任意位置
-- 执行路径：使用 `info` 返回的实际路径（SKILL.md 中会包含完整路径信息）
-
-**关键规则**：
-- ✅ 始终先调用 `info` 获取 SKILL.md（无论安装在哪里）
-- ✅ 从 SKILL.md 中获取正确的执行路径和命令
-- ❌ 不要假设 Skill 一定在默认目录
-- ❌ 不要猜测 Skill 的安装位置
-
-### 📋 执行命令提取规则
-
-从 `readme` 中查找以下信息：
-- **完整路径**：如 `<defaultSkillDir>/skill-name/scripts/main.py`（使用 `api_get_config` 查询 defaultSkillDir）
-- **脚本名称**：精确匹配 readme 中的文件名（不要猜测或修改）
-- **参数格式**：精确使用 readme 中的参数名（如 `--input` 不是 `--file`）
-- **执行方式**：如 `python`、`node`、`bash`（根据 readme 说明）
-
-### ✅ 正确示例（完整流程）
-
-**场景：用户要求使用图片处理 Skill**
-
-```json
-// 步骤 1: 获取 SKILL.md
-{
-  "action": "info",
-  "name": "image-processor"
-}
-
-// 步骤 2: 阅读返回的 SKILL.md 内容
-// readme 字段示例：
-// "使用方法：python scripts/process.py --input <输入文件> --output <输出文件>"
-// configuration 字段示例：
-// "需要配置：OPENAI_API_KEY 环境变量"
-
-// 步骤 3: 检查配置
-// 发现需要 OPENAI_API_KEY，询问用户：
-// "这个 Skill 需要 OpenAI API Key，请提供您的 API Key"
-// 用户提供后，使用 set-env 保存到 Skill 的 .env 文件（持久化，Docker 环境也有效）：
-{
-  "action": "set-env",
-  "name": "image-processor",
-  "env": "OPENAI_API_KEY=sk-xxx"
-}
-
-// 步骤 4: 从 readme 提取执行命令
-// 提取到：python scripts/process.py --input "input.jpg" --output "output.jpg"
-
-// 步骤 5: 执行命令
-{
-  "command": "cd ~/.agents/skills/image-processor && python scripts/process.py --input 'input.jpg' --output 'output.jpg'"
-}
-```
-
-**场景：Skill 安装在非默认目录**
-
-```json
-// 步骤 1: 获取 SKILL.md（无论安装在哪里）
-{
-  "action": "info",
-  "name": "custom-skill"
-}
-
-// 步骤 2-3: 阅读 SKILL.md，完成配置（同上）
-
-// 步骤 4: 从 readme 提取执行命令
-// 假设 SKILL.md 中说明：安装在 ~/my-custom-skills/custom-skill/
-
-// 步骤 5: 使用实际路径执行
-{
-  "command": "cd ~/my-custom-skills/custom-skill && python main.py --arg value"
-}
-```
-
-### ❌ 错误示例（不要这样做）
-
-```json
-// ❌ 错误 1: 没有先调用 info，直接猜测执行命令
-{
-  "command": "python ~/.agents/skills/example-skill/main.py ..."
-}
-// 问题：文件名可能错误！SKILL.md 中可能是 process.py 或 run.py
-
-// ❌ 错误 2: 调用了 info 但没有仔细阅读 readme，自己编造文件名
-{
-  "action": "info",
-  "name": "example-skill"
-}
-// 然后直接执行：
-{
-  "command": "python ~/.agents/skills/example-skill/scripts/run.py ..."
-}
-// 问题：readme 中明明写的是 process.py，不是 run.py！
-
-// ❌ 错误 3: 参数名自己编造
-{
-  "command": "python ~/.agents/skills/example-skill/scripts/process.py --file input.txt --out output.txt"
-}
-// 问题：readme 中的参数是 --input 和 --output，不是 --file 和 --out！
-
-// ❌ 错误 4: 跳过配置检查，直接执行
-{
-  "action": "info",
-  "name": "openai-skill"
-}
-// SKILL.md 中说明需要 OPENAI_API_KEY，但直接执行：
-{
-  "command": "cd ~/.agents/skills/openai-skill && python main.py"
-}
-// 问题：缺少必需的 API Key 配置，执行会失败！
-
-// ❌ 错误 5: 假设 Skill 在默认目录
-{
-  "command": "cd ~/.agents/skills/custom-skill && python main.py"
-}
-// 问题：用户可能安装在 ~/my-skills/custom-skill/，路径错误！
-```
-
-### 🎯 为什么必须这样做
-
-每个 Skill 实现方式不同：
-- **语言不同**：Node.js / Python / Bash / 可执行文件
-- **文件名不同**：`main.py` / `process.py` / `run.py` / `index.js` 等
-- **参数不同**：`--input` / `--file` / `-i` / `--source` 等
-- **路径不同**：`scripts/` / `bin/` / `src/` / 根目录
-- **配置要求不同**：有的需要 API Key，有的需要环境变量，有的需要依赖安装
-
-**只有 SKILL.md 才有正确答案，不要猜测！**
-
-### ⚠️ 配置检查的重要性
-
-**为什么必须先检查配置？**
-1. **避免执行失败**：缺少必需的 API Key 或环境变量会导致 Skill 执行失败
-2. **提升用户体验**：提前告知用户需要什么配置，而不是执行失败后才发现
-3. **自动化配置**：能自动配置的先自动完成，减少用户操作
-
-**常见配置类型**：
-- **API Key**：如 `OPENAI_API_KEY`、`ANTHROPIC_API_KEY`
-- **环境变量**：如 `PATH`、`PYTHONPATH`
-- **依赖安装**：如 `pip install requests`、`npm install axios`
-- **配置文件**：如 `config.json`、`.env`
-
-**配置检查流程**：
-```
-1. 从 SKILL.md 的 configuration 字段中查找配置要求
-2. 调用 get-env 检查 Skill 是否已有配置：{ "action": "get-env", "name": "skill-name" }
-3. 如果未配置：
-   - 需要用户提供的：明确告知用户需要什么（如"需要 OpenAI API Key"）
-   - 用户提供后，调用 set-env 保存：{ "action": "set-env", "name": "skill-name", "env": "KEY=VALUE" }
-   - set-env 会写入 Skill 目录的 .env 文件，持久化保存，Docker 环境也有效
-4. 配置完成后再执行 Skill
-```
-
-### 列出 Skills 的特殊情况
-
-**重要**：如果 `list` 操作返回 `count: 0` 和 `message: "当前没有安装任何 Skill"`，这是正常结果，表示系统中没有安装任何 Skill。不要重复调用，直接告诉用户即可。
+- `list` 返回 `count: 0` 是正常结果，表示没有安装任何 Skill，不要重复调用
 
 ---
 

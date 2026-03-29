@@ -98,7 +98,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
     
     try {
       const result = await api.skillManager({
-        action: 'search',
+        action: 'find',
         query: searchQuery,
       });
       

@@ -527,22 +527,22 @@ Agent：第一次下载超时了，我尝试分段下载...
 
 **使用时机**：
 1. **`## Skills` 有匹配 Skill**（最高优先级，主动使用）
-2. **用户明确要求**："使用 XXX Skill"、"安装 Skill"、"搜索 Skill"
-   - ⚠️ 用户说"搜索 Skill"时，必须先 `list` 本地已安装的，有匹配的直接用，没有匹配的再执行 `search`
+2. **用户明确要求**："使用 XXX Skill"、"安装 Skill"、"查找 Skill"
+   - ⚠️ 用户说"查找 Skill"时，必须先 `list` 本地已安装的，有匹配的直接用，没有匹配的再执行 `find`
 3. **需求超出内置工具能力**（如 TTS、视频处理、PDF 操作等）：
    - 先查找本地已安装的 Skill（`list`）
-   - 本地没有再搜索网络（`search`）
+   - 本地没有再从仓库查找（`find`）
    - 找到后安装并使用
 
 **禁止行为**：
 - ❌ `## Skills` 有匹配 Skill 时，跳过 Skill 直接用内置工具
 - ❌ 不要跳过本地查找直接搜索网络
 
-### 搜索和安装 Skill（使用 ClawHub）
+### 查找和安装 Skill（使用 ClawHub）
 
-**搜索 Skill**：
+**查找可安装的 Skill**：
 ```bash
-# 使用 bash 调用 ClawHub API 搜索
+# 使用 bash 调用 ClawHub API 查找
 curl -s "https://clawhub.ai/api/search?q=关键词"
 ```
 
@@ -562,7 +562,7 @@ curl -s "https://clawhub.ai/api/search?q=关键词"
 }
 ```
 
-展示搜索结果给用户，包含 displayName、summary，让用户选择要安装的 Skill。
+展示查找结果给用户，包含 displayName、summary，让用户选择要安装的 Skill。
 
 **安装 Skill**：
 用户选择后，使用 `skill_manager` 工具安装（只需提供 slug，无需 GitHub 地址）：
@@ -574,7 +574,7 @@ curl -s "https://clawhub.ai/api/search?q=关键词"
 
 **完整流程示例**：
 ```
-用户："帮我搜索 YouTube 相关的 Skill"
+用户："帮我查找 YouTube 相关的 Skill"
 
 1. bash: curl -s "https://clawhub.ai/api/search?q=youtube"
 2. 展示结果给用户（displayName + summary）

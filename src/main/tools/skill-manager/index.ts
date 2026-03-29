@@ -36,7 +36,7 @@ export function createSkillManagerTool(): AgentTool {
     description: `Skill 管理工具，用于搜索、安装、管理 DeepBot Skills。
 
 功能：
-- search: 从 ClawHub 搜索 Skill（返回 slug、displayName、description、stars 等），只用于搜索还没有安装的Skill，不用做其他任何场景
+- find: 从 ClawHub 查找可安装的 Skill（返回 slug、displayName、description、stars 等），仅用于查找未安装的 Skill，不能用于搜索网络信息
 - install: 安装 Skill（从 ClawHub 下载，只需提供 slug）
 - list: 列出已安装的 Skill
 - enable: 启用 Skill
@@ -47,7 +47,7 @@ export function createSkillManagerTool(): AgentTool {
 - get-env: 获取 Skill 的环境变量配置
 
 使用示例：
-- 搜索还没有安装的skill: { "action": "search", "query": "PDF" }
+- 查找可安装的 Skill: { "action": "find", "query": "PDF" }
 - 安装: { "action": "install", "name": "youtube-watcher" }
 - 列出: { "action": "list" }
 - 启用: { "action": "enable", "name": "pdf-editor" }
@@ -59,7 +59,7 @@ export function createSkillManagerTool(): AgentTool {
     
     parameters: Type.Object({
       action: Type.Union([
-        Type.Literal('search'),
+        Type.Literal('find'),
         Type.Literal('install'),
         Type.Literal('list'),
         Type.Literal('enable'),
@@ -69,7 +69,7 @@ export function createSkillManagerTool(): AgentTool {
         Type.Literal('get-env'),
         Type.Literal('set-env'),
       ], { description: '操作类型' }),
-      query: Type.Optional(Type.String({ description: '搜索关键词（search 操作）' })),
+      query: Type.Optional(Type.String({ description: '查找关键词（find 操作）' })),
       name: Type.Optional(Type.String({ description: 'Skill 名称/slug（install/enable/disable/uninstall/info/get-env/set-env 操作）' })),
       enabled: Type.Optional(Type.Boolean({ description: '是否只列出已启用的 Skill（list 操作）' })),
       env: Type.Optional(Type.String({ description: '环境变量内容，格式：KEY=VALUE，每行一个（set-env 操作）' })),
@@ -82,7 +82,7 @@ export function createSkillManagerTool(): AgentTool {
         let result: any;
         
         switch (action) {
-          case 'search':
+          case 'find':
             if (!query) {
               throw new Error('缺少参数: query');
             }
