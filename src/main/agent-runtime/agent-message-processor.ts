@@ -100,14 +100,13 @@ export class AgentMessageProcessor {
     console.log(`   清理后的响应长度: ${cleanResponse.length}`);
     console.log(`   清理后的响应预览: ${cleanResponse.substring(0, 200)}`);
 
-    // 🔥 假执行检测：响应中包含执行计划关键词，但全程没有任何工具调用
+    // 🔥 假执行检测：响应中包含明确的"开始执行"意图，但全程没有任何工具调用
     const planKeywords = [
       '现在开始执行',
       '开始执行',
       '立即执行',
       '现在执行',
-      '执行计划',
-      '按照计划',
+      '按照计划执行',
       '按计划执行',
     ];
     const cleanResponseLower = cleanResponse.toLowerCase();
