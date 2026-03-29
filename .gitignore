@@ -50,3 +50,4 @@ temp/
 /dist-web
 /dist-server
 *.gz
+/scripts/package-releases.sh
