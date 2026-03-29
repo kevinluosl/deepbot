@@ -150,6 +150,31 @@ export function QuickStart(_props: QuickStartProps) {
               前往「模型配置」，配置 Qwen、DeepSeek、Gemini、Minimax 或自定义模型的 API 密钥
             </div>
           </div>
+
+          {/* API Key 申请说明 */}
+          <div style={{ 
+            marginBottom: '10px',
+            marginLeft: '16px',
+            padding: '10px 12px',
+            background: 'rgba(0,0,0,0.1)',
+            borderRadius: '6px',
+            fontSize: '12px',
+            lineHeight: '1.6'
+          }}>
+            <div style={{ marginBottom: '6px', color: 'var(--settings-text)', fontWeight: '600' }}>
+              🔑 如何获取 API Key？（以 Qwen 为例）
+            </div>
+            <div style={{ lineHeight: '1.8' }}>
+              1. 访问 <span style={{ color: 'var(--settings-accent)' }}>dashscope.console.aliyun.com</span>，注册/登录阿里云账号<br/>
+              2. 进入控制台，点击右上角「API-KEY 管理」<br/>
+              3. 点击「创建新的 API-KEY」，复制生成的密钥<br/>
+              4. 回到 DeepBot「模型配置」页面，粘贴 API Key 并保存
+            </div>
+            <div style={{ marginTop: '8px', color: 'var(--settings-text-dim)', fontSize: '11px' }}>
+              其他提供商：DeepSeek → platform.deepseek.com | Gemini → aistudio.google.com | MiniMax → platform.minimaxi.com
+            </div>
+          </div>
+
           <div style={{ marginBottom: '10px' }}>
             <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>第二步：配置工具（可选）</span>
             <div style={{ marginLeft: '16px', marginTop: '4px' }}>
