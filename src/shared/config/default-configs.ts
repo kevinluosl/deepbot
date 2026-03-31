@@ -9,6 +9,13 @@
  * 提供商预设配置
  */
 export const PROVIDER_PRESETS = {
+  deepbot: {
+    name: 'DeepBot',
+    baseUrl: 'https://www.im-director.com/api/llm-proxy',
+    defaultModelId: 'deepseek-v3.2',
+    defaultModelId2: 'step-3.5-flash',  // 快速模型
+    apiType: 'openai-completions',
+  },
   qwen: {
     name: 'Qwen',
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',

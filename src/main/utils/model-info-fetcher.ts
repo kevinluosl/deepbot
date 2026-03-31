@@ -12,52 +12,72 @@
  */
 export function getContextWindowFromModelId(modelId: string): number {
   const lowerModelId = modelId.toLowerCase();
-  
+
   // Claude 系列
   if (lowerModelId.includes('claude')) {
-    return 200000;
+    return 1000000;
   }
-  
+
   // OpenAI GPT 系列
-  if (lowerModelId.includes('gpt-4o')) {
-    return 128000;
+  if (lowerModelId.includes('gpt-5.4')) {
+    return 1050000;
   }
-  if (lowerModelId.includes('gpt-4')) {
-    return 128000;
+  if (lowerModelId.includes('gpt-5') && lowerModelId.includes('codex')) {
+    return 400000;
   }
-  if (lowerModelId.includes('gpt-3.5') || lowerModelId.includes('gpt-35')) {
-    return 16000;
+  if (lowerModelId.includes('gpt-4o-mini')) {
+    return 128000;
   }
   if (lowerModelId.includes('gpt')) {
-    return 128000; // GPT 系列默认值
+    return 120000;
   }
-  
+
   // DeepSeek 系列
   if (lowerModelId.includes('deepseek')) {
-    return 64000;
+    return 164000;
   }
-  
+
   // Qwen (通义千问) 系列
-  if (lowerModelId.includes('qwen3.5-plus')) {
-    return 1000000; // Qwen 3.5 Plus 支持 1M 上下文
-  }
-  if (lowerModelId.includes('qwen-long')) {
+  if (lowerModelId.includes('qwen3.5-plus') || lowerModelId.includes('qwen-long')) {
     return 1000000;
   }
   if (lowerModelId.includes('qwen')) {
-    return 32000; // Qwen 系列默认值
+    return 256000;
   }
-  
+
   // MiniMax 系列
   if (lowerModelId.includes('minimax') || lowerModelId.includes('abab')) {
-    return 245000; // MiniMax 默认值
+    return 205000;
   }
-  
+
   // GLM (智谱) 系列
   if (lowerModelId.includes('glm')) {
-    return 128000; // GLM 系列默认值
+    return 203000;
+  }
+
+  // Moonshot / Kimi 系列
+  if (lowerModelId.includes('kimi') || lowerModelId.includes('moonshot')) {
+    return 262000;
+  }
+
+  // Gemini 系列
+  if (lowerModelId.includes('gemini')) {
+    return 1000000;
+  }
+
+  // 小米 MiMo 系列
+  if (lowerModelId.includes('mimo-v2-pro')) {
+    return 1000000;
+  }
+  if (lowerModelId.includes('mimo')) {
+    return 262000;
   }
   
+  // StepFun 阶跃星辰系列
+  if (lowerModelId.includes('step')) {
+    return 262000;
+  }
+
   // 默认值（未知模型）
-  return 32000;
+  return 160000;
 }

@@ -105,7 +105,7 @@
   content: '> ';
 }
 
-/* 关闭按钮 */
+/* 关闭按钮 - 基础样式（最终覆盖在文件末尾） */
 .settings-close-button,
 .fixed button[class*="text-gray-400"] {
   background: transparent !important;
@@ -118,7 +118,7 @@
 .fixed button[class*="text-gray-400"]:hover {
   color: var(--settings-error) !important;
   border-color: var(--settings-error) !important;
-  background: var(--terminal-accent-bg-hover) !important;
+  background: transparent !important;
 }
 
 /* ========== 侧边栏（系统设置专用） ========== */
@@ -596,4 +596,25 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* ========== 关闭按钮最终覆盖（特异性高于 .settings-panel button） ========== */
+button.settings-close-button {
+  background: transparent !important;
+  border: 1px solid var(--settings-border) !important;
+  color: var(--settings-text-dim) !important;
+  padding: 6px !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-shadow: none !important;
+}
+
+button.settings-close-button:hover,
+button.settings-close-button:hover:not(:disabled) {
+  color: var(--settings-error) !important;
+  border-color: var(--settings-error) !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }

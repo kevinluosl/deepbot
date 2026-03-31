@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import qrcodeImg from '../../assets/qrcode.png';
 
 interface QuickStartProps {
   onClose: () => void;
@@ -147,7 +148,7 @@ export function QuickStart(_props: QuickStartProps) {
           <div style={{ marginBottom: '10px' }}>
             <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>第一步：配置主大模型（必需）</span>
             <div style={{ marginLeft: '16px', marginTop: '4px' }}>
-              前往「模型配置」，配置 Qwen、DeepSeek、Gemini、Minimax 或自定义模型的 API 密钥
+              前往「模型配置」，选择提供商并配置 API 密钥
             </div>
           </div>
 
@@ -161,17 +162,28 @@ export function QuickStart(_props: QuickStartProps) {
             fontSize: '12px',
             lineHeight: '1.6'
           }}>
-            <div style={{ marginBottom: '6px', color: 'var(--settings-text)', fontWeight: '600' }}>
-              🔑 如何获取 API Key？（以 Qwen 为例）
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ color: 'var(--settings-text)', fontWeight: '600', marginBottom: '4px' }}>
+                🔑 方式一：扫码获取 DeepBot Token
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--settings-text-dim)', marginBottom: '8px' }}>
+                选择 DeepBot 提供商时，扫码添加微信获取 Token
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <img src={qrcodeImg} alt="扫码添加微信" style={{ width: '120px', height: '120px', borderRadius: '6px' }} />
+              </div>
             </div>
-            <div style={{ lineHeight: '1.8' }}>
-              1. 访问 <span style={{ color: 'var(--settings-accent)' }}>dashscope.console.aliyun.com</span>，注册/登录阿里云账号<br/>
-              2. 进入控制台，点击右上角「API-KEY 管理」<br/>
-              3. 点击「创建新的 API-KEY」，复制生成的密钥<br/>
-              4. 回到 DeepBot「模型配置」页面，粘贴 API Key 并保存
-            </div>
-            <div style={{ marginTop: '8px', color: 'var(--settings-text-dim)', fontSize: '11px' }}>
-              其他提供商：DeepSeek → platform.deepseek.com | Gemini → aistudio.google.com | MiniMax → platform.minimaxi.com
+            <hr style={{ border: 'none', borderTop: '1px solid var(--settings-border)', margin: '10px 0' }} />
+            <div>
+              <div style={{ color: 'var(--settings-text)', fontWeight: '600', marginBottom: '4px' }}>
+                🔑 方式二：自行申请（以 Qwen 为例）
+              </div>
+              <div style={{ lineHeight: '1.8' }}>
+                1. 访问 <span style={{ color: 'var(--settings-accent)' }}>dashscope.console.aliyun.com</span><br/>
+                2. 进入控制台 →「API-KEY 管理」<br/>
+                3. 创建 API-KEY，复制密钥<br/>
+                4. 粘贴到此处保存即可
+              </div>
             </div>
           </div>
 

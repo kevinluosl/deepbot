@@ -8,9 +8,11 @@ import React, { useState, useEffect } from 'react';
 import { PROVIDER_PRESETS } from '../../../shared/config/default-configs';
 import { api } from '../../api';
 import { showToast } from '../../utils/toast';
+import { X } from 'lucide-react';
+import qrcodeImg from '../../assets/qrcode.png';
 
 interface ModelConfig {
-  providerType: 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom';
+  providerType: 'deepbot' | 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom';
   providerId: string;
   providerName: string;
   baseUrl: string;
@@ -43,6 +45,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   const hasLoadedRef = React.useRef(false);
   const [isFirstTimeConfig, setIsFirstTimeConfig] = useState(false);
   const [isFromEnv, setIsFromEnv] = useState(false); // 当前配置是否来自环境变量
+  const [showApiKeyHelp, setShowApiKeyHelp] = useState(false); // 显示 API Key 帮助模态框
 
   // 加载当前配置（防止 Strict Mode 重复执行）
   useEffect(() => {
@@ -81,7 +84,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   };
 
   // 处理提供商类型变化
-  const handleProviderTypeChange = (providerType: 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom') => {
+  const handleProviderTypeChange = (providerType: 'deepbot' | 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom') => {
     const preset = PROVIDER_PRESETS[providerType];
     
     setConfig({
@@ -125,8 +128,8 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       if (actualResult.success) {
         showToast('success', '✅ 保存成功！配置已生效');
         
-        // 保存成功后，配置已写入数据库，不再是 env 来源
-        setIsFromEnv(false);
+        // 保存成功后重新加载配置，获取后端推断的上下文窗口值
+        await loadConfig();
         
         // 🔥 如果是第一次配置，延迟关闭窗口让用户看到初始化过程
         if (isFirstTimeConfig) {
@@ -203,14 +206,15 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         </label>
         <select
           value={config.providerType}
-          onChange={(e) => handleProviderTypeChange(e.target.value as 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom')}
+          onChange={(e) => handleProviderTypeChange(e.target.value as 'deepbot' | 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="qwen">Qwen（推荐）</option>
+          <option value="deepbot">DeepBot（推荐）</option>
+          <option value="qwen">Qwen</option>
           <option value="deepseek">DeepSeek</option>
           <option value="gemini">Google Gemini</option>
           <option value="minimax">MiniMax</option>
-          <option value="custom">自定义（OpenAI、OpenRouter、Claude）</option>
+          <option value="custom">自定义（OpenAI、Claude）</option>
         </select>
         <p className="mt-1 text-xs text-gray-500">
           选择预设提供商或自定义配置
@@ -240,7 +244,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       {/* API 地址 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          API 地址
+          API 地址 <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -259,12 +263,12 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       {/* 模型 ID */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          模型 ID（主模型）
+          模型 ID（主模型） <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={config.modelId}
-          onChange={(e) => setConfig({ ...config, modelId: e.target.value, modelName: e.target.value })}
+          onChange={(e) => setConfig({ ...config, modelId: e.target.value, modelName: e.target.value, contextWindow: undefined })}
           placeholder={
             config.providerType === 'qwen' 
               ? 'qwen-max' 
@@ -320,9 +324,15 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
 
       {/* API Key */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          API Key
-        </label>
+        <div className="flex items-center gap-2 mb-2">
+          <label className="text-sm font-medium text-gray-700">API Key <span className="text-red-500">*</span></label>
+          <span
+            onClick={() => setShowApiKeyHelp(true)}
+            style={{ fontSize: '11px', color: 'var(--settings-accent)', cursor: 'pointer' }}
+          >
+            如何获取？
+          </span>
+        </div>
         <input
           type="password"
           value={config.apiKey}
@@ -368,6 +378,39 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           {isSaving ? '保存并测试...' : '保存配置'}
         </button>
       </div>
+
+      {/* 如何获取 API Key 模态框 */}
+      {showApiKeyHelp && (
+        <div className="settings-overlay" onClick={() => setShowApiKeyHelp(false)}>
+          <div className="settings-container" onClick={(e) => e.stopPropagation()} style={{ width: '300px', maxWidth: '300px', height: 'auto', maxHeight: '70vh' }}>
+            <div className="settings-header">
+              <h2 className="settings-title" style={{ fontSize: '13px' }}>获取 API KEY</h2>
+              <button className="settings-close-button" onClick={() => setShowApiKeyHelp(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ padding: '14px 16px', overflowY: 'auto' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--settings-text)', marginBottom: '4px' }}>方式一：扫码获取 DeepBot Token</div>
+                <div style={{ fontSize: '11px', color: 'var(--settings-text-dim)', marginBottom: '8px' }}>选择 DeepBot 提供商时，扫码添加微信获取 Token</div>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <img src={qrcodeImg} alt="扫码添加微信" style={{ width: '140px', height: '140px', borderRadius: '6px' }} />
+                </div>
+              </div>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--settings-border)', margin: '12px 0' }} />
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--settings-text)', marginBottom: '4px' }}>方式二：自行申请（以 Qwen 为例）</div>
+                <div style={{ fontSize: '11px', color: 'var(--settings-text-dim)', lineHeight: '1.8' }}>
+                  1. 访问 <span style={{ color: 'var(--settings-accent)' }}>dashscope.console.aliyun.com</span><br/>
+                  2. 进入控制台 →「API-KEY 管理」<br/>
+                  3. 创建 API-KEY，复制密钥<br/>
+                  4. 粘贴到此处保存即可
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
