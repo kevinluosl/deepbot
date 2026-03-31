@@ -11,7 +11,7 @@
 export const PROVIDER_PRESETS = {
   deepbot: {
     name: 'DeepBot',
-    baseUrl: 'https://www.im-director.com/api/llm-proxy',
+    baseUrl: 'https://www.im-director.com/api/llm-v1',
     defaultModelId: 'minimax-m2.5',
     defaultModelId2: 'minimax-m2.5',  // 快速模型
     apiType: 'openai-completions',
@@ -61,7 +61,7 @@ export const PROVIDER_PRESETS = {
 export const IMAGE_GENERATION_PROVIDER_PRESETS = {
   deepbot: {
     name: 'DeepBot（Nano banana 2）',
-    baseUrl: 'https://www.im-director.com/api/gemini-proxy',
+    baseUrl: 'https://www.im-director.com/api/gemini-v1',
     defaultModelId: 'gemini-3.1-flash-image-preview',
   },
   gemini: {
@@ -82,7 +82,7 @@ export const IMAGE_GENERATION_PROVIDER_PRESETS = {
 export const WEB_SEARCH_PROVIDER_PRESETS = {
   deepbot: {
     name: 'DeepBot',
-    baseUrl: 'https://www.im-director.com/api/gemini-proxy',
+    baseUrl: 'https://www.im-director.com/api/gemini-v1',
     defaultModelId: 'gemini-3-flash-preview',
   },
   qwen: {
