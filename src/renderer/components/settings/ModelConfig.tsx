@@ -45,6 +45,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   const [isFirstTimeConfig, setIsFirstTimeConfig] = useState(false);
   const [isFromEnv, setIsFromEnv] = useState(false); // 当前配置是否来自环境变量
   const [showApiKeyHelp, setShowApiKeyHelp] = useState(false); // 显示 API Key 帮助模态框
+  const [showModelDropdown, setShowModelDropdown] = useState(false); // DeepBot 模型下拉菜单
 
   // 加载当前配置（防止 Strict Mode 重复执行）
   useEffect(() => {
@@ -264,24 +265,61 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           模型 ID（主模型） <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
-          value={config.modelId}
-          onChange={(e) => setConfig({ ...config, modelId: e.target.value, modelName: e.target.value, contextWindow: undefined })}
-          placeholder={
-            config.providerType === 'qwen' 
-              ? 'qwen-max' 
-              : config.providerType === 'deepseek' 
-                ? 'deepseek-chat' 
-                : config.providerType === 'gemini'
-                  ? 'gemini-3-pro-preview'
-                  : config.providerType === 'minimax'
-                    ? 'MiniMax-M2.5'
-                    : 'model-id'
-          }
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        {config.providerType === 'deepbot' ? (
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              value={config.modelId}
+              onChange={(e) => setConfig({ ...config, modelId: e.target.value, modelName: e.target.value, contextWindow: undefined })}
+              onFocus={() => setShowModelDropdown(true)}
+              onBlur={() => setTimeout(() => setShowModelDropdown(false), 150)}
+              placeholder="deepseek-v3.2"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {showModelDropdown && (
+              <ul style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                background: 'var(--settings-bg, #fff)', border: '1px solid var(--settings-border, #d1d5db)',
+                borderTop: 'none', borderRadius: '0 0 6px 6px', maxHeight: '200px', overflowY: 'auto',
+                listStyle: 'none', margin: 0, padding: '4px 0',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}>
+                {['deepseek-v3.2', 'minimax-m2.5', 'minimax-m2.7', 'glm-4.7', 'kimi-k2.5', 'step-3.5-flash', 'qwen3.5-plus-02-15'].map(id => (
+                  <li key={id}
+                    onMouseDown={() => setConfig({ ...config, modelId: id, modelName: id, contextWindow: undefined })}
+                    style={{
+                      padding: '6px 12px', cursor: 'pointer', fontSize: '13px',
+                      color: config.modelId === id ? 'var(--settings-accent, #3b82f6)' : 'var(--settings-text, #333)',
+                      fontWeight: config.modelId === id ? 600 : 400,
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--settings-bg-light, rgba(59,130,246,0.08))'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >{id}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <input
+            type="text"
+            value={config.modelId}
+            onChange={(e) => setConfig({ ...config, modelId: e.target.value, modelName: e.target.value, contextWindow: undefined })}
+            placeholder={
+              config.providerType === 'qwen' 
+                ? 'qwen-max' 
+                : config.providerType === 'deepseek' 
+                  ? 'deepseek-chat' 
+                  : config.providerType === 'gemini'
+                    ? 'gemini-3-pro-preview'
+                    : config.providerType === 'minimax'
+                      ? 'MiniMax-M2.5'
+                      : 'model-id'
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        )}
         <p className="mt-1 text-xs text-gray-500">
+          {config.providerType === 'deepbot' && '从列表选择或输入自定义模型 ID'}
           {config.providerType === 'qwen' && '推荐: qwen-max（高质量）或 qwen-plus（平衡）'}
           {config.providerType === 'deepseek' && '推荐: deepseek-chat'}
           {config.providerType === 'gemini' && '推荐: gemini-3-pro-preview（高质量）或 gemini-3-flash-preview（快速）'}
