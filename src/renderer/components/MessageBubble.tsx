@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDuration, formatTimestamp } from '../../shared/utils/time-format';
 import { api } from '../api';
+import { Tooltip } from './Tooltip';
 
 interface MessageBubbleProps {
   message: Message;
@@ -255,16 +256,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   //   }
   // };
 
-  // 复制消息内容 - 已禁用
-  // const handleCopy = async () => {
-  //   try {
-  //     await navigator.clipboard.writeText(message.content);
-  //     setCopySuccess(true);
-  //     setTimeout(() => setCopySuccess(false), 2000);
-  //   } catch (err) {
-  //     console.error('复制失败:', err);
-  //   }
-  // };
+  // 复制消息内容
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('复制失败:', err);
+    }
+  };
 
   // 过滤系统提示信息
   const filterSystemPrompts = (content: string): string => {
@@ -313,7 +314,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   };
 
   return (
-    <div className="terminal-line">
+    <div className={`terminal-line${isUser ? ' terminal-line-user' : ''}`}>
       {/* 提示符和消息内容在同一行 */}
       <div className="terminal-message-line">
         <span className={`terminal-prompt ${promptClass}`}>{prompt}</span>
@@ -534,9 +535,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
         </div>
       )}
       
-      {/* 🔥 总执行时间 - 只在 Agent 消息且有执行时间时显示 */}
+      {/* 🔥 总执行时间 + 操作按钮 - 只在 Agent 消息且有执行时间时显示 */}
       {!isUser && !isSystem && message.totalDuration !== undefined && (
-        <div className="terminal-execution-time">
+        <div className="terminal-execution-time" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="terminal-execution-time-label">执行时间:</span>
           <span className="terminal-execution-time-value">
             {formatDuration(message.totalDuration)}
@@ -546,6 +547,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               (发送于 {formatTimestamp(message.sentAt)})
             </span>
           )}
+          {/* 复制按钮 */}
+          <span style={{ display: 'inline-flex', gap: '4px', marginLeft: '4px' }}>
+            <Tooltip content={copySuccess ? '已复制' : '复制回答'}>
+              <button
+                onClick={handleCopy}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'inline-flex', alignItems: 'center', opacity: 0.5 }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+            </Tooltip>
+          </span>
         </div>
       )}
     </div>

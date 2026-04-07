@@ -52,7 +52,7 @@
   --terminal-accent-bg-active: rgba(0, 122, 255, 0.12);
   --terminal-accent-border: rgba(0, 122, 255, 0.2);
   --terminal-accent-glow: rgba(0, 122, 255, 0.12);
-  --terminal-line-hover: transparent;
+  --terminal-line-hover: rgba(0, 122, 255, 0.04);
   --terminal-header-bg: rgba(255, 255, 255, 0.8);
   --terminal-input-focus-bg: #ffffff;
 }
@@ -129,8 +129,8 @@
   /* animation: fadeIn 0.3s ease-in; */
 }
 
-/* 鼠标悬停高亮 - 使用 CSS :hover 避免影响文本选择 */
-.terminal-line:hover {
+/* 用户消息行固定背景色 */
+.terminal-line.terminal-line-user {
   background-color: var(--terminal-line-hover);
 }
 
