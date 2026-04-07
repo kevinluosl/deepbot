@@ -19,7 +19,7 @@ export class SessionManager {
   
   // 配置常量
   private readonly MAX_UI_ROUNDS = 100;      // UI 显示最多 100 轮
-  private readonly MAX_CONTEXT_ROUNDS = 10;  // Agent 上下文最多 10 轮
+  private readonly MAX_CONTEXT_ROUNDS = 50;  // Agent 上下文最多 50 轮
   
   constructor(sessionDir: string) {
     this.sessionStore = new SessionStore(sessionDir);
@@ -115,7 +115,7 @@ export class SessionManager {
   }
   
   /**
-   * 加载 Agent 上下文消息（最近 10 轮）
+   * 加载 Agent 上下文消息（最近 50 轮）
    */
   async loadContextMessages(tabId: string): Promise<SessionMessage[]> {
     try {

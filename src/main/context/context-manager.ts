@@ -8,6 +8,7 @@
 import type { AgentMessage } from '@mariozechner/pi-agent-core';
 import { 
   estimateMessagesTokens, 
+  estimateTextTokens,
   getContextWindowTokens,
   calculateContextUsage 
 } from '../utils/token-estimator';
@@ -122,18 +123,18 @@ export function manageContext(params: {
   let fixedOverheadTokens = 0;
   
   if (systemPrompt) {
-    fixedOverheadTokens += Math.ceil(systemPrompt.length / 3.5);
+    fixedOverheadTokens += estimateTextTokens(systemPrompt);
   }
   
   if (tools && tools.length > 0) {
-    let toolsCharCount = 0;
+    let toolsText = '';
     for (const tool of tools) {
-      toolsCharCount += (tool.name || '').length;
-      toolsCharCount += (tool.label || '').length;
-      toolsCharCount += (tool.description || '').length;
-      toolsCharCount += JSON.stringify(tool.parameters || {}).length;
+      toolsText += (tool.name || '') + ' ';
+      toolsText += (tool.label || '') + ' ';
+      toolsText += (tool.description || '') + ' ';
+      toolsText += JSON.stringify(tool.parameters || {});
     }
-    fixedOverheadTokens += Math.ceil(toolsCharCount / 3.5);
+    fixedOverheadTokens += estimateTextTokens(toolsText);
   }
 
   // 如果未启用，直接返回

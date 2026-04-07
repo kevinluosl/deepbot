@@ -215,7 +215,7 @@ export class AgentRuntime {
       // 更新 MessageHandler 的 Agent 引用
       this.messageHandler.setAgent(agent);
       
-      // 🔥 加载历史消息到 Agent 上下文（最近 10 轮）
+      // 🔥 加载历史消息到 Agent 上下文（最近 50 轮，其中 10 轮完整，其余精简）
       await this.loadHistoryToContext();
       
       // 异步初始化系统提示词（不阻塞）
@@ -231,7 +231,7 @@ export class AgentRuntime {
   /**
    * 从 Session 加载历史消息到 Agent 上下文
    * 
-   * 加载最近 10 轮对话，如果超出上下文限制，使用现有的压缩规则压缩
+   * 加载最近 50 轮对话，最近 10 轮保留完整工具信息，其余只保留文本
    */
   private async loadHistoryToContext(): Promise<void> {
       try {
@@ -258,7 +258,7 @@ export class AgentRuntime {
           return;
         }
 
-        // 加载最近 10 轮对话（按用户消息计算）
+        // 加载最近 50 轮对话（按用户消息计算）
         const contextMessages = await sessionManager.loadContextMessages(this.runtimeConfig.sessionId);
 
         if (contextMessages.length === 0) {
@@ -275,7 +275,7 @@ export class AgentRuntime {
         if (this.instanceManager.agent) {
           this.instanceManager.agent.state.messages.push(...agentMessages);
 
-          // 🔥 确保消息队列不超过 10 轮用户对话
+          // 🔥 确保消息队列不超过 50 轮用户对话
           this.maintainMessageQueue();
 
           // 🔥 使用现有的上下文压缩功能
@@ -385,9 +385,10 @@ export class AgentRuntime {
   }
 
   /**
-   * 维护消息队列，确保不超过 10 轮用户对话
-   *
-   * 一轮对话 = 1个用户消息 + 所有相关的回复消息（assistant、toolResult等）
+   * 维护消息队列，确保不超过 50 轮用户对话
+   * 
+   * 最近 10 轮：保留完整消息（包含工具调用和结果）
+   * 第 11-50 轮：只保留 user 和 assistant 文本消息，去掉工具信息
    */
   private maintainMessageQueue(): void {
     if (!this.instanceManager.agent) {
@@ -395,7 +396,8 @@ export class AgentRuntime {
     }
 
     const messages = this.instanceManager.agent.state.messages;
-    const maxUserRounds = 10;
+    const maxUserRounds = 50;
+    const fullDetailRounds = 10;
 
     // 找到所有用户消息的索引
     const userMessageIndices: number[] = [];
@@ -405,21 +407,62 @@ export class AgentRuntime {
       }
     }
 
-    // 如果用户消息数量超过限制，删除最老的轮次
+    // 如果用户消息数量超过 50 轮，删除最老的轮次
     if (userMessageIndices.length > maxUserRounds) {
       const excessRounds = userMessageIndices.length - maxUserRounds;
-
-      // 计算需要删除的消息范围
-      // 从第一个用户消息开始，到第 excessRounds 个用户消息的下一个用户消息之前
-      const deleteStartIndex = 0;
-      const deleteEndIndex = userMessageIndices[excessRounds]; // 不包含这个索引
-
-      // 删除消息
-      messages.splice(deleteStartIndex, deleteEndIndex);
+      const deleteEndIndex = userMessageIndices[excessRounds];
+      messages.splice(0, deleteEndIndex);
 
       console.log(`[AgentRuntime] 🗑️ 删除了 ${excessRounds} 轮旧对话，保留最近 ${maxUserRounds} 轮`);
-      console.log(`[AgentRuntime] 📊 当前消息队列: ${messages.length} 条消息，${messages.filter(m => m.role === 'user').length} 轮用户对话`);
     }
+
+    // 重新计算用户消息索引
+    const updatedUserIndices: number[] = [];
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].role === 'user') {
+        updatedUserIndices.push(i);
+      }
+    }
+
+    // 对第 11-50 轮（即最早的那些轮次），精简消息：去掉 toolCall 内容和 toolResult 消息
+    if (updatedUserIndices.length > fullDetailRounds) {
+      const simplifyBeforeIndex = updatedUserIndices[updatedUserIndices.length - fullDetailRounds];
+      const removeIndices = new Set<number>();
+      let simplified = 0;
+
+      for (let i = 0; i < simplifyBeforeIndex; i++) {
+        const msg = messages[i];
+        
+        // 标记 toolResult 消息待删除
+        if (msg.role === 'toolResult') {
+          removeIndices.add(i);
+          simplified++;
+          continue;
+        }
+
+        // assistant 消息：只保留文本，去掉 toolCall
+        if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+          const textOnly = msg.content.filter((block: any) => block.type === 'text');
+          if (textOnly.length < msg.content.length) {
+            msg.content = textOnly;
+            simplified++;
+          }
+        }
+      }
+
+      // 批量删除 toolResult 消息
+      if (removeIndices.size > 0) {
+        const filtered = messages.filter((_: any, idx: number) => !removeIndices.has(idx));
+        messages.length = 0;
+        messages.push(...filtered);
+      }
+      
+      if (simplified > 0) {
+        console.log(`[AgentRuntime] 📋 精简了 ${simplified} 条旧轮次的工具信息`);
+      }
+    }
+
+    console.log(`[AgentRuntime] 📊 当前消息队列: ${messages.length} 条消息，${messages.filter(m => m.role === 'user').length} 轮用户对话`);
   }
 
   /**
