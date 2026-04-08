@@ -221,9 +221,11 @@ export class OperationTracker {
       return `browser:${action}:${Date.now()}`;
     }
     
-    // 对于 read 工具，只关心路径
+    // 对于 read 工具，关心路径 + offset + limit（不同参数不算重复）
     if (tool === 'read' && params?.path) {
-      return `read:${params.path}`;
+      const offset = params.offset ?? '';
+      const limit = params.limit ?? '';
+      return `read:${params.path}:${offset}:${limit}`;
     }
     
     // 对于 bash 工具，只关心命令
