@@ -101,6 +101,7 @@ export class AgentBrowserWrapper {
     const resourcesPath = process.resourcesPath || process.cwd();
     const possiblePaths = [
       join(resourcesPath, 'app', 'node_modules', 'agent-browser', 'bin', executableName),
+      join(resourcesPath, 'app.asar.unpacked', 'node_modules', 'agent-browser', 'bin', executableName),
       join(resourcesPath, 'node_modules', 'agent-browser', 'bin', executableName),
       join(process.cwd(), 'node_modules', 'agent-browser', 'bin', executableName),
     ];

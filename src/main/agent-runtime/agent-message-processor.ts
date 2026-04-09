@@ -152,7 +152,7 @@ ${tailResponse}
         },
       ], {
         temperature: 0,
-        maxTokens: 200,
+        maxTokens: 2000,
         useFastModel: true,
       });
       

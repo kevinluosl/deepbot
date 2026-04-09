@@ -1,6 +1,6 @@
 {
   "name": "deepbot",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "DeepBot - 系统级 AI 助手，专注企业生产提效",
   "main": "dist-electron/main/index.js",
   "author": "K Luo",
@@ -123,7 +123,11 @@
       "mirror": "https://npmmirror.com/mirrors/electron/",
       "cache": "~/Library/Caches/electron"
     },
-    "asar": false,
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/**/*.node",
+      "node_modules/agent-browser/bin/**/*"
+    ],
     "afterPack": "scripts/after-pack.js",
     "afterSign": "scripts/after-sign.js",
     "compression": "normal",
