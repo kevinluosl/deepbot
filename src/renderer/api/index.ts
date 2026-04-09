@@ -387,6 +387,11 @@ export const api = {
     return this._registerWebEvent('message:stream', callback);
   },
 
+  onLoadingStatus(callback: (data: { status: string }) => void): () => void {
+    if (isElectron()) return (window as any).deepbot.onLoadingStatus?.(callback) || (() => {});
+    return this._registerWebEvent('loading-status', callback);
+  },
+
   onExecutionStepUpdate(callback: (data: any) => void): () => void {
     if (isElectron()) return (window as any).deepbot.onExecutionStepUpdate?.(callback) || (() => {});
     return this._registerWebEvent('execution-step:update', callback);

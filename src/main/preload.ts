@@ -348,6 +348,15 @@ contextBridge.exposeInMainWorld('deepbot', {
     };
   },
 
+  // 监听加载状态变化
+  onLoadingStatus: (callback: (data: { status: string }) => void) => {
+    const listener = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('loading-status', listener);
+    return () => {
+      ipcRenderer.removeListener('loading-status', listener);
+    };
+  },
+
   // 监听错误
   onMessageError: (callback: (error: any) => void) => {
     const listener = (_event: any, error: any) => callback(error);

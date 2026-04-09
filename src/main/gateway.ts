@@ -18,6 +18,7 @@ import { sleep, waitUntil } from '../shared/utils/async-utils';
 import { generateMessageId, generateUserMessageId, generateTabId, generateExecutionId } from '../shared/utils/id-generator';
 import { sendToWindow } from '../shared/utils/webcontents-utils';
 import { setGatewayInstance } from './tools/scheduled-task-tool';
+import { setLoadingStatusWindow } from './utils/loading-status';
 import type { GatewayMessage } from '../types/connector';
 import { ConnectorManager } from './connectors/connector-manager';
 import { FeishuConnector } from './connectors/feishu/feishu-connector';
@@ -375,6 +376,7 @@ export class Gateway {
    */
   setMainWindow(window: BrowserWindow) {
     this.mainWindow = window;
+    setLoadingStatusWindow(window);
     this.setupHandlerDependencies(window);
   }
 
@@ -395,6 +397,7 @@ export class Gateway {
     
     // 使用虚拟窗口（而不是 null）
     this.mainWindow = virtualWindow;
+    setLoadingStatusWindow(virtualWindow);
     
     // 设置所有处理器的依赖（传入 Web 模式状态）
     this.setupHandlerDependencies(virtualWindow, {

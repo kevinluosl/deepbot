@@ -54,6 +54,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   const [autoScroll, setAutoScroll] = useState(true); // 🔥 是否自动滚动
   const programScrollingRef = useRef(false); // 🔥 程序是否正在滚动（避免误判）
   const lastScrollHeightRef = useRef(0); // 🔥 记录上次滚动高度
+  const [loadingText, setLoadingText] = useState('Processing'); // 加载状态文本
   
   // 🔥 分页加载优化：初始只显示最近 20 条消息
   const [displayCount, setDisplayCount] = useState(20);
@@ -148,6 +149,25 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       }
     }
   }, [messages.length, isInitializing]);
+
+  // 监听加载状态变化（processing / checking）
+  useEffect(() => {
+    const unsubscribe = api.onLoadingStatus((data: { status: string }) => {
+      if (data.status === 'checking') {
+        setLoadingText('Checking Result');
+      } else {
+        setLoadingText('Processing');
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  // isLoading 变为 true 时重置为默认文本
+  useEffect(() => {
+    if (isLoading) {
+      setLoadingText('Processing');
+    }
+  }, [isLoading]);
   
   // 🔥 监听 Tab 消息清除事件，重新显示初始化状态（仅 default Tab）
   useEffect(() => {
@@ -467,7 +487,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
             {isLoading && (
               <div className="terminal-line">
                 <span className="terminal-message" style={{ marginLeft: '0' }}>
-                  Processing
+                  {loadingText}
                   <span className="terminal-loading">
                     <span className="terminal-loading-dot" />
                     <span className="terminal-loading-dot" />

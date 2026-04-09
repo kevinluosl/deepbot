@@ -337,6 +337,14 @@ export class WebSocketManager {
         title: event.title
       });
     });
+
+    // 监听加载状态变化（广播给所有客户端）
+    this.gatewayAdapter.on('loading-status', (event: any) => {
+      this.broadcastToAll({
+        type: 'loading-status',
+        status: event.status
+      });
+    });
   }
   
   /**

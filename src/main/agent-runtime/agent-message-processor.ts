@@ -14,6 +14,7 @@ import { estimateTextTokens } from '../utils/token-estimator';
 import type { AgentRuntimeConfig, AgentInstanceManager } from './types';
 import { MessageHandler } from './message-handler';
 import { wrapToolWithAbortSignal, OperationTracker } from '../tools/tool-abort';
+import { sendLoadingStatus } from '../utils/loading-status';
 
 /**
  * Message Processor 类
@@ -510,7 +511,9 @@ ${tailResponse}
         return;
       }
       
+      sendLoadingStatus('checking');
       const hasUnfinishedIntent = await this.detectUnfinishedIntent(fullResponse, lastRoundHasToolCalls, anyRoundHasToolCalls);
+      sendLoadingStatus('processing');
       
       if (hasUnfinishedIntent) {
         if (abortController?.signal.aborted) {
