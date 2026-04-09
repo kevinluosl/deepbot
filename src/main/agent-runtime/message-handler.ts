@@ -151,7 +151,8 @@ export class MessageHandler {
       // 订阅 Agent 事件，并实现真正的流式输出
       let fullResponse = '';
       let wasCancelled = false;
-      let currentToolStepId: string | null = null; // 当前工具调用的步骤 ID
+      let currentToolStepId: string | null = null; // 当前工具调用的步骤 ID（thinking 用）
+      const toolCallStepMap = new Map<string, string>(); // toolCallId → stepId 映射
       
       // 用于统计
       let toolCallCount = 0;
@@ -277,15 +278,15 @@ export class MessageHandler {
         // 处理工具调用事件 - 收集执行步骤
         if (event.type === 'tool_execution_start') {
           toolCallCount++;
-          console.log(`🔧 工具调用 ${toolCallCount}: ${event.toolName}`);
+          console.log(`🔧 工具调用 ${toolCallCount}: ${event.toolName} (${event.toolCallId})`);
           
-          // 创建执行步骤
-          const stepId = generateStepId();
-          currentToolStepId = stepId;
+          // 使用 toolCallId 作为步骤 ID，确保并行调用不会错位
+          const stepId = event.toolCallId || generateStepId();
+          toolCallStepMap.set(event.toolCallId, stepId);
           this.addExecutionStep({
             id: stepId,
             toolName: event.toolName,
-            toolLabel: event.toolName, // 可以后续优化为更友好的名称
+            toolLabel: event.toolName,
             params: event.args,
             status: 'running',
             timestamp: Date.now(),
@@ -293,32 +294,32 @@ export class MessageHandler {
         }
         
         if (event.type === 'tool_execution_update') {
-          // console.log(`🔧 工具执行进度:`, event.partialResult);
-          
-          // 更新执行步骤的部分结果
-          if (currentToolStepId) {
+          // 通过 toolCallId 找到对应的步骤
+          const stepId = toolCallStepMap.get(event.toolCallId);
+          if (stepId) {
             const resultText = this.extractResultText(event.partialResult);
-            this.updateExecutionStep(currentToolStepId, {
+            this.updateExecutionStep(stepId, {
               result: resultText,
             });
           }
         }
         
         if (event.type === 'tool_execution_end') {
-          console.log(`✅ 工具完成 ${toolCallCount}: ${event.toolName}`);
+          console.log(`✅ 工具完成 ${toolCallCount}: ${event.toolName} (${event.toolCallId})`);
           
-          // 更新执行步骤为成功
-          if (currentToolStepId) {
+          // 通过 toolCallId 找到对应的步骤
+          const stepId = toolCallStepMap.get(event.toolCallId);
+          if (stepId) {
             const resultText = this.extractResultText(event.result);
             const hasError = this.detectErrorInResult(resultText);
             
-            this.updateExecutionStep(currentToolStepId, {
+            this.updateExecutionStep(stepId, {
               result: resultText,
               status: hasError ? 'error' : 'success',
               error: hasError ? resultText : undefined,
             });
             
-            currentToolStepId = null;
+            toolCallStepMap.delete(event.toolCallId);
           }
         }
         
