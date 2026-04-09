@@ -293,7 +293,7 @@ ${sourceMemory}
       },
     ], {
       temperature: 0.3,
-      maxTokens: 15000, // 🔥 两个记忆文件最多 40000 字符，需要足够的输出空间
+      maxTokens: 20000, // 🔥 两个记忆文件最多 40000 字符，需要足够的输出空间
       signal,
       useFastModel: true,
     });
@@ -388,7 +388,7 @@ ${context ? `执行结果：\n"""\n${context}\n"""\n` : ''}
       },
     ], {
       temperature: 0.3,
-      maxTokens: 2000,
+      maxTokens: 20000,
       signal,
       useFastModel: true, // 🔥 使用快速模型（记忆提炼是轻量级任务）
     });

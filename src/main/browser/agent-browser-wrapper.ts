@@ -159,24 +159,28 @@ export class AgentBrowserWrapper {
     if (process.env.NODE_ENV !== 'development' && !process.env.VITE_DEV_SERVER_URL && !process.env.DEEPBOT_DOCKER) {
       const resourcesPath = process.resourcesPath || process.cwd();
       const appDir = join(resourcesPath, 'app');
+      // asar 模式下 app 目录不存在，fallback 到 resources 目录
+      const nodeDir = existsSync(appDir) ? appDir : resourcesPath;
       const sep = process.platform === 'win32' ? ';' : ':';
       
       if (process.platform === 'win32') {
-        const nodeExePath = join(appDir, 'node.exe');
+        const nodeExePath = join(nodeDir, 'node.exe');
         if (existsSync(nodeExePath)) {
-          env.PATH = `${appDir}${sep}${env.PATH}`;
+          env.PATH = `${nodeDir}${sep}${env.PATH}`;
         } else {
           logger.error('❌ node.exe 不存在，浏览器工具将无法工作。请重新安装应用。');
         }
       } else {
-        const nodeWrapperPath = join(appDir, 'node');
+        const nodeWrapperPath = join(nodeDir, 'node');
         if (!existsSync(nodeWrapperPath)) {
           try {
             const { writeFileSync, chmodSync } = require('fs');
+            // asar 模式下 nodeDir 是 Resources/，非 asar 是 Resources/app/
+            const relMacOS = nodeDir === resourcesPath ? '../MacOS' : '../../MacOS';
             const wrapperScript = `#!/bin/bash
 export ELECTRON_RUN_AS_NODE=1
 SCRIPT_DIR="$( cd "$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
-ELECTRON_PATH="$SCRIPT_DIR/../../MacOS/$(basename "${process.execPath}")"
+ELECTRON_PATH="$SCRIPT_DIR/${relMacOS}/$(basename "${process.execPath}")"
 exec "$ELECTRON_PATH" "$@"
 `;
             writeFileSync(nodeWrapperPath, wrapperScript);
@@ -186,7 +190,7 @@ exec "$ELECTRON_PATH" "$@"
           }
         }
         if (existsSync(nodeWrapperPath)) {
-          env.PATH = `${appDir}${sep}${env.PATH}`;
+          env.PATH = `${nodeDir}${sep}${env.PATH}`;
         }
       }
     }
