@@ -64,4 +64,5 @@ export type ServerMessage =
   | { type: 'name-config:update'; agentName?: string; userName?: string; tabId?: string; isGlobalUpdate?: boolean }
   | { type: 'model-config:update' }
   | { type: 'pending-count:update'; pendingCount: number }
-  | { type: 'session:kicked'; reason: string };
+  | { type: 'session:kicked'; reason: string }
+  | { type: 'loading-status'; status: string };
