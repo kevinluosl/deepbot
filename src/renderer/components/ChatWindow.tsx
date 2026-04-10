@@ -55,6 +55,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   const programScrollingRef = useRef(false); // 🔥 程序是否正在滚动（避免误判）
   const lastScrollHeightRef = useRef(0); // 🔥 记录上次滚动高度
   const [loadingText, setLoadingText] = useState('Processing'); // 加载状态文本
+  const [isDragOver, setIsDragOver] = useState(false); // 拖拽悬停状态
+  const dragCounterRef = useRef(0); // 拖拽计数器（处理子元素触发的 enter/leave）
   
   // 🔥 分页加载优化：初始只显示最近 20 条消息
   const [displayCount, setDisplayCount] = useState(20);
@@ -334,8 +336,59 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   // 🔥 判断是否为 Electron 环境（Web 版本不需要标题栏）
   const isElectronEnv = isElectron();
 
+  // 拖拽事件处理
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer?.types.includes('Files')) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0 && messageInputRef.current) {
+      messageInputRef.current.handleDroppedFiles(files);
+    }
+  };
+
   return (
-    <div className="terminal-container flex flex-col h-screen">
+    <div
+      className="terminal-container flex flex-col h-screen"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* 拖拽遮罩 */}
+      {isDragOver && (
+        <div className="drop-overlay">
+          <div className="drop-overlay-content">
+            <span className="drop-overlay-icon">📎</span>
+            <span className="drop-overlay-text">释放以上传文件</span>
+          </div>
+        </div>
+      )}
       {/* 窗口控制栏 - 仅 macOS Electron 需要，为交通灯按钮预留空间 */}
       {isElectronEnv && isMacOS() && (
         <div className="window-titlebar">

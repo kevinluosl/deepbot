@@ -6,6 +6,8 @@ import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } f
 import { ImageUploader } from './ImageUploader';
 import { FileUploader } from './FileUploader';
 import type { UploadedImage, UploadedFile } from '../../types/message';
+import { api } from '../api';
+import { readFileAsDataURL } from '../utils/file-reader';
 
 interface MessageInputProps {
   onSend: (content: string, images?: UploadedImage[], files?: UploadedFile[]) => void;
@@ -20,6 +22,7 @@ interface MessageInputProps {
 // 🔥 暴露给父组件的方法
 export interface MessageInputRef {
   focus: () => void;
+  handleDroppedFiles: (files: FileList) => void;
 }
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
@@ -57,13 +60,16 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
     ...(isConnectorTab ? [{ name: 'stop', description: '停止当前正在执行的任务' }] : []),
   ];
 
-  // 🔥 暴露 focus 方法给父组件
+  // 🔥 暴露 focus 和 handleDroppedFiles 方法给父组件
   useImperativeHandle(ref, () => ({
     focus: () => {
       if (textareaRef.current && !disabled) {
         textareaRef.current.focus();
       }
-    }
+    },
+    handleDroppedFiles: (files: FileList) => {
+      processFiles(files);
+    },
   }));
 
   // 自动聚焦到输入框
@@ -330,6 +336,88 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
     }
   };
 
+  // 处理外部传入的文件（粘贴或拖拽）
+  const processFiles = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+
+    // 已有文件上传时，所有新文件（包括图片）都当文件处理
+    const hasExistingFiles = uploadedFiles.length > 0;
+    const hasExistingImages = uploadedImages.length > 0;
+
+    const imageFiles: File[] = [];
+    const otherFiles: File[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].type.startsWith('image/') && !hasExistingFiles) {
+        imageFiles.push(files[i]);
+      } else {
+        otherFiles.push(files[i]);
+      }
+    }
+
+    // 处理图片
+    if (imageFiles.length > 0) {
+      const maxSizeBytes = 5 * 1024 * 1024;
+      const newImages: UploadedImage[] = [];
+
+      for (const file of imageFiles) {
+        if (uploadedImages.length + newImages.length >= 5) break;
+        if (file.size > maxSizeBytes) continue;
+
+        try {
+          const dataUrl = await readFileAsDataURL(file);
+          const result = await api.uploadImage(file.name || 'pasted-image.png', dataUrl, file.size);
+          if (result.success && result.image) {
+            newImages.push(result.image);
+          }
+        } catch (error) {
+          console.error('上传图片失败:', error);
+        }
+      }
+
+      if (newImages.length > 0) {
+        setUploadedImages(prev => [...prev, ...newImages]);
+      }
+    }
+
+    // 处理其他文件
+    if (otherFiles.length > 0) {
+      if (hasExistingImages) {
+        alert('已上传图片，不能同时上传文件');
+        return;
+      }
+      const maxSizeBytes = 500 * 1024 * 1024;
+      const newFiles: UploadedFile[] = [];
+
+      for (const file of otherFiles) {
+        if (uploadedFiles.length + newFiles.length >= 5) break;
+        if (file.size > maxSizeBytes) continue;
+
+        try {
+          const dataUrl = await readFileAsDataURL(file);
+          const result = await api.uploadFile(file.name, dataUrl, file.size, file.type);
+          if (result.success && result.file) {
+            newFiles.push(result.file);
+          }
+        } catch (error) {
+          console.error('上传文件失败:', error);
+        }
+      }
+
+      if (newFiles.length > 0) {
+        setUploadedFiles(prev => [...prev, ...newFiles]);
+      }
+    }
+  };
+
+  // 处理粘贴事件
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const files = e.clipboardData?.files;
+    if (!files || files.length === 0) return;
+    e.preventDefault();
+    await processFiles(files);
+  };
+
   return (
     <div className="terminal-input-container">
       {/* 🔥 命令提示列表 */}
@@ -395,6 +483,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder="Enter command or query..."
             disabled={disabled}
             rows={1}

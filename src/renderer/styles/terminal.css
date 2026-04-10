@@ -87,6 +87,37 @@
   display: none;
 }
 
+/* 拖拽上传遮罩 */
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--terminal-accent, #00ff41);
+  pointer-events: none;
+}
+
+.drop-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.drop-overlay-icon {
+  font-size: 36px;
+}
+
+.drop-overlay-text {
+  color: var(--terminal-accent, #00ff41);
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
 /* 终端内容区域 */
 .terminal-content {
   position: relative;
