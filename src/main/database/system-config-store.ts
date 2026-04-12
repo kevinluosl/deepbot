@@ -555,6 +555,23 @@ export class SystemConfigStore {
     }
   }
 
+  // ========== 应用设置（通用 key-value） ==========
+
+  /**
+   * 获取应用设置
+   */
+  getAppSetting(key: string): string | null {
+    const row = this.db.prepare('SELECT value FROM workspace_settings WHERE key = ?').get(`app:${key}`) as any;
+    return row?.value ?? null;
+  }
+
+  /**
+   * 保存应用设置
+   */
+  setAppSetting(key: string, value: string): void {
+    this.db.prepare('INSERT OR REPLACE INTO workspace_settings (key, value) VALUES (?, ?)').run(`app:${key}`, value);
+  }
+
   // ========== 数据库管理 ==========
 
   /**

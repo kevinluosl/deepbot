@@ -11,6 +11,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { api } from '../../api';
 import { ThemeContext } from '../../App';
 import type { ThemeMode } from '../../hooks/useTheme';
+import { getLanguage, setLanguage as saveLanguage, type Language } from '../../i18n';
 
 interface EnvironmentStatus {
   python: {
@@ -36,12 +37,21 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
   const [fontSize, setFontSize] = useState<string>(() => {
     return localStorage.getItem('deepbot-font-size') || 'small';
   });
+  const [language, setLang] = useState<Language>(getLanguage);
 
   // 切换字体大小
   const handleFontSizeChange = (size: string) => {
     setFontSize(size);
     localStorage.setItem('deepbot-font-size', size);
     document.documentElement.setAttribute('data-font-size', size);
+  };
+
+  // 切换语言
+  const handleLanguageChange = (lang: Language) => {
+    setLang(lang);
+    saveLanguage(lang);
+    // 同步到后端（影响系统提示词）
+    api.saveAppSetting('language', lang).catch(() => {});
   };
 
   // 加载环境状态
@@ -250,6 +260,50 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 语言 */}
+      <div style={{
+        padding: '12px 16px',
+        border: '1px solid var(--settings-border)',
+        borderRadius: '8px',
+        marginBottom: '16px',
+      }}>
+        <div style={{ fontSize: '13px', color: 'var(--settings-text)', fontWeight: '600', marginBottom: '8px' }}>
+          语言 / Language
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {([
+            { value: 'zh' as Language, label: '中文' },
+            { value: 'en' as Language, label: 'English' },
+          ]).map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => handleLanguageChange(opt.value)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 20px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                border: language === opt.value ? '2px solid var(--settings-accent)' : '2px solid transparent',
+                background: language === opt.value ? 'var(--terminal-accent-bg)' : 'transparent',
+                color: language === opt.value ? 'var(--settings-accent)' : 'var(--settings-text-dim)',
+                transition: 'all 0.15s ease',
+                fontSize: '13px',
+                fontWeight: language === opt.value ? '600' : '400',
+              }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+        {language === 'en' && (
+          <div style={{ fontSize: '11px', color: 'var(--settings-text-dim)', marginTop: '6px' }}>
+            Agent will respond in English when this is selected.
+          </div>
+        )}
       </div>
 
       {/* 运行环境 */}

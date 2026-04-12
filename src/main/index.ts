@@ -1090,6 +1090,28 @@ function registerIpcHandlers() {
     }
   });
   
+  // 保存应用设置（通用 key-value）
+  ipcMain.handle('app-setting:save', async (_event, { key, value }) => {
+    try {
+      const configStore = SystemConfigStore.getInstance();
+      configStore.setAppSetting(key, value);
+      return { success: true };
+    } catch (error) {
+      console.error('[IPC] 保存应用设置失败:', error);
+      return { success: false, error: String(error) };
+    }
+  });
+
+  // 获取应用设置
+  ipcMain.handle('app-setting:get', async (_event, { key }) => {
+    try {
+      const configStore = SystemConfigStore.getInstance();
+      return { success: true, value: configStore.getAppSetting(key) };
+    } catch (error) {
+      return { success: false, value: null };
+    }
+  });
+  
   // ==================== Tab 管理 ====================
   
   // 创建新 Tab

@@ -200,6 +200,15 @@ contextBridge.exposeInMainWorld('deepbot', {
   saveUserName: (userName: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SAVE_USER_NAME, { userName });
   },
+
+  // 应用设置（通用 key-value）
+  saveAppSetting: (key: string, value: string) => {
+    return ipcRenderer.invoke('app-setting:save', { key, value });
+  },
+  
+  getAppSetting: (key: string) => {
+    return ipcRenderer.invoke('app-setting:get', { key });
+  },
   
   // 🔥 监听名字配置更新（事件驱动）
   onNameConfigUpdate: (callback: (config: { agentName?: string; userName?: string; tabId?: string; isGlobalUpdate?: boolean }) => void) => {

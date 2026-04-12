@@ -64,6 +64,20 @@ export const api = {
     return { success: true, agentName: config.names?.agentName || 'DeepBot', userName: config.names?.userName || '用户' };
   },
 
+  // 应用设置（通用 key-value）
+  async saveAppSetting(key: string, value: string): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.saveAppSetting(key, value);
+    return webClient.post('/api/settings/app', { key, value });
+  },
+
+  async getAppSetting(key: string): Promise<{ success: boolean; value: string | null }> {
+    if (isElectron()) return (window as any).deepbot.getAppSetting(key);
+    try {
+      const result = await webClient.get(`/api/settings/app?key=${encodeURIComponent(key)}`);
+      return { success: true, value: result?.value ?? null };
+    } catch { return { success: true, value: null }; }
+  },
+
   // ==================== 系统设置 ====================
 
   async checkEnvironment(action: 'check' | 'get_status'): Promise<any> {
