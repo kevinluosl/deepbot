@@ -39,6 +39,31 @@ export function createConfigRouter(gatewayAdapter: GatewayAdapter): Router {
   
   router.get('/', getConfig);
   router.put('/', updateConfig);
+
+  // 应用设置（通用 key-value）
+  router.post('/app-setting', (async (req, res) => {
+    try {
+      const { key, value } = req.body;
+      if (!key) return res.status(400).json({ success: false, error: 'key is required' });
+      const { SystemConfigStore } = await import('../../main/database/system-config-store');
+      SystemConfigStore.getInstance().setAppSetting(key, value);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false, error: getErrorMessage(error) });
+    }
+  }) as RequestHandler);
+
+  router.get('/app-setting', (async (req, res) => {
+    try {
+      const key = req.query.key as string;
+      if (!key) return res.status(400).json({ success: false, value: null });
+      const { SystemConfigStore } = await import('../../main/database/system-config-store');
+      const value = SystemConfigStore.getInstance().getAppSetting(key);
+      res.json({ success: true, value });
+    } catch (error) {
+      res.json({ success: false, value: null });
+    }
+  }) as RequestHandler);
   
   return router;
 }
