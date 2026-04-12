@@ -25,6 +25,14 @@ function App() {
   // 主题管理
   const { mode: themeMode, setThemeMode } = useTheme();
 
+  // 字体大小初始化
+  useEffect(() => {
+    const saved = localStorage.getItem('deepbot-font-size');
+    if (saved) {
+      document.documentElement.setAttribute('data-font-size', saved);
+    }
+  }, []);
+
   // Tab 管理
   const [tabs, setTabs] = useState<AgentTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('default');

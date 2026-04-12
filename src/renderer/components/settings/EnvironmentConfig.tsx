@@ -33,6 +33,16 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
   const [status, setStatus] = useState<EnvironmentStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const hasLoadedRef = React.useRef(false);
+  const [fontSize, setFontSize] = useState<string>(() => {
+    return localStorage.getItem('deepbot-font-size') || 'small';
+  });
+
+  // 切换字体大小
+  const handleFontSizeChange = (size: string) => {
+    setFontSize(size);
+    localStorage.setItem('deepbot-font-size', size);
+    document.documentElement.setAttribute('data-font-size', size);
+  };
 
   // 加载环境状态
   const loadStatus = async () => {
@@ -192,6 +202,49 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
             >
               {opt.icon}
               <span style={{ fontSize: '11px', fontWeight: themeMode === opt.value ? '600' : '400' }}>
+                {opt.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 字体大小 */}
+      <div style={{
+        padding: '12px 16px',
+        border: '1px solid var(--settings-border)',
+        borderRadius: '8px',
+        marginBottom: '16px',
+      }}>
+        <div style={{ fontSize: '13px', color: 'var(--settings-text)', fontWeight: '600', marginBottom: '8px' }}>
+          字体大小
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {([
+            { value: 'small', label: '标准' },
+            { value: 'medium', label: '中等' },
+            { value: 'large', label: '较大' },
+          ]).map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => handleFontSizeChange(opt.value)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                border: fontSize === opt.value ? '2px solid var(--settings-accent)' : '2px solid transparent',
+                background: fontSize === opt.value ? 'var(--terminal-accent-bg)' : 'transparent',
+                color: fontSize === opt.value ? 'var(--settings-accent)' : 'var(--settings-text-dim)',
+                transition: 'all 0.15s ease',
+                minWidth: '60px',
+              }}
+            >
+              <span style={{ fontSize: opt.value === 'small' ? '13px' : opt.value === 'medium' ? '14px' : '15px', fontFamily: 'Courier New, Consolas, monospace' }}>Aa</span>
+              <span style={{ fontSize: '11px', fontWeight: fontSize === opt.value ? '600' : '400', marginTop: '2px' }}>
                 {opt.label}
               </span>
             </div>
