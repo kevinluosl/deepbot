@@ -113,9 +113,7 @@ export function ScheduledTaskConfig({ onClose }: ScheduledTaskConfigProps) {
         taskId,
       });
       
-      if (response.success) {
-        alert(lang === 'zh' ? '任务已触发执行' : 'Task triggered successfully');
-      } else {
+      if (!response.success) {
         alert(lang === 'zh' ? `触发失败: ${response.message || '未知错误'}` : `Trigger failed: ${response.message || 'Unknown error'}`);
       }
     } catch (error) {

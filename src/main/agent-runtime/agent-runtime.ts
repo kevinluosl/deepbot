@@ -667,9 +667,30 @@ export class AgentRuntime {
     }
     
     if (this.instanceManager.agent) {
-      const messageCount = this.instanceManager.agent.state.messages.length;
-      this.instanceManager.agent.state.messages = [];
-      console.log(`[AgentRuntime] 🗑️ 已清空 ${messageCount} 条历史消息`);
+      const messages = this.instanceManager.agent.state.messages;
+      const messageCount = messages.length;
+      
+      if (messageCount === 0) return;
+      
+      // 保留上一轮对话作为上下文（最后一条用户消息 + 对应的 AI 回复和工具结果）
+      // 从后往前找最后一条用户消息
+      let lastUserIdx = -1;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if ((messages[i] as any).role === 'user') {
+          lastUserIdx = i;
+          break;
+        }
+      }
+      
+      if (lastUserIdx >= 0) {
+        // 保留从最后一条用户消息到末尾的所有消息
+        const kept = messages.slice(lastUserIdx);
+        this.instanceManager.agent.state.messages = kept;
+        console.log(`[AgentRuntime] 🗑️ 清理历史消息：${messageCount} → ${kept.length}（保留上一轮上下文）`);
+      } else {
+        this.instanceManager.agent.state.messages = [];
+        console.log(`[AgentRuntime] 🗑️ 已清空 ${messageCount} 条历史消息`);
+      }
     }
   }
 
