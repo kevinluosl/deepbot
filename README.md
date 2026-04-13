@@ -4,143 +4,143 @@
 
 <p>
 
- **让 AI 深入参与企业日常办公，成为你真正干活的伙伴**
+**Bring AI into your enterprise workflows — a real working partner, not just a chatbot**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
 [![Electron](https://img.shields.io/badge/Electron-28+-9feaf9.svg)](https://www.electronjs.org/)
 
-[English](README_EN.md) | [简体中文](README.md)
+[English](README.md) | [简体中文](README_ZH.md)
 
 </div>
 
 ---
 
-## 📖 简介
+## 📖 Introduction
 
-DeepBot 是一个系统级 AI 助手，会更多探索企业生产提效方向。它能够与企业现有系统深度结合，让 AI 深入参与各部门的日常办公提效，通过多 Agent 协作模式实现复杂业务流程的自动化。无论是文档处理、数据分析、系统监控，还是跨部门协作任务，DeepBot 都能通过 AI Agent 技术帮助企业轻松搞定。它支持多任务并行处理、定时任务、技能扩展等功能，同时通过严格的安全机制保护企业系统安全。
+DeepBot is a system-level AI assistant focused on enterprise productivity. It integrates deeply with existing enterprise systems, enabling AI to participate in day-to-day operations across departments through multi-Agent collaboration — automating complex business workflows. Whether it's document processing, data analysis, system monitoring, or cross-department coordination, DeepBot handles it through AI Agent technology. It supports parallel task execution, scheduled tasks, and skill extensions, all protected by strict security controls.
 
-### ✨ 核心特性
+### ✨ Core Features
 
-- 🎯 **多任务并行处理** - 同时处理多个任务，互不干扰
-- 🔧 **14 个内置工具** - 文件操作、命令执行、浏览器控制、图片生成、AI 对话、跨会话通信、网页内容获取、飞书云文档操作等
-- 🧠 **记忆系统** - 长期记忆用户偏好和重要信息
-- ⏰ **定时任务** - 自动化执行周期性任务
-- 🎨 **技能扩展** - 通过 Skills 组合工具实现复杂功能
-- 🔒 **安全限制** - 严格的路径白名单机制，保护系统安全
-- 🤖 **多模型支持** - 通义千问、OpenAI、Claude 等
-- 🌐 **外部通讯** - 支持接入飞书等外部平台，实现跨平台交互
+- 🎯 **Parallel Task Processing** — Run multiple tasks simultaneously without interference
+- 🔧 **14 Built-in Tools** — File operations, command execution, browser control, image generation, AI chat, cross-session messaging, web fetching, Feishu document operations, and more
+- 🧠 **Memory System** — Long-term memory for user preferences and important context
+- ⏰ **Scheduled Tasks** — Automate recurring work with cron-based scheduling
+- 🎨 **Skill Extensions** — Compose tools into reusable Skills for complex workflows
+- 🔒 **Security Controls** — Strict path whitelist to protect system access
+- 🤖 **Multi-Model Support** — Qwen, OpenAI, Claude, and more
+- 🌐 **External Integrations** — Connect with Feishu and other platforms for cross-platform interaction
 
 ---
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 环境要求
+### Requirements
 
-- **Python**: 3.11 或更高版本
-- **Node.js**: 20.0.0 或更高版本（可选，用于运行 JS 脚本）
-- **pnpm**: 10.23.0 或更高版本（可选，用于运行 JS 脚本）
-- **操作系统**: macOS、Windows（桌面版），Linux/Docker
+- **Python**: 3.11+
+- **Node.js**: 20.0.0+ (optional, for running JS scripts)
+- **pnpm**: 10.23.0+ (optional, for running JS scripts)
+- **OS**: macOS, Windows (desktop), Linux/Docker
 
-### 安装
+### Installation
 
 ```bash
-# 克隆仓库
-git clone https://github.com/yourusername/deepbot.git
+# Clone the repository
+git clone https://github.com/kevinluosl/deepbot.git
 cd deepbot
 
-# 安装依赖
+# Install dependencies
 pnpm install
 
-# 开发模式运行
+# Start in development mode
 pnpm run dev
 ```
 
-### 构建桌面版
+### Build Desktop App
 
 ```bash
-# 构建所有平台
+# Build for all platforms
 pnpm run dist
 
-# 仅构建 macOS
+# macOS only
 pnpm run dist:mac
 
-# 仅构建 Windows
+# Windows only
 pnpm run dist:win
 ```
 
-### Docker 部署
+### Docker Deployment
 
-适用于 Linux 服务器或任何支持 Docker 的环境：
+For Linux servers or any Docker-supported environment:
 
 ```bash
-# 构建 Docker 镜像
+# Build the Docker image
 docker build -t deepbot:latest .
 
-# 使用 docker-compose 启动
+# Start with docker-compose
 docker-compose up -d
 
-# 查看日志
+# View logs
 docker-compose logs -f
 
-# 停止服务
+# Stop the service
 docker-compose down
 ```
 
-启动后访问 `http://localhost:3008` 即可通过 Web 页面访问。
+Once running, open `http://localhost:3008` to access the web interface.
 
-配置说明：
-- 复制 `.env.example` 为 `.env`，填入模型 API Key 等配置
-- `docker-compose.yml` 中可调整端口映射和数据卷挂载
-- 数据默认持久化到 `./data` 目录
+Configuration:
+- Copy `.env.example` to `.env` and fill in your model API keys
+- Adjust port mappings and volume mounts in `docker-compose.yml`
+- Data is persisted to `./data` by default
 
-**macOS 构建说明**：构建过程会自动对 macOS 应用进行 ad-hoc 签名。这可以避免"应用已损坏"提示，但用户首次启动时仍会看到"无法验证开发者"提示（这是正常的，可以通过右键点击 → 打开来绕过）。
+**Note for macOS builds**: The build process automatically applies ad-hoc signing. This prevents the "app is damaged" error, but users will still see "cannot verify developer" on first launch — which is expected and can be bypassed with right-click → Open.
 
-### macOS 安装问题
+### macOS Security Warnings
 
-macOS 首次打开 DeepBot 时可能会提示安全警告，选择对应的解决方法：
+macOS may show a security warning the first time you open DeepBot. Use the appropriate fix based on the message:
 
-#### 提示"应用已损坏"
+#### "App is damaged"
 
-在终端执行以下命令后重新打开：
+Run this in Terminal, then reopen the app:
 
 ```bash
 sudo xattr -rd com.apple.quarantine /Applications/DeepBot.app
 ```
 
-#### 提示"无法验证开发者"
+#### "Cannot verify developer"
 
-**方法 1：右键打开**
+**Option 1: Right-click to open**
 
-右键点击应用图标，选择"打开"，在弹出的对话框中再次点击"打开"。
+Right-click the app icon, select "Open", then click "Open" again in the dialog.
 
-**方法 2：系统设置**
+**Option 2: System Settings**
 
-1. 尝试打开应用（会看到安全提示，点击"取消"）
-2. 打开"系统设置" → "隐私与安全性"
-3. 向下滚动找到"安全性"部分
-4. 点击"仍要打开"按钮
-5. 再次打开应用，在对话框中点击"打开"
+1. Try to open the app (you'll see a security warning — click "Cancel")
+2. Go to "System Settings" → "Privacy & Security"
+3. Scroll to the "Security" section
+4. Click "Open Anyway"
+5. Try opening the app again and click "Open" in the dialog
 
 ---
 
-## 🏗️ 架构设计
+## 🏗️ Architecture
 
-DeepBot 采用模块化架构，支持多 Agent 互相对话和协作：
+DeepBot uses a modular architecture with support for multi-Agent communication and collaboration:
 
 ```
 ┌─────────────────────────────────────────┐
-│         用户界面 (Electron)              │
-│      外部通讯：飞书 (已支持)             │
+│      User Interface (Electron)          │
+│   External Communication: Feishu        │
 └─────────────────┬───────────────────────┘
                   │ IPC / WebSocket
 ┌─────────────────▼───────────────────────┐
-│         Gateway (会话管理)               │
-│    • Session 管理 (每个 Tab 一个)       │
-│    • 消息队列和路由                      │
-│    • 连接器管理 (Connector)              │
-│    • 跨 Tab 消息路由 🆕                  │
+│      Gateway (Session Management)       │
+│    • Session per Tab                    │
+│    • Message queue & routing            │
+│    • Connector management               │
+│    • Cross-Tab message routing 🆕       │
 └─────────────────┬───────────────────────┘
                   │
         ┌─────────┼─────────┐
@@ -150,172 +150,174 @@ DeepBot 采用模块化架构，支持多 Agent 互相对话和协作：
         │         │         │
         ▼         ▼         ▼
 ┌─────────────────────────────────────────┐
-│      Agent Runtime (每个 Session 一个)   │
-│    • 智能决策和工具编排                  │
-│    • 自动继续机制 (最多 100 次)          │
-│    • 操作追踪 (防重复，最多 3 次)        │
-│    • 独立记忆和上下文                    │
-│    • 跨 Tab 调用工具 🆕                  │
-│    • 系统提示词动态组装 🆕                │
+│   Agent Runtime (one per Session)       │
+│    • Intelligent decision & orchestration│
+│    • Auto-continue (up to 100 times)    │
+│    • Operation tracking (max 3 retries) │
+│    • Independent memory & context       │
+│    • Cross-Tab calling tool 🆕          │
+│    • Dynamic system prompt assembly 🆕  │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│       系统提示词组装层 🆕                 │
-│    • 基础 Agent 提示 (AGENT.md)         │
-│    • 工具说明 (TOOLS.md)                │
-│    • 自定义工具说明 (CUSTOM-TOOLS.md)   │
-│    • 全局记忆 (MEMORY.md)               │
-│    • 独立记忆 (memory-<tab-id>.md)      │
-│    • Skills 指令 (SKILL.md)             │
-│    • 动态加载和实时更新                  │
+│     System Prompt Assembly Layer 🆕     │
+│    • Base Agent prompt (AGENT.md)       │
+│    • Tool instructions (TOOLS.md)       │
+│    • Custom tool instructions           │
+│    • Global memory (MEMORY.md)          │
+│    • Per-tab memory (memory-<tab>.md)   │
+│    • Skills instructions (SKILL.md)     │
+│    • Dynamic loading & live updates     │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│         13 个工具 + 安全检查             │
-│    🔒 路径白名单 • 工作空间隔离          │
-│    🔄 跨 Tab 消息工具 🆕                 │
+│      14 Tools + Security Check          │
+│    🔒 Path whitelist • Workspace isolation│
+│    🔄 Cross-Tab messaging tool 🆕        │
 └─────────────────┬───────────────────────┘
                   │
         ┌─────────┼─────────┐
         ▼         ▼         ▼
-    Skills   定时任务   数据存储
+    Skills   Scheduled   Data Storage
+                Tasks
 ```
 
-### 多 Agent 协作架构 🆕
+### Multi-Agent Collaboration 🆕
 
 ```
 ┌─────────────────────────────────────────┐
-│           多 Agent 协作系统               │
+│      Enterprise Multi-Agent System      │
 └─────────────────┬───────────────────────┘
                   │
         ┌─────────┼─────────┐
         ▼         ▼         ▼
 ┌─────────┐ ┌─────────┐ ┌─────────┐
-│ 销售     │ │ Gateway │ │ 市场     │
-│AI助手    │ │消息路由  │ │AI助手    │
-└────┬────┘ └────┬────┘ └────┬────┘
-     │           │           │
+│ Sales   │ │ Gateway │ │Marketing│
+│AI Agent │ │Message  │ │AI Agent │
+└────┬────┘ │Router   │ └────┬────┘
+     │      └────┬────┘      │
      └───────────┼───────────┘
                  │
      ┌───────────┼───────────┐
      ▼           ▼           ▼
 ┌─────────┐ ┌─────────┐ ┌─────────┐
-│解决方案  │ │ 产品     │  │ 研发    │
-│AI助手    │ │AI助手   │  │AI助手   │
+│Solutions│ │Product  │ │  R&D    │
+│AI Agent │ │AI Agent │ │AI Agent │
 └────┬────┘ └────┬────┘ └────┬────┘
      │           │           │
      └───────────┼───────────┘
                  │
                  ▼
            ┌─────────┐
-           │项目管理  │
-           │AI助手   │
+           │Project  │
+           │Manager  │
+           │AI Agent │
            └─────────┘
 ```
 
-### 架构说明
+### Architecture Overview
 
-- **Gateway**: 管理所有 Session，每个 Tab 对应一个独立 Session，支持跨 Tab 消息路由
-- **Session**: 独立的会话单元，包含独立的 Agent Runtime、记忆和上下文
-- **Agent Runtime**: 基于 `@mariozechner/pi-agent-core`，负责智能决策和工具编排
-- **系统提示词组装层**: 动态组装系统提示词，包含基础系统提示、工具说明、记忆文件、Skills 指令等
-- **Tools**: 13 个内置工具，包括跨 Tab 调用工具，支持 Agent 间通信
-- **安全检查**: 所有文件和命令操作都经过路径白名单验证
-- **多 Agent 协作**: 不同 Tab 的 Agent 可以互相发送消息，实现协作完成复杂任务
+- **Gateway**: Manages all Sessions. Each Tab maps to an independent Session with cross-Tab message routing.
+- **Session**: An isolated conversation unit with its own Agent Runtime, memory, and context.
+- **Agent Runtime**: Built on `@mariozechner/pi-agent-core`, handles intelligent decision-making and tool orchestration.
+- **System Prompt Assembly Layer**: Dynamically assembles system prompts from base prompts, tool instructions, memory files, and Skills.
+- **Tools**: 14 built-in tools including a cross-Tab messaging tool for inter-Agent communication.
+- **Security Check**: All file and command operations are validated against a path whitelist.
+- **Multi-Agent Collaboration**: Agents in different Tabs can message each other to collaborate on complex tasks.
 
-#### 系统提示词组装流程 🆕
+#### System Prompt Assembly Flow 🆕
 
 ```
-Agent 启动 → 加载基础 Agent 提示 (AGENT.md)
-           ↓
-         加载工具说明 (TOOLS.md + CUSTOM-TOOLS.md)
-           ↓
-         加载全局记忆 (MEMORY.md)
-           ↓
-         加载独立记忆 (memory-<tab-id>.md)
-           ↓
-         加载 Skills 指令 (各个 SKILL.md)
-           ↓
-         组装完整系统提示词
-           ↓
-         发送给 AI 模型
+Agent starts → Load base Agent prompt (AGENT.md)
+             ↓
+           Load tool instructions (TOOLS.md + CUSTOM-TOOLS.md)
+             ↓
+           Load global memory (MEMORY.md)
+             ↓
+           Load per-tab memory (memory-<tab-id>.md)
+             ↓
+           Load Skills instructions (SKILL.md files)
+             ↓
+           Assemble complete system prompt
+             ↓
+           Send to AI model
 ```
 
-**动态更新机制**：
-- 记忆文件更新时，自动重载所有 Agent 的系统提示词
-- Skills 安装/卸载时，自动更新工具说明
-- 支持运行时热更新，无需重启应用
+**Dynamic Updates**:
+- When memory files change, all Agent system prompts reload automatically
+- Installing or uninstalling Skills updates tool instructions in real time
+- Hot updates are supported — no app restart required
 
 ---
 
-## 🌐 外部通讯 (Connector)
+## 🌐 External Integrations (Connectors)
 
-DeepBot 支持通过 Connector 系统接入外部平台，实现跨平台交互。
+DeepBot connects to external platforms via the Connector system for cross-platform interaction.
 
-### 已支持平台
+### Supported Platforms
 
-#### 飞书 (Feishu)
+#### Feishu (Lark)
 
-通过飞书机器人与 DeepBot 交互，支持私聊和群聊。
+Interact with DeepBot through a Feishu bot, supporting both direct messages and group chats.
 
-**功能特性**：
-- ✅ 私聊消息（需配对授权）
-- ✅ 群聊消息（支持 @提及）
-- ✅ 消息去重（防止重复响应）
-- ✅ 独立会话管理（每个对话独立 Tab）
-- ✅ 发送图片/文件给用户
-- ✅ 飞书云文档操作（创建、读取、编辑、删除、评论）
+**Features**:
+- ✅ Direct messages (requires pairing authorization)
+- ✅ Group messages (supports @mention)
+- ✅ Message deduplication (prevents duplicate responses)
+- ✅ Independent session per conversation (each chat gets its own Tab)
+- ✅ Send images and files to users
+- ✅ Feishu document operations (create, read, edit, delete, comment)
 
-**配置步骤**：
+**Setup**:
 
-1. 在 DeepBot 中打开「系统设置」→「外部连接」→「飞书」
-2. 填写飞书应用配置（App ID、App Secret、机器人名称）
-3. 配置安全策略（私聊策略、群聊策略）
-4. 点击「保存」并「启动」连接器
+1. In DeepBot, go to "System Settings" → "External Connections" → "Feishu"
+2. Enter your Feishu app credentials (App ID, App Secret, Bot Name)
+3. Configure security policies (DM policy, group policy)
+4. Click "Save" then "Start" the connector
 
-**详细配置指南**：
+**Detailed Configuration Guide**:
 
-📖 [飞书机器人配置指南](docs/飞书机器人配置指南.md)
+📖 [Feishu Bot Configuration Guide](docs/飞书机器人配置指南.md) (Chinese)
 
-包含完整的飞书开放平台配置步骤、权限设置、安全策略说明等。
+Covers the full Feishu Open Platform setup, permission configuration, and security policy details.
 
-### 未来计划
+### Coming Soon
 
 - 🔜 Discord
 - 🔜 Slack
-- 🔜 企业微信
-- 🔜 钉钉
+- 🔜 WeCom (WeChat Work)
+- 🔜 DingTalk
 
 ---
 
-## 🔧 14 个内置工具
+## 🔧 14 Built-in Tools
 
-| 工具 | 功能 | 典型用途 |
-|------|------|---------|
-| **File Tool** | 文件读写操作 | 读取配置、保存数据、搜索文件 |
-| **Exec Tool** | 执行命令行命令 | 运行脚本、系统操作、安装软件 |
-| **Browser Tool** | 浏览器控制 | 网页截图、自动化操作、内容提取 |
-| **Calendar Tool** | 日历管理 | 查看日期、计算时间、日程提醒 |
-| **Environment Check** | 环境检查 | 检测系统信息、验证依赖、诊断问题 |
-| **Image Generation** | AI 图片生成 | 创建图片、设计素材、视觉内容 |
-| **Web Search** | 网页搜索 | 实时信息查询、资料搜集、内容研究 |
-| **Web Fetch** | 网页内容获取 | 获取网页正文、提取文章内容、下载网页数据 |
-| **Memory Tool** | 记忆管理 | 存储用户偏好、读取历史信息 |
-| **Skill Manager** | 技能管理 | 安装/卸载/列出技能包 |
-| **Scheduled Task** | 定时任务 | 创建/管理/执行定时任务 |
-| **Chat Tool** | AI 对话处理 | 工具内部调用 AI、后端 AI 处理、不占用主 Agent 上下文 |
-| **Connector Tool** | 跨 Tab 通信 | Agent 间互相发送消息、多 Agent 协作完成复杂任务 |
-| **Feishu Doc Tool** | 飞书云文档操作 | 创建文档、读取内容、追加/更新/删除块、添加评论、删除文档 |
+| Tool | Function | Typical Use Cases |
+|------|----------|-------------------|
+| **File Tool** | File read/write | Read configs, save data, search files |
+| **Exec Tool** | Run shell commands | Execute scripts, system operations, install packages |
+| **Browser Tool** | Browser automation | Screenshots, web automation, content extraction |
+| **Calendar Tool** | Calendar management | Check dates, calculate time, schedule reminders |
+| **Environment Check** | System inspection | Detect system info, verify dependencies, diagnose issues |
+| **Image Generation** | AI image generation | Create images, design assets, visual content |
+| **Web Search** | Web search | Real-time queries, research, data collection |
+| **Web Fetch** | Fetch web content | Extract articles, download page data |
+| **Memory Tool** | Memory management | Store preferences, retrieve historical context |
+| **Skill Manager** | Skill management | Install, uninstall, and list skill packages |
+| **Scheduled Task** | Task scheduling | Create and manage cron-based tasks |
+| **Chat Tool** | AI conversation | Internal AI calls, backend processing, isolated from main Agent context |
+| **Cross Tab Call** 🆕 | Cross-Tab messaging | Inter-Agent communication for multi-Agent collaboration |
+| **Feishu Doc Tool** | Feishu document ops | Create, read, append, update, delete blocks, add comments |
 
-### 创建自定义工具
+### Creating Custom Tools
 
-DeepBot 支持创建自定义工具来扩展功能。所有工具都是内置工具，代码位于 `src/main/tools/` 目录。
+All tools are built-in and live in `src/main/tools/`. You can add your own by following the pattern below.
 
-#### 快速开始
+#### Quick Start
 
-1. **创建工具文件**
+1. **Create a tool file**
 
-在 `src/main/tools/` 创建新文件（如 `my-tool.ts`）：
+Create a new file in `src/main/tools/` (e.g., `my-tool.ts`):
 
 ```typescript
 import { Type } from '@sinclair/typebox';
@@ -325,36 +327,36 @@ export const myToolPlugin: ToolPlugin = {
   metadata: {
     id: 'my-tool',
     name: 'my_tool',
-    description: '我的自定义工具',
+    description: 'My custom tool',
     version: '1.0.0',
   },
   
   create: (options) => ({
     name: 'my_tool',
-    label: '我的工具',
-    description: '执行自定义操作',
+    label: 'My Tool',
+    description: 'Execute custom operations',
     parameters: Type.Object({
-      input: Type.String({ description: '输入内容' }),
+      input: Type.String({ description: 'Input content' }),
     }),
     
     execute: async (toolCallId, params, signal) => {
-      // 实现工具逻辑
+      // Implement tool logic
       return {
-        content: [{ type: 'text', text: '执行成功' }],
+        content: [{ type: 'text', text: 'Success' }],
       };
     },
   }),
 };
 ```
 
-2. **在 tool-loader.ts 中加载**
+2. **Register in tool-loader.ts**
 
-编辑 `src/main/tools/registry/tool-loader.ts`，添加工具导入和加载：
+Edit `src/main/tools/registry/tool-loader.ts`:
 
 ```typescript
 import { myToolPlugin } from '../my-tool';
 
-// 在 loadBuiltinTools() 方法中添加
+// Inside loadBuiltinTools()
 const myTools = myToolPlugin.create({
   workspaceDir: this.workspaceDir,
   sessionId: this.sessionId,
@@ -363,28 +365,28 @@ const myTools = myToolPlugin.create({
 tools.push(myTools);
 ```
 
-3. **添加工具提示词**
+3. **Add tool instructions**
 
-编辑 `src/main/prompts/templates/CUSTOM-TOOLS.md`，添加工具使用说明。
+Edit `src/main/prompts/templates/CUSTOM-TOOLS.md` to document how the AI should use your tool.
 
-以 Email 工具为例，说明文档应包含以下部分：
+Using the Email tool as an example:
 
 ````markdown
-## Email（邮件发送工具）
+## Email (Email Sending Tool)
 
-### 核心原则
-1. 必须先配置 SMTP 账号才能使用
-2. 配置文件路径固定，不要告诉用户错误路径
-3. 发送失败时，根据错误信息指导用户修复配置
-4. 不要重复调用，失败一次就告知用户原因
+### Core Principles
+1. SMTP must be configured before use
+2. The config file path is fixed — don't give users incorrect paths
+3. On failure, guide users to fix their config based on the error message
+4. Don't retry repeatedly — report the failure reason after one attempt
 
-### 使用前提
+### Prerequisites
 
-**配置文件路径**（按优先级查找）：
-1. 项目级别：`<workspace>/.deepbot/tools/email-tool/config.json`
-2. 用户级别：`~/.deepbot/tools/email-tool/config.json`
+**Config file path** (searched in priority order):
+1. Project-level: `<workspace>/.deepbot/tools/email-tool/config.json`
+2. User-level: `~/.deepbot/tools/email-tool/config.json`
 
-**配置文件格式**：
+**Config file format**:
 ```json
 {
   "user": "your-email@example.com",
@@ -396,223 +398,221 @@ tools.push(myTools);
 }
 ```
 
-**常见邮箱配置**：
-- QQ 邮箱：必须使用授权码（不是 QQ 密码）
-- Gmail：必须使用应用专用密码
-- 163 邮箱：必须开启 SMTP 服务并使用授权码
+**Common provider notes**:
+- QQ Mail: Use authorization code, not your QQ password
+- Gmail: Use an app-specific password
+- 163 Mail: Enable SMTP service and use an authorization code
 
-### 使用场景
-- ✅ 发送通知邮件、报告邮件
-- ✅ 发送带附件的邮件
-- ✅ 发送 HTML 格式的邮件
-- ❌ 不要用于批量营销邮件（可能被封号）
-- ❌ 不要发送敏感信息（邮件不加密）
+### Use Cases
+- ✅ Notification emails, report emails
+- ✅ Emails with attachments
+- ✅ HTML-formatted emails
+- ❌ Bulk marketing emails (risk of account suspension)
+- ❌ Sensitive information (emails are not encrypted)
 
-### 示例
+### Examples
 
-1. 发送简单文本邮件：
+1. Plain text email:
 ```json
 {
   "to": "recipient@example.com",
-  "subject": "测试邮件",
-  "body": "这是一封测试邮件"
+  "subject": "Test Email",
+  "body": "This is a test email"
 }
 ```
 
-2. 发送 HTML 邮件：
+2. HTML email:
 ```json
 {
   "to": "team@company.com",
-  "subject": "项目进度报告",
-  "body": "<h1>项目进度</h1><ul><li>功能 A：已完成</li></ul>",
+  "subject": "Project Progress Report",
+  "body": "<h1>Progress</h1><ul><li>Feature A: Done</li></ul>",
   "html": true
 }
 ```
 
-3. 发送带附件的邮件：
+3. Email with attachment:
 ```json
 {
   "to": "client@example.com",
-  "subject": "合同文件",
-  "body": "请查收附件中的合同",
+  "subject": "Contract Documents",
+  "body": "Please find the contract attached",
   "attachments": ["~/Documents/contract.pdf"]
 }
 ```
 
-### 错误处理
+### Error Handling
 
-| 错误信息 | 原因 | 解决方案 |
-|---------|------|---------|
-| "nodemailer 未安装" | 依赖未安装 | 告诉用户需要安装 nodemailer |
-| "邮件工具未配置" | 配置文件不存在 | 告诉用户需要创建配置文件 |
-| "认证失败" | 账号或密码错误 | 检查配置中的账号和授权码 |
+| Error | Cause | Fix |
+|-------|-------|-----|
+| "nodemailer not installed" | Missing dependency | Ask user to install nodemailer |
+| "Email tool not configured" | Config file missing | Ask user to create the config file |
+| "Authentication failed" | Wrong credentials | Check account and authorization code |
 ````
 
-**说明文档结构**：
-- **核心原则**：AI 必须遵守的规则
-- **使用前提**：使用工具前需要满足的条件（如配置文件、依赖安装）
-- **使用场景**：什么时候用/不用这个工具
-- **示例**：实际使用案例（从简单到复杂）
-- **错误处理**：常见错误和解决方案
+**Documentation structure**:
+- **Core Principles**: Rules the AI must follow
+- **Prerequisites**: Required setup (config files, dependencies)
+- **Use Cases**: When to use or avoid this tool
+- **Examples**: Real usage from simple to complex
+- **Error Handling**: Common errors and how to resolve them
 
-#### 高级功能
+#### Advanced Features
 
-- **配置文件**: 从 `~/.deepbot/tools/<tool-name>/config.json` 读取配置
-- **外部依赖**: 使用动态 `require()` 加载，避免打包到主项目
-- **取消支持**: 通过 `AbortSignal` 支持用户取消操作
-- **提示词管理**: 在 `CUSTOM-TOOLS.md` 中添加工具使用说明，帮助 AI 更好地理解和使用工具
+- **Config files**: Read from `~/.deepbot/tools/<tool-name>/config.json`
+- **External dependencies**: Use dynamic `require()` to avoid bundling
+- **Cancellation**: Support user cancellation via `AbortSignal`
+- **Prompt management**: Document tool behavior in `CUSTOM-TOOLS.md` so the AI uses it correctly
 
-#### 示例和文档
+#### References
 
-- 📖 [完整开发指南](src/main/tools/registry/README.md)
-- 📝 [示例工具模板](src/main/tools/registry/example-tool.ts)
-- 🔧 [邮件工具示例](src/main/tools/email-tool.ts) - 带配置和外部依赖的完整示例
-
----
-
-## 🔒 安全机制
-
-DeepBot 实现了严格的安全限制，确保 AI Agent 只能访问用户明确授权的目录：
-
-### 路径白名单
-
-只允许访问以下配置的目录及其子目录：
-
-| 目录类型 | 默认路径 | 用途 | 可配置 |
-|---------|---------|------|--------|
-| **工作目录** | `~` (用户主目录) | 文件读写、命令执行 | ✅ |
-| **脚本目录** | `~/.deepbot/scripts` | Python 脚本存储 | ✅ |
-| **Skill 目录** | `~/.agents/skills` | Skill 包安装 | ✅ |
-| **图片目录** | `~/.deepbot/generated-images` | AI 生成图片保存 | ✅ |
-
-### 安全检查流程
-
-```
-工具调用 → 路径安全检查 → 在白名单内？
-                           ├─ 是 → 允许执行
-                           └─ 否 → 拒绝执行，返回错误
-```
+- 📖 [Full Development Guide](src/main/tools/registry/README.md)
+- 📝 [Example Tool Template](src/main/tools/registry/example-tool.ts)
+- 🔧 [Email Tool Example](src/main/tools/email-tool.ts) — complete example with config and external dependencies
 
 ---
 
-## 🧠 记忆系统
+## 🔒 Security
 
-DeepBot 支持强大的长期记忆功能，可以记住用户的偏好和重要信息。
+DeepBot enforces strict access controls so AI Agents can only reach directories you've explicitly authorized.
 
-### 全局记忆
+### Path Whitelist
 
-- **存储位置**: `~/.deepbot/memory/MEMORY.md`
-- **格式**: Markdown 格式，结构化存储
-- **自动注入**: 每次对话自动加载到系统提示词
-- **实时更新**: 记忆更新后自动重载所有 Agent
-- **作用范围**: 所有 Tab 共享，存储通用偏好和重要信息
+Only the following directories (and their subdirectories) are accessible:
 
-### 独立记忆（多 Agent 支持）
+| Type | Default Path | Purpose | Configurable |
+|------|-------------|---------|--------------|
+| **Workspace** | `~` (home directory) | File read/write, command execution | ✅ |
+| **Scripts** | `~/.deepbot/scripts` | Python script storage | ✅ |
+| **Skills** | `~/.agents/skills` | Skill package installation | ✅ |
+| **Images** | `~/.deepbot/generated-images` | AI-generated image storage | ✅ |
 
-每个 Tab（Agent）可以拥有独立的记忆文件，实现真正的多角色协作：
-
-- **独立记忆文件**: 每个 Tab 可以有自己的 `memory-<tab-id>.md`
-- **独立角色设定**: 不同 Tab 可以扮演不同角色（如产品经理、开发工程师、测试工程师）
-- **独立工作偏向**: 每个 Agent 可以有自己的专业领域和工作方式
-- **持久化存储**: Tab 的记忆和角色设定会被持久化保存
-
-### 使用场景
-
-**全局记忆**：
-```
-用户: "记住：我喜欢简洁的代码"
-DeepBot: "已记住你的偏好"
-```
-
-**独立记忆**：
-```
-用户: "创建一个销售分析 Agent"
-DeepBot: "已创建新 Tab，这个 Agent 将专注于客户关系管理和销售数据分析"
-
-用户: "记住：你是销售专家，负责客户跟进和销售业绩分析"
-销售分析 Agent: "已记住我的职责范围"
-```
-
-### 多 Agent 协作示例
-
-1. **销售 Agent**: 负责客户关系管理和销售流程，记忆中存储客户信息和销售策略
-2. **市场 Agent**: 负责市场分析和营销活动，记忆中存储市场数据和推广方案
-3. **解决方案 Agent**: 负责技术方案设计和客户需求分析，记忆中存储解决方案模板和技术规范
-4. **产品 Agent**: 负责产品规划和需求管理，记忆中存储产品路线图和用户反馈
-5. **研发 Agent**: 负责技术开发和系统实现，记忆中存储技术文档和开发规范
-6. **项目管理 Agent**: 负责项目协调和进度管控，记忆中存储项目计划和资源分配
-
-每个 Agent 都有独立的记忆和专业领域，可以专注于自己的业务范围，实现跨部门高效协作。
-
----
-
-## ⏰ 定时任务
-
-支持创建和管理定时任务，自动化执行周期性工作：
-
-### 功能特性
-
-- ✅ Cron 表达式支持
-- ✅ 专用 Tab 执行（锁定不可关闭）
-- ✅ 清空历史上下文
-- ✅ 执行历史记录
-
-### 使用示例
+### Security Check Flow
 
 ```
-用户: "每天早上 9 点检查桌面文件"
-DeepBot: "已创建定时任务，将在每天 9:00 执行"
+Tool call → Path security check → Within whitelist?
+                                   ├─ Yes → Allow execution
+                                   └─ No  → Reject, return error
 ```
 
 ---
 
-## 🎨 技能扩展 (Skills)
+## 🧠 Memory System
 
-通过 Skills 系统可以组合多个工具实现复杂功能。
+DeepBot supports persistent long-term memory to retain user preferences and important context across sessions.
 
-### 安装现有 Skill
+### Global Memory
+
+- **Location**: `~/.deepbot/memory/MEMORY.md`
+- **Format**: Structured Markdown
+- **Auto-injection**: Loaded into every conversation's system prompt
+- **Live updates**: Memory changes automatically reload all active Agents
+- **Scope**: Shared across all Tabs — stores general preferences and shared context
+
+### Per-Tab Memory (Multi-Agent Support)
+
+Each Tab (Agent) can have its own independent memory file, enabling true multi-role collaboration:
+
+- **Independent memory files**: Each Tab can have its own `memory-<tab-id>.md`
+- **Independent role definitions**: Different Tabs can take on different roles (e.g., Product Manager, Developer, QA Engineer)
+- **Independent work styles**: Each Agent can have its own domain expertise and preferences
+- **Persistent storage**: Tab memory and role settings are saved across sessions
+
+### Usage Examples
+
+**Global memory**:
+```
+User: "Remember: I prefer concise code"
+DeepBot: "Got it, I'll keep that in mind"
+```
+
+**Per-tab memory**:
+```
+User: "Create a Sales Analysis Agent"
+DeepBot: "New Tab created. This Agent will focus on customer relationship management and sales data analysis"
+
+User: "Remember: You are a Sales Expert responsible for customer follow-up and performance analysis"
+Sales Agent: "Understood, I've saved my role and responsibilities"
+```
+
+### Multi-Agent Collaboration Example
+
+1. **Sales Agent** — Customer relationship management and sales pipeline; stores customer info and sales strategies
+2. **Marketing Agent** — Market analysis and campaigns; stores market data and promotion plans
+3. **Solutions Agent** — Technical solution design and requirements analysis; stores solution templates and specs
+4. **Product Agent** — Product planning and backlog management; stores roadmaps and user feedback
+5. **R&D Agent** — Technical development and implementation; stores technical docs and coding standards
+6. **Project Manager Agent** — Project coordination and progress tracking; stores project plans and resource allocation
+
+Each Agent operates with independent memory and domain expertise, enabling efficient cross-department collaboration.
+
+---
+
+## ⏰ Scheduled Tasks
+
+Create and manage scheduled tasks to automate recurring work:
+
+### Features
+
+- ✅ Cron expression support
+- ✅ Dedicated Tab execution (locked, cannot be closed)
+- ✅ Context reset between runs (retains last run's output as context)
+- ✅ Execution history tracking
+
+### Example
+
+```
+User: "Check desktop files every day at 9 AM"
+DeepBot: "Scheduled task created — will run daily at 9:00"
+```
+
+---
+
+## 🎨 Skill Extensions
+
+The Skills system lets you compose multiple tools into reusable, complex workflows.
+
+### Install an Existing Skill
 
 ```bash
-# 在 DeepBot 中使用 Skill Manager 工具
-"安装 weather skill"
+# Use the Skill Manager tool in DeepBot
+"Install weather skill"
 ```
 
-### 创建自定义 Skill
+### Create a Custom Skill
 
-用户可以创建自己的 Skill 来实现特定功能。Skill 是包含 SKILL.md 文件的目录，使用 YAML frontmatter + Markdown 格式。
+A Skill is a directory containing a `SKILL.md` file using YAML frontmatter + Markdown format.
 
-#### 1. 创建 Skill 目录
+#### 1. Create the Skill directory
 
 ```bash
 mkdir -p ~/.agents/skills/my-skill
 cd ~/.agents/skills/my-skill
 ```
 
-#### 2. 创建 SKILL.md 文件
-
-创建 `SKILL.md` 文件（YAML frontmatter + Markdown 指令）：
+#### 2. Create SKILL.md
 
 ````markdown
 ---
 name: my-skill
-description: 我的自定义技能，用于处理特定任务
+description: My custom skill for handling specific tasks
 version: 1.0.0
 author: Your Name
 ---
 
-# 我的自定义技能
+# My Custom Skill
 
-## 何时使用此技能
+## When to use this skill
 
-当用户需要执行以下操作时使用此技能：
-- 操作 1
-- 操作 2
+Use this skill when the user needs to:
+- Operation 1
+- Operation 2
 
-## 如何使用
+## How to use
 
-### 步骤 1：读取文件
+### Step 1: Read file
 
-使用 file_read 工具读取文件：
+Use the file_read tool:
 
 ```json
 {
@@ -620,138 +620,122 @@ author: Your Name
 }
 ```
 
-### 步骤 2：处理数据
+### Step 2: Process data
 
-对读取的数据进行处理...
+Process the data as needed...
 
-### 步骤 3：保存结果
+### Step 3: Save results
 
-使用 file_write 工具保存结果...
+Use the file_write tool to save results...
 
-## 注意事项
+## Notes
 
-- 注意事项 1
-- 注意事项 2
+- Note 1
+- Note 2
 ````
 
-#### 3. 安装 Skill
+#### 3. Install the Skill
 
-有两种安装方式：
+**Option 1: Direct placement** (recommended)
 
-**方式 1：直接放置**（推荐）
+Place the Skill directory under `~/.agents/skills/` and restart DeepBot — it will be loaded automatically.
 
-将 Skill 目录放到 `~/.agents/skills/` 下，重启 DeepBot 即可自动加载。
-
-**方式 2：使用 Skill Manager**
+**Option 2: Use Skill Manager**
 
 ```bash
-# 在 DeepBot 中使用命令
-"安装本地 skill，路径是 ~/.agents/skills/my-skill"
+"Install local skill at path ~/.agents/skills/my-skill"
 ```
 
-### Skill 目录
+### Skill Directory
 
-- **默认路径**: `~/.agents/skills/`
-- **自动发现**: 启动时自动加载所有已安装的 Skills
-- **动态管理**: 支持运行时安装/卸载
+- **Default path**: `~/.agents/skills/`
+- **Auto-discovery**: All installed Skills are loaded at startup
+- **Dynamic management**: Install and uninstall at runtime
 
-### Skill 开发文档
+### Skill Capabilities
 
-- 📖 Skill 可以调用所有内置工具
-- 📝 支持异步操作和错误处理
-- 🔧 可以组合多个工具实现复杂功能
+- 📖 Skills can call all 14 built-in tools
+- 📝 Supports async operations and error handling
+- 🔧 Compose multiple tools for complex multi-step workflows
 
 ---
 
-## 🤖 支持的 AI 模型
+## 🤖 Supported AI Models
 
-DeepBot 支持多种 AI 模型提供商：
-
-- **通义千问** (阿里云) - 默认模型
-- **OpenAI** (GPT-4、GPT-3.5)
+- **Qwen** (Alibaba Cloud) — default model
+- **OpenAI** (GPT-4, GPT-3.5)
 - **Claude** (Anthropic)
 
-### 配置 API 密钥
+Configure your API keys in System Settings to get started.
 
-在系统设置中配置对应的 API 密钥即可使用。
+### ⚠️ Important: Avoid Reasoning Models
 
-### ⚠️ 重要提示
+DeepBot is optimized for standard conversational models. Models with built-in thinking/reasoning modes can cause display issues with `<think>...</think>` tags, slower responses, and unnecessary overhead for simple tasks.
 
-**不建议使用：带有"思考"或"推理"能力的模型**
-
-DeepBot 针对标准对话模型进行了优化。带有内置思考/推理模式的模型（如通义千问的 QwQ 系列、OpenAI 的 o1 系列，或其他具有显式推理步骤的模型）可能会导致：
-
-- 思考标签（`<think>...</think>`）显示问题
-- 响应速度变慢
-- 简单任务产生不必要的推理开销
-
-
-**不推荐使用：**
-- ❌ QwQ-32B-Preview（推理模型）
-- ❌ OpenAI o1、o1-mini、o1-preview（推理模型）
-- ❌ DeepSeek-R1（推理模型）
-- ❌ 其他具有显式思考/推理模式的模型
+**Not recommended:**
+- ❌ QwQ-32B-Preview
+- ❌ OpenAI o1, o1-mini, o1-preview
+- ❌ DeepSeek-R1
+- ❌ Any model with explicit reasoning/thinking steps
 
 ---
 
-## 📦 外部服务
+## 📦 External Services
 
-DeepBot 集成了以下外部服务：
-
-| 服务 | 用途 | 配置位置 |
-|------|------|---------|
-| **Tavily API** | 网页搜索 | 系统设置 → Web Search |
-| **Gemini** | 图片生成 (Imagen 3) | 系统设置 → Image Generation |
+| Service | Purpose | Configuration |
+|---------|---------|---------------|
+| **Tavily API** | Web search | System Settings → Web Search |
+| **Gemini** | Image generation (Imagen 3) | System Settings → Image Generation |
 
 ---
 
-## 🛠️ 开发指南
+## 🛠️ Development Guide
 
-### 项目结构
+### Project Structure
 
 ```
 deepbot/
 ├── src/
-│   ├── main/           # 主进程代码
-│   │   ├── gateway.ts          # 会话管理
-│   │   ├── agent-runtime/      # Agent 运行时
-│   │   ├── tools/              # 工具系统
-│   │   ├── scheduled-tasks/    # 定时任务
-│   │   ├── connectors/         # 外部连接器
-│   │   └── database/           # 数据存储
-│   ├── renderer/       # 渲染进程代码 (React)
-│   ├── shared/         # 共享代码
-│   └── types/          # 类型定义
-├── docs/               # 文档
-└── scripts/            # 构建脚本
+│   ├── main/           # Main process
+│   │   ├── gateway.ts          # Session management
+│   │   ├── agent-runtime/      # Agent runtime
+│   │   ├── tools/              # Tool system
+│   │   ├── scheduled-tasks/    # Scheduled tasks
+│   │   ├── connectors/         # External connectors
+│   │   └── database/           # Data storage
+│   ├── renderer/       # Renderer process (React)
+│   ├── shared/         # Shared utilities
+│   └── types/          # Type definitions
+├── docs/               # Documentation
+└── scripts/            # Build scripts
 ```
 
 ---
 
-## 📝 许可证
+## 📝 License
 
-本项目采用 [MIT License](LICENSE) 开源协议。
-
----
-
-## 🙏 致谢
-
-DeepBot 的开发受到以下项目的启发：
-
-- [Clawdbot](https://github.com/openclaw/openclaw) - 提供了架构参考
-- [@mariozechner/pi-agent-core](https://github.com/badlogic/pi-agent) - AI Agent Runtime
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 📧 联系方式
+## 🙏 Acknowledgments
 
-- **作者**: K罗@格灵深瞳
-- **问题反馈**: [GitHub Issues](https://github.com/yourusername/deepbot/issues)
+DeepBot was inspired by:
+
+- [Clawdbot](https://github.com/openclaw/openclaw) — architectural reference
+- [@mariozechner/pi-agent-core](https://github.com/badlogic/pi-agent) — AI Agent Runtime
+
+---
+
+## 📧 Contact
+
+- **Author**: Kevin Luo @ Deepglint
+- **Issues**: [GitHub Issues](https://github.com/kevinluosl/deepbot/issues)
 
 ---
 
 <div align="center">
 
-**⭐ 如果这个项目对你有帮助，请给一个 Star！**
+**⭐ If DeepBot is useful to you, a star goes a long way!**
 
 </div>
