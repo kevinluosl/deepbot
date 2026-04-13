@@ -12,6 +12,7 @@ import { api } from '../api';
 import type { UploadedFile } from '../../types/message';
 import { Tooltip } from './Tooltip';
 import { readFileAsDataURL } from '../utils/file-reader';
+import { getLanguage } from '../i18n';
 
 interface FileUploaderProps {
   files: UploadedFile[];
@@ -33,6 +34,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   hasImages = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lang = getLanguage();
 
   // 处理文件选择
   const handleFileSelect = async (selectedFiles: FileList | null) => {
@@ -126,7 +128,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   if (showButtonOnly) {
     return (
       <>
-        <Tooltip content={`上传文件 (最多${maxFiles}个，每个最大${maxSizeMB}MB)`}>
+        <Tooltip content={lang === 'zh' ? `上传文件 (最多${maxFiles}个，每个最大${maxSizeMB}MB)` : `Upload files (max ${maxFiles}, ${maxSizeMB}MB each)`}>
           <button
             type="button"
             className="file-upload-button-inline"
@@ -176,7 +178,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 type="button"
                 className="file-preview-remove-floating"
                 onClick={() => handleRemove(file.id)}
-                title="删除文件"
+                title={lang === 'zh' ? '删除文件' : 'Remove file'}
               >
                 ×
               </button>
@@ -224,7 +226,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 type="button"
                 className="file-preview-remove"
                 onClick={() => handleRemove(file.id)}
-                title="删除文件"
+                title={lang === 'zh' ? '删除文件' : 'Remove file'}
               >
                 ×
               </button>

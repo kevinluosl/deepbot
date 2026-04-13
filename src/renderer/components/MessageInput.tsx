@@ -8,6 +8,7 @@ import { FileUploader } from './FileUploader';
 import type { UploadedImage, UploadedFile } from '../../types/message';
 import { api } from '../api';
 import { readFileAsDataURL } from '../utils/file-reader';
+import { getLanguage } from '../i18n';
 
 interface MessageInputProps {
   onSend: (content: string, images?: UploadedImage[], files?: UploadedFile[]) => void;
@@ -38,6 +39,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lang = getLanguage();
   
   // 🔥 历史记录功能
   const [history, setHistory] = useState<string[]>([]);
@@ -513,7 +515,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
             onClick={onStop}
             disabled={disableStop}
             className="terminal-button danger"
-            title={disableStop ? "定时任务专属窗口（只读）" : "停止生成"}
+            title={disableStop ? (lang === 'zh' ? '定时任务专属窗口（只读）' : 'Task-only tab (read-only)') : (lang === 'zh' ? '停止生成' : 'Stop')}
           >
             [STOP]
           </button>
@@ -522,7 +524,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
             onClick={handleSend}
             disabled={disabled || !content.trim()}
             className="terminal-button"
-            title="发送消息"
+            title={lang === 'zh' ? '发送消息' : 'Send'}
           >
             [SEND]
           </button>

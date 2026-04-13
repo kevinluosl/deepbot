@@ -30,6 +30,7 @@ interface EnvironmentConfigProps {
 }
 
 export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigProps) {
+  const lang = getLanguage();
   const { mode: themeMode, setThemeMode } = useContext(ThemeContext);
   const [status, setStatus] = useState<EnvironmentStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +62,11 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
       if (result.success) {
         setStatus(result.data);
       } else {
-        setError(result.error || '获取状态失败');
+        setError(result.error || (lang === 'zh' ? '获取状态失败' : 'Failed to get status'));
       }
     } catch (err: any) {
       console.error('加载环境状态失败:', err);
-      setError(err.message || '加载失败');
+      setError(err.message || (lang === 'zh' ? '加载失败' : 'Load failed'));
     }
   };
 
@@ -111,7 +112,7 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-900">{displayName}</h3>
-                <p className="text-xs text-gray-500">未检查</p>
+                <p className="text-xs text-gray-500">{lang === 'zh' ? '未检查' : 'Not checked'}</p>
               </div>
             </div>
           </div>
@@ -140,11 +141,11 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
               <h3 className="text-sm font-medium text-gray-900">{displayName}</h3>
               {config.isInstalled ? (
                 <>
-                  <p className="text-xs text-gray-600 mt-1">版本: {config.version}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">路径: {config.path}</p>
+                  <p className="text-xs text-gray-600 mt-1">{lang === 'zh' ? '版本' : 'Version'}: {config.version}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{lang === 'zh' ? '路径' : 'Path'}: {config.path}</p>
                 </>
               ) : (
-                <p className="text-xs text-red-600 mt-1">未安装 - {config.error}</p>
+                <p className="text-xs text-red-600 mt-1">{lang === 'zh' ? '未安装' : 'Not installed'} - {config.error}</p>
               )}
             </div>
           </div>
@@ -157,9 +158,9 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
     <div className="space-y-6">
       {/* 标题和说明 */}
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">环境配置</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{lang === 'zh' ? '环境配置' : 'Environment'}</h3>
         <p className="text-sm text-gray-500">
-          配置界面主题和运行环境。
+          {lang === 'zh' ? '配置界面主题和运行环境。' : 'Configure UI theme and runtime environment.'}
         </p>
       </div>
 
@@ -170,22 +171,22 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
         borderRadius: '8px',
       }}>
         <div style={{ fontSize: '13px', color: 'var(--settings-text)', fontWeight: '600', marginBottom: '8px' }}>
-          界面主题
+          {lang === 'zh' ? '界面主题' : 'Theme'}
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {([
-            { value: 'light' as ThemeMode, label: '浅色', icon: (
+            { value: 'light' as ThemeMode, label: lang === 'zh' ? '浅色' : 'Light', icon: (
               <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
                 <circle cx="16" cy="16" r="5" stroke="currentColor" strokeWidth="2"/>
                 <path d="M16 4v3M16 25v3M4 16h3M25 16h3M7.8 7.8l2.1 2.1M22.1 22.1l2.1 2.1M7.8 24.2l2.1-2.1M22.1 9.9l2.1-2.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             )},
-            { value: 'dark' as ThemeMode, label: '深色', icon: (
+            { value: 'dark' as ThemeMode, label: lang === 'zh' ? '深色' : 'Dark', icon: (
               <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
                 <path d="M26 17.6A10 10 0 1114.4 6a8 8 0 0011.6 11.6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             )},
-            { value: 'auto' as ThemeMode, label: '自动', icon: (
+            { value: 'auto' as ThemeMode, label: lang === 'zh' ? '自动' : 'Auto', icon: (
               <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
                 <circle cx="16" cy="16" r="10" stroke="currentColor" strokeWidth="2"/>
                 <path d="M16 6v20" stroke="currentColor" strokeWidth="2"/>
@@ -227,13 +228,13 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
         marginBottom: '16px',
       }}>
         <div style={{ fontSize: '13px', color: 'var(--settings-text)', fontWeight: '600', marginBottom: '8px' }}>
-          字体大小
+          {lang === 'zh' ? '字体大小' : 'Font Size'}
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {([
-            { value: 'small', label: '标准' },
-            { value: 'medium', label: '中等' },
-            { value: 'large', label: '较大' },
+            { value: 'small', label: lang === 'zh' ? '标准' : 'Standard' },
+            { value: 'medium', label: lang === 'zh' ? '中等' : 'Medium' },
+            { value: 'large', label: lang === 'zh' ? '较大' : 'Large' },
           ]).map(opt => (
             <div
               key={opt.value}
@@ -270,7 +271,7 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
         marginBottom: '16px',
       }}>
         <div style={{ fontSize: '13px', color: 'var(--settings-text)', fontWeight: '600', marginBottom: '8px' }}>
-          语言 / Language
+          {lang === 'zh' ? '语言' : 'Language'} / {lang === 'zh' ? 'Language' : '语言'}
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {([
@@ -313,10 +314,10 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
         borderRadius: '8px',
       }}>
         <div style={{ fontSize: '13px', color: 'var(--settings-text)', fontWeight: '600', marginBottom: '4px' }}>
-          运行环境
+          {lang === 'zh' ? '运行环境' : 'Runtime Environment'}
         </div>
         <p style={{ fontSize: '12px', color: 'var(--settings-text-dim)', marginBottom: '12px' }}>
-          DeepBot 需要 Python 环境来执行脚本和 Skill。
+          {lang === 'zh' ? 'DeepBot 需要 Python 环境来执行脚本和 Skill。' : 'DeepBot requires Python to run scripts and Skills.'}
         </p>
 
         <div className="space-y-3">
@@ -329,7 +330,7 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="text-sm font-medium text-red-900">错误</h4>
+              <h4 className="text-sm font-medium text-red-900">{lang === 'zh' ? '错误' : 'Error'}</h4>
               <p className="text-sm text-red-700 mt-1">{error}</p>
             </div>
           </div>
@@ -351,9 +352,9 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="text-sm font-medium text-yellow-900">尚未检查环境</h4>
+              <h4 className="text-sm font-medium text-yellow-900">{lang === 'zh' ? '尚未检查环境' : 'Environment not checked'}</h4>
               <p className="text-sm text-yellow-700 mt-1">
-                请点击下方按钮检查系统环境配置
+                {lang === 'zh' ? '请点击下方按钮检查系统环境配置' : 'Click the button below to check system environment'}
               </p>
             </div>
           </div>
@@ -366,7 +367,7 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
           onClick={handleCheckEnvironment}
           className="px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
         >
-          检查环境
+          {lang === 'zh' ? '检查环境' : 'Check Environment'}
         </button>
       </div>
 
@@ -389,14 +390,17 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
               <h4 className={`text-sm font-medium ${
                 status.allInstalled ? 'text-green-900' : 'text-yellow-900'
               }`}>
-                {status.allInstalled ? '环境配置完成' : '环境配置不完整'}
+                {status.allInstalled
+                  ? (lang === 'zh' ? '环境配置完成' : 'Environment ready')
+                  : (lang === 'zh' ? '环境配置不完整' : 'Environment incomplete')
+                }
               </h4>
               <p className={`text-sm mt-1 ${
                 status.allInstalled ? 'text-green-700' : 'text-yellow-700'
               }`}>
                 {status.allInstalled 
-                  ? 'DeepBot 已准备就绪，可以正常使用所有功能。'
-                  : 'Python 未安装，某些功能可能无法使用。请安装 Python。'
+                  ? (lang === 'zh' ? 'DeepBot 已准备就绪，可以正常使用所有功能。' : 'DeepBot is ready. All features are available.')
+                  : (lang === 'zh' ? 'Python 未安装，某些功能可能无法使用。请安装 Python。' : 'Python is not installed. Some features may not work. Please install Python.')
                 }
               </p>
             </div>
@@ -407,15 +411,15 @@ export function EnvironmentConfig({ onClose, activeTabId }: EnvironmentConfigPro
       {/* 安装指南 */}
       {status && !status.allInstalled && !status.needsCheck && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-blue-900 mb-2">安装指南</h4>
+          <h4 className="text-sm font-medium text-blue-900 mb-2">{lang === 'zh' ? '安装指南' : 'Installation Guide'}</h4>
           <div className="space-y-2 text-sm text-blue-700">
             {!status.python?.isInstalled && (
               <div>
-                <p className="font-medium">安装 Python:</p>
+                <p className="font-medium">{lang === 'zh' ? '安装 Python:' : 'Install Python:'}</p>
                 <code className="block bg-blue-100 px-2 py-1 rounded mt-1 text-xs">
                   # macOS: brew install python<br/>
                   # Linux: sudo apt install python3 python3-pip<br/>
-                  # Windows: 下载官方安装包
+                  # Windows: {lang === 'zh' ? '下载官方安装包' : 'Download official installer'}
                 </code>
               </div>
             )}

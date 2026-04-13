@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { isElectron } from '../../utils/platform';
 import { showToast } from '../../utils/toast';
+import { getLanguage } from '../../i18n';
 
 interface WorkspaceConfigProps {
   onClose: () => void;
@@ -26,6 +27,8 @@ interface WorkspaceSettings {
 }
 
 export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
+  const lang = getLanguage();
+
   const [settings, setSettings] = useState<WorkspaceSettings>({
     workspaceDir: '',
     scriptDir: '',
@@ -104,7 +107,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       }
     } catch (error) {
       console.error('加载工作目录配置失败:', error);
-      showToast('error', '加载配置失败');
+      showToast('error', lang === 'zh' ? '加载配置失败' : 'Failed to load config');
     } finally {
       setLoading(false);
     }
@@ -112,7 +115,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
 
   const handleSaveWorkspaceDir = async () => {
     if (!settings.workspaceDir.trim()) {
-      showToast('error', '默认工作目录不能为空');
+      showToast('error', lang === 'zh' ? '默认工作目录不能为空' : 'Default workspace directory cannot be empty');
       return;
     }
 
@@ -121,14 +124,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showToast('success', '默认工作目录已保存');
+        showToast('success', lang === 'zh' ? '默认工作目录已保存' : 'Default workspace directory saved');
         clearDirty('workspaceDir');
       } else {
-        showToast('error', result.error || '保存失败');
+        showToast('error', result.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
       }
     } catch (error) {
       console.error('保存默认工作目录失败:', error);
-      showToast('error', '保存失败');
+      showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -140,14 +143,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showToast('success', 'Python 脚本目录已保存');
+        showToast('success', lang === 'zh' ? 'Python 脚本目录已保存' : 'Python script directory saved');
         clearDirty('scriptDir');
       } else {
-        showToast('error', result.error || '保存失败');
+        showToast('error', result.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
       }
     } catch (error) {
       console.error('保存 Python 脚本目录失败:', error);
-      showToast('error', '保存失败');
+      showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -159,14 +162,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showToast('success', '图片生成目录已保存');
+        showToast('success', lang === 'zh' ? '图片生成目录已保存' : 'Image directory saved');
         clearDirty('imageDir');
       } else {
-        showToast('error', result.error || '保存失败');
+        showToast('error', result.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
       }
     } catch (error) {
       console.error('保存图片生成目录失败:', error);
-      showToast('error', '保存失败');
+      showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -174,7 +177,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
 
   const handleAddSkillDir = async () => {
     if (!newSkillDir.trim()) {
-      showToast('error', '请输入 Skill 目录路径');
+      showToast('error', lang === 'zh' ? '请输入 Skill 目录路径' : 'Please enter a Skill directory path');
       return;
     }
 
@@ -186,20 +189,23 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         setSettings(result.settings);
         setNewSkillDir('');
         setShowAddInput(false);
-        showToast('success', 'Skill 目录已添加');
+        showToast('success', lang === 'zh' ? 'Skill 目录已添加' : 'Skill directory added');
       } else {
-        showToast('error', result.error || '添加失败');
+        showToast('error', result.error || (lang === 'zh' ? '添加失败' : 'Add failed'));
       }
     } catch (error) {
       console.error('添加 Skill 目录失败:', error);
-      showToast('error', '添加失败');
+      showToast('error', lang === 'zh' ? '添加失败' : 'Add failed');
     } finally {
       setSaving(false);
     }
   };
 
   const handleRemoveSkillDir = async (dir: string) => {
-    if (!confirm(`确定要删除 Skill 目录 "${dir}" 吗？`)) {
+    const confirmMsg = lang === 'zh'
+      ? `确定要删除 Skill 目录 "${dir}" 吗？`
+      : `Remove Skill directory "${dir}"?`;
+    if (!confirm(confirmMsg)) {
       return;
     }
 
@@ -209,13 +215,13 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       
       if (result.success && result.settings) {
         setSettings(result.settings);
-        showToast('success', 'Skill 目录已删除');
+        showToast('success', lang === 'zh' ? 'Skill 目录已删除' : 'Skill directory removed');
       } else {
-        showToast('error', result.error || '删除失败');
+        showToast('error', result.error || (lang === 'zh' ? '删除失败' : 'Delete failed'));
       }
     } catch (error) {
       console.error('删除 Skill 目录失败:', error);
-      showToast('error', '删除失败');
+      showToast('error', lang === 'zh' ? '删除失败' : 'Delete failed');
     } finally {
       setSaving(false);
     }
@@ -228,13 +234,13 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       
       if (result.success && result.settings) {
         setSettings(result.settings);
-        showToast('success', '默认 Skill 目录已设置');
+        showToast('success', lang === 'zh' ? '默认 Skill 目录已设置' : 'Default Skill directory set');
       } else {
-        showToast('error', result.error || '设置失败');
+        showToast('error', result.error || (lang === 'zh' ? '设置失败' : 'Set failed'));
       }
     } catch (error) {
       console.error('设置默认 Skill 目录失败:', error);
-      showToast('error', '设置失败');
+      showToast('error', lang === 'zh' ? '设置失败' : 'Set failed');
     } finally {
       setSaving(false);
     }
@@ -248,7 +254,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('workspaceDir');
       }
     } catch (error) {
-      showToast('error', '获取默认路径失败');
+      showToast('error', lang === 'zh' ? '获取默认路径失败' : 'Failed to get default path');
     }
   };
 
@@ -260,7 +266,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('scriptDir');
       }
     } catch (error) {
-      showToast('error', '获取默认路径失败');
+      showToast('error', lang === 'zh' ? '获取默认路径失败' : 'Failed to get default path');
     }
   };
 
@@ -272,7 +278,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('imageDir');
       }
     } catch (error) {
-      showToast('error', '获取默认路径失败');
+      showToast('error', lang === 'zh' ? '获取默认路径失败' : 'Failed to get default path');
     }
   };
 
@@ -282,14 +288,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showToast('success', '记忆管理目录已保存');
+        showToast('success', lang === 'zh' ? '记忆管理目录已保存' : 'Memory directory saved');
         clearDirty('memoryDir');
       } else {
-        showToast('error', result.error || '保存失败');
+        showToast('error', result.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
       }
     } catch (error) {
       console.error('保存记忆管理目录失败:', error);
-      showToast('error', '保存失败');
+      showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -303,7 +309,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('memoryDir');
       }
     } catch (error) {
-      showToast('error', '获取默认路径失败');
+      showToast('error', lang === 'zh' ? '获取默认路径失败' : 'Failed to get default path');
     }
   };
 
@@ -313,14 +319,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       const result = await api.saveWorkspaceSettings(settings);
       
       if (result.success) {
-        showToast('success', '对话历史目录已保存');
+        showToast('success', lang === 'zh' ? '对话历史目录已保存' : 'Session directory saved');
         clearDirty('sessionDir');
       } else {
-        showToast('error', result.error || '保存失败');
+        showToast('error', result.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
       }
     } catch (error) {
       console.error('保存对话历史目录失败:', error);
-      showToast('error', '保存失败');
+      showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -334,14 +340,14 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         markDirty('sessionDir');
       }
     } catch (error) {
-      showToast('error', '获取默认路径失败');
+      showToast('error', lang === 'zh' ? '获取默认路径失败' : 'Failed to get default path');
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-gray-500">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>
       </div>
     );
   }
@@ -349,9 +355,13 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">工作目录配置</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {lang === 'zh' ? '工作目录配置' : 'Workspace Configuration'}
+        </h3>
         <p className="text-sm text-gray-500">
-          配置 DeepBot 的工作目录，所有文件操作将限制在工作目录及其子目录内
+          {lang === 'zh'
+            ? '配置 DeepBot 的工作目录，所有文件操作将限制在工作目录及其子目录内'
+            : 'Configure DeepBot workspace directories. All file operations are restricted to the workspace directory and its subdirectories.'}
         </p>
       </div>
 
@@ -363,8 +373,12 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
             <div className="text-sm text-blue-300">
-              <p className="font-medium">Docker 模式</p>
-              <p className="mt-0.5 text-blue-400">目录由 docker-compose.yml 的 volume 挂载决定，无法在此修改。如需更改，请修改 .env 文件后重启容器。</p>
+              <p className="font-medium">{lang === 'zh' ? 'Docker 模式' : 'Docker Mode'}</p>
+              <p className="mt-0.5 text-blue-400">
+                {lang === 'zh'
+                  ? '目录由 docker-compose.yml 的 volume 挂载决定，无法在此修改。如需更改，请修改 .env 文件后重启容器。'
+                  : 'Directories are determined by docker-compose.yml volume mounts and cannot be changed here. To modify, update the .env file and restart the container.'}
+              </p>
             </div>
           </div>
         </div>
@@ -373,10 +387,12 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       {/* 默认工作目录 - 放在第一个位置 */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          默认工作目录 <span className="text-red-500">*</span>
+          {lang === 'zh' ? '默认工作目录' : 'Default Workspace Directory'} <span className="text-red-500">*</span>
         </label>
         <p className="text-xs text-gray-500 mb-2">
-          所有文件操作（读写、执行命令等）将限制在此目录及其子目录内，必须设置
+          {lang === 'zh'
+            ? '所有文件操作（读写、执行命令等）将限制在此目录及其子目录内，必须设置'
+            : 'All file operations (read/write, commands, etc.) are restricted to this directory and its subdirectories. Required.'}
         </p>
         <div className="flex gap-2">
           <input
@@ -393,7 +409,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
               onClick={() => handleBrowse('workspaceDir')}
               className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap"
             >
-              浏览
+              {lang === 'zh' ? '浏览' : 'Browse'}
             </button>
           )}
           <button
@@ -401,7 +417,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
             disabled={isDocker}
             className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
-            重置
+            {lang === 'zh' ? '重置' : 'Reset'}
           </button>
           {dirtyFields.has('workspaceDir') && (
             <button
@@ -409,12 +425,12 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
               disabled={saving || !settings.workspaceDir.trim() || isDocker}
               className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {saving ? '保存中...' : '保存'}
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存' : 'Save')}
             </button>
           )}
         </div>
         <p className="text-xs text-gray-400">
-          默认：{defaultSettings.workspaceDir || '用户主目录'}
+          {lang === 'zh' ? '默认' : 'Default'}：{defaultSettings.workspaceDir || (lang === 'zh' ? '用户主目录' : 'Home directory')}
         </p>
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-2">
           <div className="flex">
@@ -422,8 +438,12 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
             <div className="text-sm text-yellow-700">
-              <p className="font-medium">安全提示</p>
-              <p>为了安全，AI 只能操作工作目录及其子目录内的文件，无法访问其他目录</p>
+              <p className="font-medium">{lang === 'zh' ? '安全提示' : 'Security Notice'}</p>
+              <p>
+                {lang === 'zh'
+                  ? '为了安全，AI 只能操作工作目录及其子目录内的文件，无法访问其他目录'
+                  : 'For security, AI can only access files within the workspace directory and its subdirectories.'}
+              </p>
             </div>
           </div>
         </div>
@@ -432,10 +452,12 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       {/* Python 脚本目录 */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          Python 脚本目录
+          {lang === 'zh' ? 'Python 脚本目录' : 'Python Script Directory'}
         </label>
         <p className="text-xs text-gray-500 mb-2">
-          AI 生成的 Python 脚本将统一保存到此目录
+          {lang === 'zh'
+            ? 'AI 生成的 Python 脚本将统一保存到此目录'
+            : 'AI-generated Python scripts will be saved to this directory'}
         </p>
         <div className="flex gap-2">
           <input
@@ -447,25 +469,33 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
             placeholder="~/.deepbot/scripts"
           />
           {isElectron() && !isDocker && (
-            <button onClick={() => handleBrowse('scriptDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">浏览</button>
+            <button onClick={() => handleBrowse('scriptDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">
+              {lang === 'zh' ? '浏览' : 'Browse'}
+            </button>
           )}
-          <button onClick={handleResetScriptDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">重置</button>
+          <button onClick={handleResetScriptDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+            {lang === 'zh' ? '重置' : 'Reset'}
+          </button>
           {dirtyFields.has('scriptDir') && (
-            <button onClick={handleSaveScriptDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">{saving ? '保存中...' : '保存'}</button>
+            <button onClick={handleSaveScriptDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存' : 'Save')}
+            </button>
           )}
         </div>
         <p className="text-xs text-gray-400">
-          默认：{defaultSettings.scriptDir || '~/.deepbot/scripts'}
+          {lang === 'zh' ? '默认' : 'Default'}：{defaultSettings.scriptDir || '~/.deepbot/scripts'}
         </p>
       </div>
 
       {/* 图片生成目录 */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          图片生成目录
+          {lang === 'zh' ? '图片生成目录' : 'Image Generation Directory'}
         </label>
         <p className="text-xs text-gray-500 mb-2">
-          AI 生成的图片将统一保存到此目录
+          {lang === 'zh'
+            ? 'AI 生成的图片将统一保存到此目录'
+            : 'AI-generated images will be saved to this directory'}
         </p>
         <div className="flex gap-2">
           <input
@@ -477,25 +507,33 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
             placeholder="~/.deepbot/generated-images"
           />
           {isElectron() && !isDocker && (
-            <button onClick={() => handleBrowse('imageDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">浏览</button>
+            <button onClick={() => handleBrowse('imageDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">
+              {lang === 'zh' ? '浏览' : 'Browse'}
+            </button>
           )}
-          <button onClick={handleResetImageDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">重置</button>
+          <button onClick={handleResetImageDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+            {lang === 'zh' ? '重置' : 'Reset'}
+          </button>
           {dirtyFields.has('imageDir') && (
-            <button onClick={handleSaveImageDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">{saving ? '保存中...' : '保存'}</button>
+            <button onClick={handleSaveImageDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存' : 'Save')}
+            </button>
           )}
         </div>
         <p className="text-xs text-gray-400">
-          默认：{defaultSettings.imageDir || '~/.deepbot/generated-images'}
+          {lang === 'zh' ? '默认' : 'Default'}：{defaultSettings.imageDir || '~/.deepbot/generated-images'}
         </p>
       </div>
 
       {/* 记忆管理目录 */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          记忆管理目录
+          {lang === 'zh' ? '记忆管理目录' : 'Memory Directory'}
         </label>
         <p className="text-xs text-gray-500 mb-2">
-          AI 的记忆文件将保存到此目录
+          {lang === 'zh'
+            ? 'AI 的记忆文件将保存到此目录'
+            : 'AI memory files will be saved to this directory'}
         </p>
         <div className="flex gap-2">
           <input
@@ -507,25 +545,33 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
             placeholder="~/.deepbot/memory"
           />
           {isElectron() && !isDocker && (
-            <button onClick={() => handleBrowse('memoryDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">浏览</button>
+            <button onClick={() => handleBrowse('memoryDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">
+              {lang === 'zh' ? '浏览' : 'Browse'}
+            </button>
           )}
-          <button onClick={handleResetMemoryDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">重置</button>
+          <button onClick={handleResetMemoryDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+            {lang === 'zh' ? '重置' : 'Reset'}
+          </button>
           {dirtyFields.has('memoryDir') && (
-            <button onClick={handleSaveMemoryDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">{saving ? '保存中...' : '保存'}</button>
+            <button onClick={handleSaveMemoryDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存' : 'Save')}
+            </button>
           )}
         </div>
         <p className="text-xs text-gray-400">
-          默认：{defaultSettings.memoryDir || '~/.deepbot/memory'}
+          {lang === 'zh' ? '默认' : 'Default'}：{defaultSettings.memoryDir || '~/.deepbot/memory'}
         </p>
       </div>
 
       {/* Session 目录 */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          对话历史目录
+          {lang === 'zh' ? '对话历史目录' : 'Session History Directory'}
         </label>
         <p className="text-xs text-gray-500 mb-2">
-          每个 Tab 的对话历史将保存到此目录
+          {lang === 'zh'
+            ? '每个 Tab 的对话历史将保存到此目录'
+            : 'Chat history for each tab will be saved to this directory'}
         </p>
         <div className="flex gap-2">
           <input
@@ -537,15 +583,21 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
             placeholder="~/.deepbot/sessions"
           />
           {isElectron() && !isDocker && (
-            <button onClick={() => handleBrowse('sessionDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">浏览</button>
+            <button onClick={() => handleBrowse('sessionDir')} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap">
+              {lang === 'zh' ? '浏览' : 'Browse'}
+            </button>
           )}
-          <button onClick={handleResetSessionDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">重置</button>
+          <button onClick={handleResetSessionDir} disabled={isDocker} className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+            {lang === 'zh' ? '重置' : 'Reset'}
+          </button>
           {dirtyFields.has('sessionDir') && (
-            <button onClick={handleSaveSessionDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">{saving ? '保存中...' : '保存'}</button>
+            <button onClick={handleSaveSessionDir} disabled={saving || isDocker} className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors whitespace-nowrap">
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存' : 'Save')}
+            </button>
           )}
         </div>
         <p className="text-xs text-gray-400">
-          默认：{defaultSettings.sessionDir || '~/.deepbot/sessions'}
+          {lang === 'zh' ? '默认' : 'Default'}：{defaultSettings.sessionDir || '~/.deepbot/sessions'}
         </p>
       </div>
 
@@ -553,19 +605,23 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="block text-sm font-medium text-gray-700">
-            Skill 工作目录
+            {lang === 'zh' ? 'Skill 工作目录' : 'Skill Directories'}
           </label>
           {!isDocker && (
             <button
               onClick={() => setShowAddInput(!showAddInput)}
               className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              {showAddInput ? '取消' : '+ 添加路径'}
+              {showAddInput
+                ? (lang === 'zh' ? '取消' : 'Cancel')
+                : (lang === 'zh' ? '+ 添加路径' : '+ Add Path')}
             </button>
           )}
         </div>
         <p className="text-xs text-gray-500 mb-2">
-          Skill 将安装到这些目录，可以配置多个路径
+          {lang === 'zh'
+            ? 'Skill 将安装到这些目录，可以配置多个路径'
+            : 'Skills will be installed to these directories. Multiple paths are supported.'}
         </p>
 
         {/* 添加新路径输入框 */}
@@ -577,7 +633,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
               onChange={(e) => setNewSkillDir(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddSkillDir()}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="输入新的 Skill 目录路径"
+              placeholder={lang === 'zh' ? '输入新的 Skill 目录路径' : 'Enter new Skill directory path'}
               autoFocus
             />
             <button
@@ -585,7 +641,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
               disabled={saving || !newSkillDir.trim()}
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-green-400 transition-colors"
             >
-              添加
+              {lang === 'zh' ? '添加' : 'Add'}
             </button>
           </div>
         )}
@@ -613,7 +669,9 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
                   {dir}
                 </span>
                 {dir === settings.defaultSkillDir && (
-                  <span className="text-xs text-blue-400 font-medium">（默认）</span>
+                  <span className="text-xs text-blue-400 font-medium">
+                    {lang === 'zh' ? '（默认）' : '(Default)'}
+                  </span>
                 )}
               </div>
               <div className="flex gap-2">
@@ -623,7 +681,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
                     disabled={saving}
                     className="px-3 py-1 text-xs text-blue-400 hover:text-blue-300 border border-blue-500/50 rounded hover:bg-blue-900/20 font-medium disabled:text-blue-600 disabled:border-blue-700"
                   >
-                    设为默认
+                    {lang === 'zh' ? '设为默认' : 'Set Default'}
                   </button>
                 )}
                 {settings.skillDirs.length > 1 && dir !== settings.defaultSkillDir && !isDocker && (
@@ -632,7 +690,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
                     disabled={saving}
                     className="px-3 py-1 text-xs text-red-400 hover:text-red-300 border border-red-500/50 rounded hover:bg-red-900/20 font-medium disabled:text-red-600 disabled:border-red-700"
                   >
-                    删除
+                    {lang === 'zh' ? '删除' : 'Remove'}
                   </button>
                 )}
               </div>
@@ -641,7 +699,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         </div>
 
         <p className="text-xs text-gray-400">
-          默认：{defaultSettings.defaultSkillDir || '~/.agents/skills'}
+          {lang === 'zh' ? '默认' : 'Default'}：{defaultSettings.defaultSkillDir || '~/.agents/skills'}
         </p>
       </div>
 
@@ -652,13 +710,13 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
           <div className="text-sm text-blue-700">
-            <p className="font-medium mb-1">提示</p>
+            <p className="font-medium mb-1">{lang === 'zh' ? '提示' : 'Tips'}</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>修改目录后，AI 将使用新目录保存脚本和图片</li>
-              <li>可以添加多个 Skill 目录，AI 会搜索所有目录</li>
-              <li>默认目录用于安装新的 Skill</li>
-              <li>已有的脚本、图片和 Skill 不会自动迁移</li>
-              <li>确保目录路径存在且有写入权限</li>
+              <li>{lang === 'zh' ? '修改目录后，AI 将使用新目录保存脚本和图片' : 'After changing directories, AI will use the new paths for scripts and images'}</li>
+              <li>{lang === 'zh' ? '可以添加多个 Skill 目录，AI 会搜索所有目录' : 'Multiple Skill directories can be added; AI will search all of them'}</li>
+              <li>{lang === 'zh' ? '默认目录用于安装新的 Skill' : 'The default directory is used for installing new Skills'}</li>
+              <li>{lang === 'zh' ? '已有的脚本、图片和 Skill 不会自动迁移' : 'Existing scripts, images, and Skills will not be migrated automatically'}</li>
+              <li>{lang === 'zh' ? '确保目录路径存在且有写入权限' : 'Ensure directory paths exist and have write permissions'}</li>
             </ul>
           </div>
         </div>

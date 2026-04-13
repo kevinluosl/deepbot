@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm';
 import { formatDuration, formatTimestamp } from '../../shared/utils/time-format';
 import { api } from '../api';
 import { Tooltip } from './Tooltip';
+import { getLanguage } from '../i18n';
 
 interface MessageBubbleProps {
   message: Message;
@@ -40,6 +41,7 @@ function openImageInNewTab(dataUrl: string) {
 
 // 图片加载组件（通过 IPC 读取本地文件）
 const ImageLoader: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
+  const lang = getLanguage();
   // 处理路径格式
   const processPath = (rawPath: string): string => {
     let filePath = rawPath;
@@ -133,7 +135,7 @@ const ImageLoader: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
         className="terminal-image terminal-image-clickable"
         loading="lazy"
         onClick={handleImageClick}
-        title="点击查看大图"
+        title={lang === 'zh' ? '点击查看大图' : 'Click to enlarge'}
       />
       {alt && <div className="terminal-image-caption">{alt}</div>}
     </div>
@@ -220,6 +222,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const lang = getLanguage();
 
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
@@ -339,7 +342,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                         openImageInNewTab(image.dataUrl);
                       }
                     }}
-                    title="点击查看大图"
+                    title={lang === 'zh' ? '点击查看大图' : 'Click to enlarge'}
                   />
                   <div className="terminal-image-caption">{image.name}</div>
                 </div>
@@ -416,7 +419,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
                       className="terminal-image terminal-image-clickable"
                       loading="lazy"
                       onClick={() => window.open(src, '_blank')}
-                      title="点击查看大图"
+                      title={lang === 'zh' ? '点击查看大图' : 'Click to enlarge'}
                     />
                     {alt && <div className="terminal-image-caption">{alt}</div>}
                   </div>
@@ -549,7 +552,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
           )}
           {/* 复制按钮 */}
           <span style={{ display: 'inline-flex', gap: '4px', marginLeft: '4px' }}>
-            <Tooltip content={copySuccess ? '已复制' : '复制回答'}>
+            <Tooltip content={copySuccess ? (lang === 'zh' ? '已复制' : 'Copied') : (lang === 'zh' ? '复制回答' : 'Copy reply')}>
               <button
                 onClick={handleCopy}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'inline-flex', alignItems: 'center', opacity: 0.5 }}

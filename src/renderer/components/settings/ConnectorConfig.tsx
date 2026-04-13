@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { showToast } from '../../utils/toast';
+import { getLanguage } from '../../i18n';
 
 interface ConnectorConfigProps {
   onClose: () => void;
@@ -41,6 +42,7 @@ interface PairingRecord {
 type TabType = 'config' | 'pairing' | 'guide';
 
 export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
+  const lang = getLanguage();
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [selectedConnector, setSelectedConnector] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('config');
@@ -183,13 +185,13 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success) {
-        showToast('success', '配对已批准');
+        showToast('success', lang === 'zh' ? '配对已批准' : 'Pairing approved');
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showToast('error', actualResult.error || '批准失败');
+        showToast('error', actualResult.error || (lang === 'zh' ? '批准失败' : 'Approval failed'));
       }
     } catch (error) {
-      showToast('error', `批准失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', lang === 'zh' ? `批准失败: ${error instanceof Error ? error.message : '未知错误'}` : `Approval failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -198,18 +200,18 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       const result = await api.connectorSetAdminPairing(connectorId, userId, isAdmin);
       const actualResult = result.data || result;
       if (actualResult.success) {
-        showToast('success', isAdmin ? '已设为管理员' : '已取消管理员');
+        showToast('success', isAdmin ? (lang === 'zh' ? '已设为管理员' : 'Set as admin') : (lang === 'zh' ? '已取消管理员' : 'Admin removed'));
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showToast('error', actualResult.error || '操作失败');
+        showToast('error', actualResult.error || (lang === 'zh' ? '操作失败' : 'Operation failed'));
       }
     } catch (error) {
-      showToast('error', `操作失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', lang === 'zh' ? `操作失败: ${error instanceof Error ? error.message : '未知错误'}` : `Operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const handleDeletePairing = async (connectorId: string, userId: string) => {
-    if (!confirm('确定要删除此配对记录吗？')) {
+    if (!confirm(lang === 'zh' ? '确定要删除此配对记录吗？' : 'Are you sure you want to delete this pairing record?')) {
       return;
     }
     
@@ -219,13 +221,13 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success) {
-        showToast('success', '配对记录已删除');
+        showToast('success', lang === 'zh' ? '配对记录已删除' : 'Pairing record deleted');
         await loadPairingRecords(selectedConnector || undefined);
       } else {
-        showToast('error', actualResult.error || '删除失败');
+        showToast('error', actualResult.error || (lang === 'zh' ? '删除失败' : 'Delete failed'));
       }
     } catch (error) {
-      showToast('error', `删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', lang === 'zh' ? `删除失败: ${error instanceof Error ? error.message : '未知错误'}` : `Delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -233,11 +235,11 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
     if (!selectedConnector) return;
 
     if (!feishuConfig.appId.trim()) {
-      showToast('error', '请输入 App ID');
+      showToast('error', lang === 'zh' ? '请输入 App ID' : 'Please enter App ID');
       return;
     }
     if (!feishuConfig.appSecret.trim()) {
-      showToast('error', '请输入 App Secret');
+      showToast('error', lang === 'zh' ? '请输入 App Secret' : 'Please enter App Secret');
       return;
     }
 
@@ -248,10 +250,10 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
         ...feishuConfig,
         enabled: false, // 保存时不自动启用
       });
-      showToast('success', '配置保存成功');
+      showToast('success', lang === 'zh' ? '配置保存成功' : 'Configuration saved');
       await loadConnectors(); // 重新加载列表
     } catch (error) {
-      showToast('error', `保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', lang === 'zh' ? `保存失败: ${error instanceof Error ? error.message : '未知错误'}` : `Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -262,7 +264,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
 
     const connector = connectors.find(c => c.id === selectedConnector);
     if (!connector?.hasConfig) {
-      showToast('error', '请先保存配置');
+      showToast('error', lang === 'zh' ? '请先保存配置' : 'Please save configuration first');
       return;
     }
 
@@ -270,10 +272,10 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
 
     try {
       await api.connectorStart(selectedConnector);
-      showToast('success', '连接器已启动');
+      showToast('success', lang === 'zh' ? '连接器已启动' : 'Connector started');
       await loadConnectors(); // 重新加载列表
     } catch (error) {
-      showToast('error', `启动失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', lang === 'zh' ? `启动失败: ${error instanceof Error ? error.message : '未知错误'}` : `Start failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setStarting(false);
     }
@@ -286,10 +288,10 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
 
     try {
       await api.connectorStop(selectedConnector);
-      showToast('success', '连接器已停止');
+      showToast('success', lang === 'zh' ? '连接器已停止' : 'Connector stopped');
       await loadConnectors(); // 重新加载列表
     } catch (error) {
-      showToast('error', `停止失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', lang === 'zh' ? `停止失败: ${error instanceof Error ? error.message : '未知错误'}` : `Stop failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setStarting(false);
     }
@@ -300,9 +302,9 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">外部通讯配置</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{lang === 'zh' ? '外部通讯配置' : 'Connector Configuration'}</h3>
         <p className="text-sm text-gray-500">
-          配置飞书、钉钉等外部通讯工具，让 AI 助手可以在这些平台上响应消息
+          {lang === 'zh' ? '配置飞书、钉钉等外部通讯工具，让 AI 助手可以在这些平台上响应消息' : 'Configure external messaging tools like Feishu, DingTalk, etc. to let the AI assistant respond on these platforms'}
         </p>
       </div>
 
@@ -310,7 +312,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-1">
           {loading ? (
-            <div className="py-3 px-4 text-sm text-gray-400">加载中...</div>
+            <div className="py-3 px-4 text-sm text-gray-400">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>
           ) : connectors.map((connector) => (
             <button
               key={connector.id}
@@ -329,17 +331,17 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                 <>
                   {connectorHealthMap[connector.id] === 'checking' && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                      检查中
+                      {lang === 'zh' ? '检查中' : 'Checking'}
                     </span>
                   )}
                   {connectorHealthMap[connector.id] === 'healthy' && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                      运行中
+                      {lang === 'zh' ? '运行中' : 'Running'}
                     </span>
                   )}
                   {connectorHealthMap[connector.id] === 'unhealthy' && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                      连接失败
+                      {lang === 'zh' ? '连接失败' : 'Connection Failed'}
                     </span>
                   )}
                 </>
@@ -363,7 +365,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                基础配置
+                {lang === 'zh' ? '基础配置' : 'Basic Config'}
               </button>
               <button
                 onClick={() => {
@@ -376,7 +378,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                Pairing 管理
+                {lang === 'zh' ? 'Pairing 管理' : 'Pairing Management'}
                 {pairingRecords.filter(r => !r.approved).length > 0 && (
                   <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                     {pairingRecords.filter(r => !r.approved).length}
@@ -391,7 +393,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                配置说明
+                {lang === 'zh' ? '配置说明' : 'Setup Guide'}
               </button>
             </nav>
           </div>
@@ -423,7 +425,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
               type="password"
               value={feishuConfig.appSecret}
               onChange={(e) => setFeishuConfig({ ...feishuConfig, appSecret: e.target.value })}
-              placeholder="请输入 App Secret"
+              placeholder={lang === 'zh' ? '请输入 App Secret' : 'Enter App Secret'}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -439,12 +441,12 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
             />
             <div>
               <label htmlFor="requirePairing" className="block text-sm font-medium text-gray-700 cursor-pointer">
-                需要配对授权
+                {lang === 'zh' ? '需要配对授权' : 'Require Pairing Authorization'}
               </label>
               <p className="text-xs text-gray-500 mt-0.5">
                 {feishuConfig.requirePairing === true
-                  ? '用户首次私聊需要管理员批准配对码后才能使用'
-                  : '所有飞书用户可直接对话，无需配对授权（用户会自动加入配对列表）'}
+                  ? (lang === 'zh' ? '用户首次私聊需要管理员批准配对码后才能使用' : 'Users must have their pairing code approved by an admin before first use')
+                  : (lang === 'zh' ? '所有飞书用户可直接对话，无需配对授权（用户会自动加入配对列表）' : 'All Feishu users can chat directly without pairing authorization (users are auto-added to the pairing list)')}
               </p>
             </div>
           </div>
@@ -452,7 +454,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
           {/* 群组使用说明 */}
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
             <p className="text-sm text-blue-800">
-              <strong>群组使用规则：</strong>在群组中必须 @ 机器人才会触发回复
+              <strong>{lang === 'zh' ? '群组使用规则：' : 'Group Usage Rule: '}</strong>{lang === 'zh' ? '在群组中必须 @ 机器人才会触发回复' : 'You must @mention the bot in group chats to trigger a reply'}
             </p>
           </div>
 
@@ -463,7 +465,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
               disabled={saving}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              {saving ? '保存中...' : '保存配置'}
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存配置' : 'Save Config')}
             </button>
             
             {selectedConnectorData?.enabled ? (
@@ -472,7 +474,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                 disabled={starting}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
-                {starting ? '停止中...' : '停止连接器'}
+                {starting ? (lang === 'zh' ? '停止中...' : 'Stopping...') : (lang === 'zh' ? '停止连接器' : 'Stop Connector')}
               </button>
             ) : (
               <button
@@ -480,7 +482,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                 disabled={starting || !selectedConnectorData?.hasConfig}
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
-                {starting ? '启动中...' : '启动连接器'}
+                {starting ? (lang === 'zh' ? '启动中...' : 'Starting...') : (lang === 'zh' ? '启动连接器' : 'Start Connector')}
               </button>
             )}
           </div>
@@ -491,19 +493,19 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
           {activeTab === 'pairing' && (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">Pairing 说明</h4>
+                <h4 className="text-sm font-medium text-blue-900 mb-2">{lang === 'zh' ? 'Pairing 说明' : 'Pairing Instructions'}</h4>
                 <p className="text-sm text-blue-800">
-                  当用户首次私聊机器人时，会收到一个配对码。管理员需要在此处批准配对码，用户才能正常使用机器人。
+                  {lang === 'zh' ? '当用户首次私聊机器人时，会收到一个配对码。管理员需要在此处批准配对码，用户才能正常使用机器人。' : 'When a user first messages the bot privately, they receive a pairing code. An admin must approve the code here before the user can use the bot.'}
                 </p>
               </div>
 
               {loadingPairing ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="text-gray-500">加载中...</div>
+                  <div className="text-gray-500">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>
                 </div>
               ) : pairingRecords.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  暂无配对记录
+                  {lang === 'zh' ? '暂无配对记录' : 'No pairing records'}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -516,33 +518,33 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                         <div className="flex-1 min-w-0 space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium text-gray-900">
-                              {record.userName || `用户_${record.userId.slice(-8)}`}
+                              {record.userName || (lang === 'zh' ? `用户_${record.userId.slice(-8)}` : `User_${record.userId.slice(-8)}`)}
                             </span>
                             <span className="text-xs text-gray-400 font-mono break-all">
                               {record.userId}
                             </span>
                             {record.approved ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
-                                已批准
+                                {lang === 'zh' ? '已批准' : 'Approved'}
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 whitespace-nowrap">
-                                待批准
+                                {lang === 'zh' ? '待批准' : 'Pending'}
                               </span>
                             )}
                             {record.isAdmin && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
-                                管理员
+                                {lang === 'zh' ? '管理员' : 'Admin'}
                               </span>
                             )}
                           </div>
                           <div className="text-sm text-gray-500">
-                            配对码: <span className="font-mono font-medium">{record.pairingCode}</span>
+                            {lang === 'zh' ? '配对码' : 'Pairing Code'}: <span className="font-mono font-medium">{record.pairingCode}</span>
                           </div>
                           <div className="text-xs text-gray-400">
-                            创建时间: {new Date(record.createdAt).toLocaleString('zh-CN')}
+                            {lang === 'zh' ? '创建时间' : 'Created'}: {new Date(record.createdAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US')}
                             {record.approvedAt && (
-                              <> · 批准时间: {new Date(record.approvedAt).toLocaleString('zh-CN')}</>
+                              <> · {lang === 'zh' ? '批准时间' : 'Approved'}: {new Date(record.approvedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US')}</>
                             )}
                           </div>
                         </div>
@@ -552,7 +554,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                               onClick={() => handleApprovePairing(record.pairingCode)}
                               className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors whitespace-nowrap"
                             >
-                              批准
+                              {lang === 'zh' ? '批准' : 'Approve'}
                             </button>
                           )}
                           <button
@@ -563,13 +565,13 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                           >
-                            {record.isAdmin ? '管理员 ✓' : '设为管理员'}
+                            {record.isAdmin ? (lang === 'zh' ? '管理员 ✓' : 'Admin ✓') : (lang === 'zh' ? '设为管理员' : 'Set Admin')}
                           </button>
                           <button
                             onClick={() => handleDeletePairing(record.connectorId, record.userId)}
                             className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors whitespace-nowrap"
                           >
-                            删除
+                            {lang === 'zh' ? '删除' : 'Delete'}
                           </button>
                         </div>
                       </div>
@@ -582,40 +584,40 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
           {/* 配置说明标签页 */}
           {activeTab === 'guide' && (
             <div className="space-y-4 text-sm text-gray-700 pr-1">
-              <h2 className="text-base font-semibold text-gray-900">飞书机器人配置指南</h2>
-              <p>本文档介绍如何配置 DeepBot 的飞书连接器，使其能够通过飞书接收和发送消息。<span className="bg-yellow-200 text-yellow-900 px-1 rounded">大约 3 ～ 5 分钟配置完成。</span></p>
+              <h2 className="text-base font-semibold text-gray-900">{lang === 'zh' ? '飞书机器人配置指南' : 'Feishu Bot Setup Guide'}</h2>
+              <p>{lang === 'zh' ? '本文档介绍如何配置 DeepBot 的飞书连接器，使其能够通过飞书接收和发送消息。' : 'This guide explains how to configure the DeepBot Feishu connector to receive and send messages via Feishu.'}<span className="bg-yellow-200 text-yellow-900 px-1 rounded">{lang === 'zh' ? '大约 3 ～ 5 分钟配置完成。' : 'Takes about 3-5 minutes to set up.'}</span></p>
 
               <div>
-                <h3 className="font-semibold text-gray-800 mb-1">前置条件</h3>
+                <h3 className="font-semibold text-gray-800 mb-1">{lang === 'zh' ? '前置条件' : 'Prerequisites'}</h3>
                 <ol className="list-decimal list-inside space-y-1 text-gray-600">
-                  <li>拥有飞书企业管理员权限</li>
+                  <li>{lang === 'zh' ? '拥有飞书企业管理员权限' : 'Feishu enterprise admin access'}</li>
                 </ol>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-800 mb-2">配置步骤</h3>
+                <h3 className="font-semibold text-gray-800 mb-2">{lang === 'zh' ? '配置步骤' : 'Setup Steps'}</h3>
 
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">1. 创建飞书企业自建应用</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">{lang === 'zh' ? '1. 创建飞书企业自建应用' : '1. Create a Feishu Custom App'}</h4>
                     <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
-                      <li>访问 <a href="https://open.feishu.cn/" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">飞书开放平台</a></li>
-                      <li>登录后，点击「创建企业自建应用」</li>
-                      <li>填写应用名称、描述等信息</li>
+                      <li>{lang === 'zh' ? '访问 ' : 'Visit '}<a href="https://open.feishu.cn/" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{lang === 'zh' ? '飞书开放平台' : 'Feishu Open Platform'}</a></li>
+                      <li>{lang === 'zh' ? '登录后，点击「创建企业自建应用」' : 'Log in and click "Create Custom App"'}</li>
+                      <li>{lang === 'zh' ? '填写应用名称、描述等信息' : 'Fill in the app name, description, etc.'}</li>
                     </ol>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">2. 获取应用凭证</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">{lang === 'zh' ? '2. 获取应用凭证' : '2. Get App Credentials'}</h4>
                     <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
-                      <li>在应用详情页，进入「凭证与基础信息」</li>
-                      <li>记录 <strong>App ID</strong> 和 <strong>App Secret</strong></li>
+                      <li>{lang === 'zh' ? '在应用详情页，进入「凭证与基础信息」' : 'In the app details page, go to "Credentials & Basic Info"'}</li>
+                      <li>{lang === 'zh' ? '记录 ' : 'Note down '}<strong>App ID</strong>{lang === 'zh' ? ' 和 ' : ' and '}<strong>App Secret</strong></li>
                     </ol>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">3. 配置应用权限</h4>
-                    <p className="text-gray-600 mb-2">在「权限管理」页面添加以下权限，或点击「批量导入/导出权限」粘贴下方 JSON 一键导入：</p>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">{lang === 'zh' ? '3. 配置应用权限' : '3. Configure App Permissions'}</h4>
+                    <p className="text-gray-600 mb-2">{lang === 'zh' ? '在「权限管理」页面添加以下权限，或点击「批量导入/导出权限」粘贴下方 JSON 一键导入：' : 'Add the following permissions on the "Permission Management" page, or click "Batch Import/Export" and paste the JSON below:'}</p>
                     <div className="bg-gray-50 border border-gray-200 rounded p-3 font-mono text-xs text-gray-700 whitespace-pre overflow-x-auto">{`{
   "scopes": {
     "tenant": [
@@ -642,60 +644,60 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">4. 在 DeepBot 中配置</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">{lang === 'zh' ? '4. 在 DeepBot 中配置' : '4. Configure in DeepBot'}</h4>
                     <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2 text-yellow-800 text-xs">
-                      注意：配置事件订阅前，需要先在 DeepBot 中填入 App ID 和 App Secret，否则无法建立长连接。
+                      {lang === 'zh' ? '注意：配置事件订阅前，需要先在 DeepBot 中填入 App ID 和 App Secret，否则无法建立长连接。' : 'Note: Before configuring event subscriptions, you must first enter the App ID and App Secret in DeepBot, otherwise the long connection cannot be established.'}
                     </div>
                     <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
-                      <li>切换到「基础配置」标签页</li>
-                      <li>填写 App ID 和 App Secret</li>
-                      <li>点击「保存配置」，再点击「启动连接器」</li>
+                      <li>{lang === 'zh' ? '切换到「基础配置」标签页' : 'Switch to the "Basic Config" tab'}</li>
+                      <li>{lang === 'zh' ? '填写 App ID 和 App Secret' : 'Enter App ID and App Secret'}</li>
+                      <li>{lang === 'zh' ? '点击「保存配置」，再点击「启动连接器」' : 'Click "Save Config", then click "Start Connector"'}</li>
                     </ol>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">5. 配置事件订阅</h4>
-                    <p className="text-gray-600 mb-1">进入应用的「事件与回调」页面：</p>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">{lang === 'zh' ? '5. 配置事件订阅' : '5. Configure Event Subscriptions'}</h4>
+                    <p className="text-gray-600 mb-1">{lang === 'zh' ? '进入应用的「事件与回调」页面：' : 'Go to the app\'s "Events & Callbacks" page:'}</p>
                     <div className="ml-2 space-y-2">
                       <div>
-                        <p className="font-medium text-gray-700">事件配置：</p>
+                        <p className="font-medium text-gray-700">{lang === 'zh' ? '事件配置：' : 'Event Configuration:'}</p>
                         <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
-                          <li>订阅方式选择「使用长连接接收事件」</li>
-                          <li>添加事件 <code className="bg-gray-100 px-1 rounded">im.message.receive_v1</code></li>
-                          <li>开通：接收群聊中@机器人消息、读取单聊消息、获取群组中所有消息</li>
+                          <li>{lang === 'zh' ? '订阅方式选择「使用长连接接收事件」' : 'Select "Use long connection to receive events"'}</li>
+                          <li>{lang === 'zh' ? '添加事件 ' : 'Add event '}<code className="bg-gray-100 px-1 rounded">im.message.receive_v1</code></li>
+                          <li>{lang === 'zh' ? '开通：接收群聊中@机器人消息、读取单聊消息、获取群组中所有消息' : 'Enable: Receive @bot messages in groups, read direct messages, get all group messages'}</li>
                         </ol>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-700">回调配置：</p>
+                        <p className="font-medium text-gray-700">{lang === 'zh' ? '回调配置：' : 'Callback Configuration:'}</p>
                         <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
-                          <li>订阅方式同样选择「使用长连接接收事件」</li>
+                          <li>{lang === 'zh' ? '订阅方式同样选择「使用长连接接收事件」' : 'Also select "Use long connection to receive events"'}</li>
                         </ol>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">6. 发布应用</h4>
-                    <p className="text-gray-600 ml-2">完成配置后，在飞书开放平台发布应用，审核通过后即可使用。</p>
+                    <h4 className="font-semibold text-gray-900 mb-2 pl-2 border-l-2 border-blue-400">{lang === 'zh' ? '6. 发布应用' : '6. Publish the App'}</h4>
+                    <p className="text-gray-600 ml-2">{lang === 'zh' ? '完成配置后，在飞书开放平台发布应用，审核通过后即可使用。' : 'After configuration, publish the app on the Feishu Open Platform. It will be available once approved.'}</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-800 mb-2">使用说明</h3>
+                <h3 className="font-semibold text-gray-800 mb-2">{lang === 'zh' ? '使用说明' : 'Usage Instructions'}</h3>
                 <div className="space-y-3">
                   <div>
-                    <h4 className="font-medium text-gray-800 mb-1">私聊（Pairing 模式）</h4>
+                    <h4 className="font-medium text-gray-800 mb-1">{lang === 'zh' ? '私聊（Pairing 模式）' : 'Direct Message (Pairing Mode)'}</h4>
                     <ol className="list-decimal list-inside space-y-1 text-gray-600 ml-2">
-                      <li>在飞书中搜索并添加机器人，发送任意消息</li>
-                      <li>机器人返回配对码</li>
-                      <li>管理员在「Pairing 管理」标签页批准配对码</li>
-                      <li>批准后用户即可正常对话</li>
+                      <li>{lang === 'zh' ? '在飞书中搜索并添加机器人，发送任意消息' : 'Search and add the bot in Feishu, send any message'}</li>
+                      <li>{lang === 'zh' ? '机器人返回配对码' : 'The bot returns a pairing code'}</li>
+                      <li>{lang === 'zh' ? '管理员在「Pairing 管理」标签页批准配对码' : 'Admin approves the pairing code in the "Pairing Management" tab'}</li>
+                      <li>{lang === 'zh' ? '批准后用户即可正常对话' : 'After approval, the user can chat normally'}</li>
                     </ol>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-800 mb-1">群组使用</h4>
-                    <p className="text-gray-600 ml-2">将机器人添加到群组，在群组中 @机器人 发送消息即可。</p>
+                    <h4 className="font-medium text-gray-800 mb-1">{lang === 'zh' ? '群组使用' : 'Group Usage'}</h4>
+                    <p className="text-gray-600 ml-2">{lang === 'zh' ? '将机器人添加到群组，在群组中 @机器人 发送消息即可。' : 'Add the bot to a group and @mention the bot to send messages.'}</p>
                   </div>
                 </div>
               </div>

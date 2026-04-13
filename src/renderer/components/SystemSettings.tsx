@@ -18,6 +18,7 @@ import { WorkspaceConfig } from './settings/WorkspaceConfig';
 import { ToolConfig } from './settings/ToolConfig';
 import { ConnectorConfig } from './settings/ConnectorConfig';
 import { AppVersion } from './settings/AppVersion';
+import { t } from '../i18n';
 import '../styles/settings.css';
 
 type SettingsTab = 'quickstart' | 'model' | 'environment' | 'workspace' | 'tools' | 'connectors' | 'version';
@@ -84,7 +85,7 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
         )}
         {/* 标题栏 */}
         <div className="settings-header">
-          <h2 className="settings-title">系统设置</h2>
+          <h2 className="settings-title">{t('settings.title')}</h2>
           <button onClick={onClose} className="settings-close-button">
             <X size={20} />
           </button>
@@ -99,44 +100,44 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
                 onClick={() => setActiveTab('quickstart')}
                 className={`settings-nav-item ${activeTab === 'quickstart' ? 'active' : ''}`}
               >
-                快速入门
+                {t('settings.quickstart')}
               </button>
               <button
                 onClick={() => setActiveTab('model')}
                 className={`settings-nav-item ${activeTab === 'model' ? 'active' : ''}`}
               >
-                模型配置
+                {t('settings.model')}
               </button>
               <button
                 onClick={() => setActiveTab('environment')}
                 className={`settings-nav-item ${activeTab === 'environment' ? 'active' : ''}`}
               >
-                环境配置
+                {t('settings.environment')}
               </button>
               <button
                 onClick={() => setActiveTab('tools')}
                 className={`settings-nav-item ${activeTab === 'tools' ? 'active' : ''}`}
               >
-                工具配置
+                {t('settings.tools')}
               </button>
               <button
                 onClick={() => setActiveTab('workspace')}
                 className={`settings-nav-item ${activeTab === 'workspace' ? 'active' : ''}`}
               >
-                工作目录
+                {t('settings.workspace')}
               </button>
               <button
                 onClick={() => setActiveTab('connectors')}
                 className={`settings-nav-item ${activeTab === 'connectors' ? 'active' : ''}`}
               >
-                外部通讯
+                {t('settings.connectors')}
               </button>
               <button
                 onClick={() => { setActiveTab('version'); setHasUpdate(false); clearPendingUpdate(); }}
                 className={`settings-nav-item ${activeTab === 'version' ? 'active' : ''}`}
                 style={{ position: 'relative' }}
               >
-                系统版本
+                {t('settings.version')}
                 {hasUpdate && (
                   <span style={{
                     position: 'absolute',

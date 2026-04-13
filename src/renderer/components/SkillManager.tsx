@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, Package, Download, Trash2, Info, Settings } from 'lucide-react';
 import '../styles/settings.css';
 import { api } from '../api';
+import { t, getLanguage } from '../i18n';
 
 interface Skill {
   name: string;        // slug
@@ -111,12 +112,12 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
         setAvailableSkills(filteredSkills);
       } else {
         // 显示错误信息
-        setSearchError(result.error || '搜索失败');
+        setSearchError(result.error || (getLanguage() === 'zh' ? '搜索失败' : 'Search failed'));
         setAvailableSkills([]);
       }
     } catch (error) {
       console.error('搜索 Skill 失败:', error);
-      const errorMessage = error instanceof Error ? error.message : '搜索失败';
+      const errorMessage = error instanceof Error ? error.message : (getLanguage() === 'zh' ? '搜索失败' : 'Search failed');
       setSearchError(errorMessage);
       setAvailableSkills([]);
     } finally {
@@ -164,7 +165,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
 
   // 卸载 Skill
   const handleUninstall = async (skillName: string) => {
-    if (!confirm(`确定要卸载 ${skillName} 吗？`)) return;
+    if (!confirm(t('skill.confirm_uninstall', { name: skillName }))) return;
     
     setIsLoading(true);
     try {
@@ -262,7 +263,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
       <div className="settings-container">
         {/* 标题栏 */}
         <div className="settings-header">
-          <h2 className="settings-title">Skill 管理器</h2>
+          <h2 className="settings-title">{t('skill.title')}</h2>
           <button
             onClick={onClose}
             className="settings-close-button"
@@ -290,7 +291,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="搜索 Skill..."
+                placeholder={t('skill.search_placeholder')}
                 className="settings-input"
                 style={{ width: '100%', paddingLeft: '40px' }}
               />
@@ -300,7 +301,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
               disabled={!searchQuery.trim() || isLoading}
               className="settings-button"
             >
-              搜索
+              {t('skill.search')}
             </button>
           </div>
           <p style={{ 
@@ -309,7 +310,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
             marginTop: '8px',
             lineHeight: '1.5'
           }}>
-            💡 Skill 是可扩展的功能模块，可以帮助 DeepBot 完成 PDF 处理、视频下载、图片编辑等专业任务。输入关键词搜索，选择合适的 Skill 点击"安装"即可使用。
+            {t('skill.search_hint')}
           </p>
         </div>
 
@@ -324,7 +325,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
               borderColor: activeTab === 'installed' ? 'var(--settings-accent)' : 'var(--settings-border)',
             }}
           >
-            已安装 ({installedSkills.length})
+            {t('skill.tab_installed')} ({installedSkills.length})
           </button>
           <button
             onClick={() => setActiveTab('available')}
@@ -335,7 +336,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
               borderColor: activeTab === 'available' ? 'var(--settings-accent)' : 'var(--settings-border)',
             }}
           >
-            可用 ({availableSkills.length})
+            {t('skill.tab_available')} ({availableSkills.length})
           </button>
         </div>
 
@@ -343,14 +344,14 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
         <div className="settings-panel">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-text-secondary">加载中...</div>
+              <div className="text-text-secondary">{t('skill.loading')}</div>
             </div>
           ) : activeTab === 'installed' ? (
             installedSkills.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <Package size={48} className="text-text-tertiary mb-4" />
-                <p className="text-text-secondary">暂无已安装的 Skill</p>
-                <p className="text-sm text-text-tertiary mt-2">使用搜索功能查找并安装 Skill</p>
+                <p className="text-text-secondary">{t('skill.no_installed')}</p>
+                <p className="text-sm text-text-tertiary mt-2">{t('skill.no_installed_hint')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -380,15 +381,15 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
                     <line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                 </div>
-                <p className="text-text-primary font-semibold mb-2">搜索失败</p>
+                <p className="text-text-primary font-semibold mb-2">{t('skill.search_failed')}</p>
                 <p className="text-sm text-text-secondary mb-4 max-w-md whitespace-pre-wrap">{searchError}</p>
                 {searchError.includes('GitHub') && (
                   <div className="text-xs text-text-tertiary bg-bg-secondary p-3 rounded-lg max-w-md">
-                    <p className="font-semibold mb-2">💡 可能的原因：</p>
+                    <p className="font-semibold mb-2">{t('skill.possible_reasons')}</p>
                     <ul className="text-left space-y-1">
-                      <li>• 网络连接问题</li>
-                      <li>• 无法访问 GitHub（可能需要代理）</li>
-                      <li>• 防火墙阻止了连接</li>
+                      <li>• {t('skill.reason_network')}</li>
+                      <li>• {t('skill.reason_github')}</li>
+                      <li>• {t('skill.reason_firewall')}</li>
                     </ul>
                   </div>
                 )}
@@ -396,14 +397,14 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
                   onClick={handleSearch}
                   className="mt-4 px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 transition-colors"
                 >
-                  重试
+                  {t('skill.retry')}
                 </button>
               </div>
             ) : availableSkills.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <Search size={48} className="text-text-tertiary mb-4" />
-                <p className="text-text-secondary">搜索 Skill</p>
-                <p className="text-sm text-text-tertiary mt-2">输入关键词搜索可用的 Skill</p>
+                <p className="text-text-secondary">{t('skill.no_results')}</p>
+                <p className="text-sm text-text-tertiary mt-2">{t('skill.no_results_hint')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -440,7 +441,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-medium">
               <div className="flex items-center gap-2">
                 <Settings size={18} className="text-brand-500" />
-                <h2 className="text-base font-semibold text-text-primary">{envEditSkill} — 环境变量</h2>
+                <h2 className="text-base font-semibold text-text-primary">{envEditSkill} — {t('skill.env_vars')}</h2>
               </div>
               <button onClick={() => setEnvEditSkill(null)} className="text-text-secondary hover:text-text-primary">
                 <X size={20} />
@@ -448,12 +449,12 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
             </div>
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <p className="text-xs text-text-tertiary mb-3">
-                每行一个变量，格式：<code className="bg-bg-secondary px-1 rounded">KEY=VALUE</code>，支持 <code className="bg-bg-secondary px-1 rounded"># 注释</code>
+                {t('skill.env_hint')}<code className="bg-bg-secondary px-1 rounded">KEY=VALUE</code>，支持 <code className="bg-bg-secondary px-1 rounded"># 注释</code>
               </p>
               <textarea
                 value={envContent}
                 onChange={(e) => setEnvContent(e.target.value)}
-                placeholder={'示例：\n# API Key 配置\nTAVILY_API_KEY=tvly-your-key-here\nANOTHER_KEY=your-value'}
+                placeholder={t('skill.env_placeholder')}
                 className="w-full font-mono text-sm bg-bg-secondary border border-border-medium rounded-lg p-3 text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:border-brand-500"
                 style={{ minHeight: '240px' }}
                 spellCheck={false}
@@ -464,14 +465,14 @@ export const SkillManager: React.FC<SkillManagerProps> = ({ isOpen, onClose }) =
                 onClick={() => setEnvEditSkill(null)}
                 className="flex-1 px-4 py-2 bg-bg-secondary text-text-primary rounded-md hover:bg-bg-tertiary transition-colors text-sm"
               >
-                取消
+                {t('skill.cancel')}
               </button>
               <button
                 onClick={handleSaveEnv}
                 disabled={envSaving}
                 className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 disabled:opacity-50 transition-colors text-sm"
               >
-                {envSaving ? '保存中...' : '保存'}
+                {envSaving ? t('skill.saving') : t('skill.save')}
               </button>
             </div>
           </div>
@@ -552,7 +553,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
           className="flex items-center gap-1 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors"
         >
           <Info size={14} />
-          <span>详情</span>
+          <span>{t('skill.detail')}</span>
         </button>
         
         {isInstalled && onEnvEdit && (
@@ -561,7 +562,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
             className="flex items-center gap-1 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded transition-colors"
           >
             <Settings size={14} />
-            <span>环境变量</span>
+            <span>{t('skill.env_vars')}</span>
           </button>
         )}
         
@@ -571,13 +572,13 @@ const SkillCard: React.FC<SkillCardProps> = ({
             className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
           >
             <Trash2 size={14} />
-            <span>卸载</span>
+            <span>{t('skill.uninstall')}</span>
           </button>
         ) : isInstalling ? (
           <div className="flex flex-col gap-1 flex-1">
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Download size={14} className="animate-bounce" />
-              <span>正在安装... {Math.round(installProgress)}%</span>
+              <span>{t('skill.installing', { progress: Math.round(installProgress) })}</span>
             </div>
             <div className="w-full bg-border-medium rounded-full h-1.5 overflow-hidden">
               <div 
@@ -592,7 +593,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
             className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-500 text-white hover:bg-brand-600 rounded transition-colors"
           >
             <Download size={14} />
-            <span>安装</span>
+            <span>{t('skill.install')}</span>
           </button>
         )}
       </div>
@@ -630,41 +631,41 @@ const SkillDetailDialog: React.FC<SkillDetailDialogProps> = ({ skill, onClose })
             {/* 描述 */}
             {skill.description && (
               <div>
-                <h3 className="text-sm font-semibold text-text-primary mb-2">描述</h3>
+                <h3 className="text-sm font-semibold text-text-primary mb-2">{t('skill.description')}</h3>
                 <p className="text-sm text-text-secondary">{skill.description}</p>
               </div>
             )}
 
             {/* 基本信息 */}
             <div>
-              <h3 className="text-sm font-semibold text-text-primary mb-2">信息</h3>
+              <h3 className="text-sm font-semibold text-text-primary mb-2">{t('skill.info')}</h3>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-text-tertiary">版本</span>
+                  <span className="text-text-tertiary">{t('skill.version')}</span>
                   <span className="text-text-primary">v{skill.version}</span>
                 </div>
                 {skill.author && (
                   <div className="flex justify-between">
-                    <span className="text-text-tertiary">作者</span>
+                    <span className="text-text-tertiary">{t('skill.author')}</span>
                     <span className="text-text-primary">{skill.author}</span>
                   </div>
                 )}
                 {skill.repository && (
                   <div className="flex justify-between">
-                    <span className="text-text-tertiary">仓库</span>
+                    <span className="text-text-tertiary">{t('skill.repository')}</span>
                     <a
                       href={skill.repository}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-brand-500 hover:underline"
                     >
-                      查看仓库
+                      {t('skill.view_repo')}
                     </a>
                   </div>
                 )}
                 {skill.installPath && (
                   <div className="flex justify-between">
-                    <span className="text-text-tertiary">安装路径</span>
+                    <span className="text-text-tertiary">{t('skill.install_path')}</span>
                     <span className="text-text-primary text-xs font-mono">{skill.installPath}</span>
                   </div>
                 )}
@@ -674,11 +675,11 @@ const SkillDetailDialog: React.FC<SkillDetailDialogProps> = ({ skill, onClose })
             {/* 依赖信息 */}
             {skill.requires && (skill.requires.tools?.length || skill.requires.dependencies?.length) ? (
               <div>
-                <h3 className="text-sm font-semibold text-text-primary mb-2">依赖</h3>
+                <h3 className="text-sm font-semibold text-text-primary mb-2">{t('skill.dependencies')}</h3>
                 <div className="space-y-2">
                   {skill.requires.tools && skill.requires.tools.length > 0 && (
                     <div>
-                      <p className="text-xs text-text-tertiary mb-1">工具:</p>
+                      <p className="text-xs text-text-tertiary mb-1">{t('skill.tools')}</p>
                       <div className="flex flex-wrap gap-1">
                         {skill.requires.tools.map((tool) => (
                           <span key={tool} className="text-xs px-2 py-0.5 bg-bg-tertiary text-text-secondary rounded">
@@ -690,7 +691,7 @@ const SkillDetailDialog: React.FC<SkillDetailDialogProps> = ({ skill, onClose })
                   )}
                   {skill.requires.dependencies && skill.requires.dependencies.length > 0 && (
                     <div>
-                      <p className="text-xs text-text-tertiary mb-1">依赖包:</p>
+                      <p className="text-xs text-text-tertiary mb-1">{t('skill.dep_packages')}</p>
                       <div className="flex flex-wrap gap-1">
                         {skill.requires.dependencies.map((dep) => (
                           <span key={dep} className="text-xs px-2 py-0.5 bg-bg-tertiary text-text-secondary rounded">
@@ -707,7 +708,7 @@ const SkillDetailDialog: React.FC<SkillDetailDialogProps> = ({ skill, onClose })
             {/* 标签 */}
             {skill.tags && skill.tags.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-text-primary mb-2">标签</h3>
+                <h3 className="text-sm font-semibold text-text-primary mb-2">{t('skill.tags')}</h3>
                 <div className="flex flex-wrap gap-2">
                   {skill.tags.map((tag) => (
                     <span key={tag} className="text-xs px-2 py-1 bg-bg-tertiary text-text-tertiary rounded">
@@ -721,7 +722,7 @@ const SkillDetailDialog: React.FC<SkillDetailDialogProps> = ({ skill, onClose })
             {/* SKILL.md 内容 */}
             {skill.readme && (
               <div>
-                <h3 className="text-sm font-semibold text-text-primary mb-2">使用说明 (SKILL.md)</h3>
+                <h3 className="text-sm font-semibold text-text-primary mb-2">{t('skill.readme')}</h3>
                 <div className="bg-bg-secondary border border-border-medium rounded-lg p-4 max-h-96 overflow-y-auto">
                   <pre className="text-xs text-text-secondary whitespace-pre-wrap font-mono">
                     {skill.readme}
@@ -733,43 +734,43 @@ const SkillDetailDialog: React.FC<SkillDetailDialogProps> = ({ skill, onClose })
             {/* 文件列表 */}
             {skill.files && (skill.files.scripts?.length || skill.files.references?.length || skill.files.assets?.length) ? (
               <div>
-                <h3 className="text-sm font-semibold text-text-primary mb-2">文件</h3>
+                <h3 className="text-sm font-semibold text-text-primary mb-2">{t('skill.files')}</h3>
                 <div className="space-y-2">
                   {skill.files.scripts && skill.files.scripts.length > 0 && (
                     <div>
-                      <p className="text-xs text-text-tertiary mb-1">脚本 ({skill.files.scripts.length}):</p>
+                      <p className="text-xs text-text-tertiary mb-1">{t('skill.scripts')} ({skill.files.scripts.length}):</p>
                       <div className="text-xs text-text-secondary space-y-0.5">
                         {skill.files.scripts.slice(0, 5).map((file) => (
                           <div key={file} className="font-mono">• {file}</div>
                         ))}
                         {skill.files.scripts.length > 5 && (
-                          <div className="text-text-tertiary">... 还有 {skill.files.scripts.length - 5} 个文件</div>
+                          <div className="text-text-tertiary">{t('skill.more_files', { count: skill.files.scripts.length - 5 })}</div>
                         )}
                       </div>
                     </div>
                   )}
                   {skill.files.references && skill.files.references.length > 0 && (
                     <div>
-                      <p className="text-xs text-text-tertiary mb-1">参考文件 ({skill.files.references.length}):</p>
+                      <p className="text-xs text-text-tertiary mb-1">{t('skill.references')} ({skill.files.references.length}):</p>
                       <div className="text-xs text-text-secondary space-y-0.5">
                         {skill.files.references.slice(0, 5).map((file) => (
                           <div key={file} className="font-mono">• {file}</div>
                         ))}
                         {skill.files.references.length > 5 && (
-                          <div className="text-text-tertiary">... 还有 {skill.files.references.length - 5} 个文件</div>
+                          <div className="text-text-tertiary">{t('skill.more_files', { count: skill.files.references.length - 5 })}</div>
                         )}
                       </div>
                     </div>
                   )}
                   {skill.files.assets && skill.files.assets.length > 0 && (
                     <div>
-                      <p className="text-xs text-text-tertiary mb-1">资源文件 ({skill.files.assets.length}):</p>
+                      <p className="text-xs text-text-tertiary mb-1">{t('skill.assets')} ({skill.files.assets.length}):</p>
                       <div className="text-xs text-text-secondary space-y-0.5">
                         {skill.files.assets.slice(0, 5).map((file) => (
                           <div key={file} className="font-mono">• {file}</div>
                         ))}
                         {skill.files.assets.length > 5 && (
-                          <div className="text-text-tertiary">... 还有 {skill.files.assets.length - 5} 个文件</div>
+                          <div className="text-text-tertiary">{t('skill.more_files', { count: skill.files.assets.length - 5 })}</div>
                         )}
                       </div>
                     </div>
@@ -786,7 +787,7 @@ const SkillDetailDialog: React.FC<SkillDetailDialogProps> = ({ skill, onClose })
             onClick={onClose}
             className="w-full px-4 py-2 bg-bg-secondary text-text-primary rounded-md hover:bg-bg-tertiary transition-colors"
           >
-            关闭
+            {t('skill.close')}
           </button>
         </div>
       </div>

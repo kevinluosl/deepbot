@@ -10,6 +10,7 @@ import type { AgentTab } from '../../types/agent-tab';
 import { MAX_TABS } from '../../shared/constants/version';
 import { api } from '../api'; // 🔥 使用统一 API 适配器
 import { isElectron, isMacOS } from '../utils/platform'; // 🔥 平台检测
+import { getLanguage } from '../i18n';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -48,6 +49,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<MessageInputRef>(null); // 🔥 添加输入框引用
   const messagesContainerRef = useRef<HTMLDivElement>(null); // 🔥 消息容器引用
+  const lang = getLanguage();
   const [agentName, setAgentName] = useState('matrix');
   const [userName, setUserName] = useState('user');
   const [isInitializing, setIsInitializing] = useState(true);
@@ -385,7 +387,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
         <div className="drop-overlay">
           <div className="drop-overlay-content">
             <span className="drop-overlay-icon">📎</span>
-            <span className="drop-overlay-text">释放以上传文件</span>
+            <span className="drop-overlay-text">{lang === 'zh' ? '释放以上传文件' : 'Drop to upload'}</span>
           </div>
         </div>
       )}
@@ -415,7 +417,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
             <button
               onClick={onOpenScheduledTaskManager}
               className="terminal-control-button"
-              title="定时任务"
+              title={lang === 'zh' ? '定时任务' : 'Tasks'}
             >
               [TASKS]
             </button>
@@ -425,7 +427,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
             <button
               onClick={onOpenSystemSettings}
               className="terminal-control-button"
-              title="系统设置"
+              title={lang === 'zh' ? '系统设置' : 'Settings'}
               style={{ position: 'relative' }}
             >
               [CONFIG]
@@ -474,7 +476,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
                       e.stopPropagation();
                       onTabClose(tab.id);
                     }}
-                    title="关闭窗口"
+                    title={lang === 'zh' ? '关闭窗口' : 'Close tab'}
                   >
                     ×
                   </button>
@@ -486,7 +488,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
               <button
                 className="agent-tab-create"
                 onClick={onTabCreate}
-                title="新建窗口"
+                title={lang === 'zh' ? '新建窗口' : 'New tab'}
               >
                 +
               </button>

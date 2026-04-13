@@ -9,6 +9,7 @@ import { PROVIDER_PRESETS } from '../../../shared/config/default-configs';
 import { api } from '../../api';
 import { showToast } from '../../utils/toast';
 import { ApiKeyHelpModal } from './ApiKeyHelpModal';
+import { getLanguage } from '../../i18n';
 
 interface ModelConfig {
   providerType: 'deepbot' | 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom';
@@ -29,6 +30,7 @@ interface ModelConfigProps {
 }
 
 export function ModelConfig({ onClose }: ModelConfigProps) {
+  const lang = getLanguage();
   const [config, setConfig] = useState<ModelConfig>({
     providerType: 'deepbot',
     providerId: 'deepbot',
@@ -104,17 +106,17 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   const handleSave = async () => {
     // 验证配置
     if (!config.baseUrl) {
-      showToast('error', '请输入 API 地址');
+      showToast('error', lang === 'zh' ? '请输入 API 地址' : 'Please enter API URL');
       return;
     }
 
     if (!config.modelId) {
-      showToast('error', '请输入模型 ID');
+      showToast('error', lang === 'zh' ? '请输入模型 ID' : 'Please enter Model ID');
       return;
     }
 
     if (!config.apiKey) {
-      showToast('error', '请输入 API Key');
+      showToast('error', lang === 'zh' ? '请输入 API Key' : 'Please enter API Key');
       return;
     }
 
@@ -126,7 +128,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       const actualResult = result.data || result;
       
       if (actualResult.success) {
-        showToast('success', '✅ 保存成功！配置已生效');
+        showToast('success', lang === 'zh' ? '✅ 保存成功！配置已生效' : '✅ Saved successfully! Configuration applied');
         
         // 保存成功后重新加载配置，获取后端推断的上下文窗口值
         await loadConfig();
@@ -138,11 +140,11 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           }, 1000); // 延迟 1 秒关闭，让用户看到成功提示
         }
       } else {
-        showToast('error', actualResult.error || '保存失败');
+        showToast('error', actualResult.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
       }
     } catch (error) {
       console.error('保存模型配置失败:', error);
-      showToast('error', '保存失败，请重试');
+      showToast('error', lang === 'zh' ? '保存失败，请重试' : 'Save failed, please try again');
     } finally {
       setIsSaving(false);
     }
@@ -161,10 +163,10 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-blue-800">
-                当前使用环境变量配置
+                {lang === 'zh' ? '当前使用环境变量配置' : 'Using environment variable configuration'}
               </h3>
               <div className="mt-1 text-sm text-blue-700">
-                <p>模型配置来自 <code className="bg-blue-100 px-1 rounded">.env</code> 文件。修改并保存后将优先使用此处的配置。</p>
+                <p>{lang === 'zh' ? '模型配置来自 ' : 'Model config from '}<code className="bg-blue-100 px-1 rounded">.env</code>{lang === 'zh' ? ' 文件。修改并保存后将优先使用此处的配置。' : ' file. After saving, this configuration will take priority.'}</p>
               </div>
             </div>
           </div>
@@ -182,10 +184,10 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-yellow-800">
-                模型未配置
+                {lang === 'zh' ? '模型未配置' : 'Model not configured'}
               </h3>
               <div className="mt-2 text-sm text-yellow-700">
-                <p>请配置 API 地址和密钥后才能使用 DeepBot。</p>
+                <p>{lang === 'zh' ? '请配置 API 地址和密钥后才能使用 DeepBot。' : 'Please configure the API URL and key before using DeepBot.'}</p>
               </div>
             </div>
           </div>
@@ -193,31 +195,31 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       )}
 
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">模型配置</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{lang === 'zh' ? '模型配置' : 'Model Configuration'}</h3>
         <p className="text-sm text-gray-500">
-          选择 AI 模型提供商并配置 API 密钥
+          {lang === 'zh' ? '选择 AI 模型提供商并配置 API 密钥' : 'Select an AI model provider and configure the API key'}
         </p>
       </div>
 
       {/* 提供商选择 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          提供商
+          {lang === 'zh' ? '提供商' : 'Provider'}
         </label>
         <select
           value={config.providerType}
           onChange={(e) => handleProviderTypeChange(e.target.value as 'deepbot' | 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="deepbot">DeepBot（推荐）</option>
+          <option value="deepbot">{lang === 'zh' ? 'DeepBot（推荐）' : 'DeepBot (Recommended)'}</option>
           <option value="qwen">Qwen</option>
           <option value="deepseek">DeepSeek</option>
           <option value="gemini">Google Gemini</option>
           <option value="minimax">MiniMax</option>
-          <option value="custom">自定义（OpenAI、Claude）</option>
+          <option value="custom">{lang === 'zh' ? '自定义（OpenAI、Claude）' : 'Custom (OpenAI, Claude)'}</option>
         </select>
         <p className="mt-1 text-xs text-gray-500">
-          选择预设提供商或自定义配置
+          {lang === 'zh' ? '选择预设提供商或自定义配置' : 'Select a preset provider or customize'}
         </p>
       </div>
 
@@ -225,18 +227,18 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       {config.providerType === 'custom' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            API 类型
+            {lang === 'zh' ? 'API 类型' : 'API Type'}
           </label>
           <select
             value={config.apiType}
             onChange={(e) => setConfig({ ...config, apiType: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="openai-completions">OpenAI 兼容（OpenAI、OpenRouter、Claude、Qwen、DeepSeek 等）</option>
-            <option value="google-generative-ai">Google Generative AI（Gemini 原生格式）</option>
+            <option value="openai-completions">{lang === 'zh' ? 'OpenAI 兼容（OpenAI、OpenRouter、Claude、Qwen、DeepSeek 等）' : 'OpenAI Compatible (OpenAI, OpenRouter, Claude, Qwen, DeepSeek, etc.)'}</option>
+            <option value="google-generative-ai">{lang === 'zh' ? 'Google Generative AI（Gemini 原生格式）' : 'Google Generative AI (Gemini native format)'}</option>
           </select>
           <p className="mt-1 text-xs text-gray-500">
-            大多数提供商使用 OpenAI 兼容格式，Google Gemini 原生 API 选第二项
+            {lang === 'zh' ? '大多数提供商使用 OpenAI 兼容格式，Google Gemini 原生 API 选第二项' : 'Most providers use OpenAI-compatible format. Select the second option for Google Gemini native API'}
           </p>
         </div>
       )}
@@ -244,7 +246,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
       {/* API 地址 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          API 地址 <span className="text-red-500">*</span>
+          {lang === 'zh' ? 'API 地址' : 'API URL'} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -255,15 +257,15 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         />
         <p className="mt-1 text-xs text-gray-500">
           {config.providerType === 'custom' 
-            ? '输入兼容 OpenAI API 或 Google Generative AI 格式的地址' 
-            : '预设提供商的 API 地址（可修改）'}
+            ? (lang === 'zh' ? '输入兼容 OpenAI API 或 Google Generative AI 格式的地址' : 'Enter an OpenAI API or Google Generative AI compatible URL')
+            : (lang === 'zh' ? '预设提供商的 API 地址（可修改）' : 'Preset provider API URL (editable)')}
         </p>
       </div>
 
       {/* 模型 ID */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          模型 ID（主模型） <span className="text-red-500">*</span>
+          {lang === 'zh' ? '模型 ID（主模型）' : 'Model ID (Primary)'} <span className="text-red-500">*</span>
         </label>
         {config.providerType === 'deepbot' ? (
           <div style={{ position: 'relative' }}>
@@ -327,19 +329,19 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           />
         )}
         <p className="mt-1 text-xs text-gray-500">
-          {config.providerType === 'deepbot' && '从列表选择或输入自定义模型 ID'}
-          {config.providerType === 'qwen' && '推荐: qwen-max（高质量）或 qwen-plus（平衡）'}
-          {config.providerType === 'deepseek' && '推荐: deepseek-chat'}
-          {config.providerType === 'gemini' && '推荐: gemini-3-pro-preview（高质量）或 gemini-3-flash-preview（快速）'}
-          {config.providerType === 'minimax' && '推荐: MiniMax-M2.5（高质量）或 MiniMax-M2.5-highspeed（快速）'}
-          {config.providerType === 'custom' && '输入主模型 ID'}
+          {config.providerType === 'deepbot' && (lang === 'zh' ? '从列表选择或输入自定义模型 ID' : 'Select from the list or enter a custom model ID')}
+          {config.providerType === 'qwen' && (lang === 'zh' ? '推荐: qwen-max（高质量）或 qwen-plus（平衡）' : 'Recommended: qwen-max (high quality) or qwen-plus (balanced)')}
+          {config.providerType === 'deepseek' && (lang === 'zh' ? '推荐: deepseek-chat' : 'Recommended: deepseek-chat')}
+          {config.providerType === 'gemini' && (lang === 'zh' ? '推荐: gemini-3-pro-preview（高质量）或 gemini-3-flash-preview（快速）' : 'Recommended: gemini-3-pro-preview (high quality) or gemini-3-flash-preview (fast)')}
+          {config.providerType === 'minimax' && (lang === 'zh' ? '推荐: MiniMax-M2.5（高质量）或 MiniMax-M2.5-highspeed（快速）' : 'Recommended: MiniMax-M2.5 (high quality) or MiniMax-M2.5-highspeed (fast)')}
+          {config.providerType === 'custom' && (lang === 'zh' ? '输入主模型 ID' : 'Enter the primary model ID')}
         </p>
       </div>
 
       {/* 模型 ID 2（快速模型） */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          模型 ID 2（快速模型，可选）
+          {lang === 'zh' ? '模型 ID 2（快速模型，可选）' : 'Model ID 2 (Fast model, optional)'}
         </label>
         <input
           type="text"
@@ -359,11 +361,11 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          {config.providerType === 'qwen' && '推荐: qwen-plus（用于轻量级任务，如语义判断）'}
-          {config.providerType === 'deepseek' && '推荐: deepseek-chat（与主模型相同）'}
-          {config.providerType === 'gemini' && '推荐: gemini-3-flash-preview（用于轻量级任务）'}
-          {config.providerType === 'minimax' && '推荐: MiniMax-M2.5-highspeed（用于轻量级任务）'}
-          {config.providerType === 'custom' && '输入快速模型 ID（用于轻量级任务）'}
+          {config.providerType === 'qwen' && (lang === 'zh' ? '推荐: qwen-plus（用于轻量级任务，如语义判断）' : 'Recommended: qwen-plus (for lightweight tasks like semantic analysis)')}
+          {config.providerType === 'deepseek' && (lang === 'zh' ? '推荐: deepseek-chat（与主模型相同）' : 'Recommended: deepseek-chat (same as primary model)')}
+          {config.providerType === 'gemini' && (lang === 'zh' ? '推荐: gemini-3-flash-preview（用于轻量级任务）' : 'Recommended: gemini-3-flash-preview (for lightweight tasks)')}
+          {config.providerType === 'minimax' && (lang === 'zh' ? '推荐: MiniMax-M2.5-highspeed（用于轻量级任务）' : 'Recommended: MiniMax-M2.5-highspeed (for lightweight tasks)')}
+          {config.providerType === 'custom' && (lang === 'zh' ? '输入快速模型 ID（用于轻量级任务）' : 'Enter fast model ID (for lightweight tasks)')}
         </p>
       </div>
 
@@ -375,7 +377,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
             onClick={() => setShowApiKeyHelp(true)}
             style={{ fontSize: '11px', color: 'var(--settings-accent)', cursor: 'pointer' }}
           >
-            如何获取？
+            {lang === 'zh' ? '如何获取？' : 'How to get?'}
           </span>
         </div>
         <input
@@ -391,25 +393,25 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         />
         <p className="mt-1 text-xs text-gray-500">
           {config.providerType === 'gemini' 
-            ? 'Google AI Studio API Key（以 AIza 开头）将加密存储在本地' 
-            : 'API 密钥将加密存储在本地'}
+            ? (lang === 'zh' ? 'Google AI Studio API Key（以 AIza 开头）将加密存储在本地' : 'Google AI Studio API Key (starts with AIza) will be encrypted and stored locally')
+            : (lang === 'zh' ? 'API 密钥将加密存储在本地' : 'API key will be encrypted and stored locally')}
         </p>
       </div>
 
       {/* 上下文窗口大小（可编辑） */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          上下文窗口
+          {lang === 'zh' ? '上下文窗口' : 'Context Window'}
         </label>
         <input
           type="number"
           value={config.contextWindow || ''}
           onChange={(e) => setConfig({ ...config, contextWindow: e.target.value ? parseInt(e.target.value) : undefined })}
-          placeholder="自动推断"
+          placeholder={lang === 'zh' ? '自动推断' : 'Auto-detect'}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          留空则根据模型 ID 自动推断（推荐）。如需精确值，请手动输入
+          {lang === 'zh' ? '留空则根据模型 ID 自动推断（推荐）。如需精确值，请手动输入' : 'Leave empty to auto-detect based on model ID (recommended). Enter manually if needed'}
         </p>
       </div>
 
@@ -420,7 +422,7 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
           disabled={isSaving}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSaving ? '保存并测试...' : '保存配置'}
+          {isSaving ? (lang === 'zh' ? '保存并测试...' : 'Saving & testing...') : (lang === 'zh' ? '保存配置' : 'Save Configuration')}
         </button>
       </div>
 

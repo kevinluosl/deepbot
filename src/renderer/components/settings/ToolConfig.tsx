@@ -14,14 +14,23 @@ import { BrowserToolConfig } from './BrowserToolConfig';
 import { api } from '../../api';
 import { showToast } from '../../utils/toast';
 import { ApiKeyHelpModal } from './ApiKeyHelpModal';
+import { getLanguage } from '../../i18n';
 
 // 可供用户禁用的工具列表
-const TOGGLEABLE_TOOLS: Array<{ name: string; label: string; description: string }> = [
+const TOGGLEABLE_TOOLS_ZH: Array<{ name: string; label: string; description: string }> = [
   { name: 'image_generation', label: '图片生成', description: '内置 Gemini/Qwen 图片生成工具' },
   { name: 'web_search', label: '网络搜索', description: '内置网络搜索工具' },
   { name: 'browser', label: '浏览器控制', description: '通过 Chrome 远程调试控制浏览器' },
   { name: 'calendar_get_events', label: '日历读取', description: '读取 macOS 日历事件' },
   { name: 'calendar_create_event', label: '日历创建', description: '在 macOS 日历中创建事件' },
+];
+
+const TOGGLEABLE_TOOLS_EN: Array<{ name: string; label: string; description: string }> = [
+  { name: 'image_generation', label: 'Image Generation', description: 'Built-in Gemini/Qwen image generation tool' },
+  { name: 'web_search', label: 'Web Search', description: 'Built-in web search tool' },
+  { name: 'browser', label: 'Browser Control', description: 'Control browser via Chrome remote debugging' },
+  { name: 'calendar_get_events', label: 'Calendar Read', description: 'Read macOS calendar events' },
+  { name: 'calendar_create_event', label: 'Calendar Create', description: 'Create events in macOS calendar' },
 ];
 
 interface ToolConfigProps {
@@ -36,6 +45,7 @@ interface ImageGenerationConfig {
 }
 
 export function ToolConfig({ onClose }: ToolConfigProps) {
+  const lang = getLanguage();
   const [activeTab, setActiveTab] = useState<'image' | 'websearch' | 'email' | 'browser' | 'manage'>('image');
   const [showApiKeyHelp, setShowApiKeyHelp] = useState(false);
   const [imageGenConfig, setImageGenConfig] = useState<ImageGenerationConfig>({
@@ -48,6 +58,8 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const hasLoadedRef = React.useRef(false);
+
+  const TOGGLEABLE_TOOLS = lang === 'zh' ? TOGGLEABLE_TOOLS_ZH : TOGGLEABLE_TOOLS_EN;
 
   // 加载配置（防止 Strict Mode 重复执行）
   React.useEffect(() => {
@@ -103,12 +115,12 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
     try {
       const result = await api.saveDisabledTools(Array.from(disabledTools));
       if (result.success) {
-        showToast('success', '已保存，Agent 将在下次对话时使用新工具配置');
+        showToast('success', lang === 'zh' ? '已保存，Agent 将在下次对话时使用新工具配置' : 'Saved. Agent will use the new tool config in the next conversation');
       } else {
-        showToast('error', result.error || '保存失败');
+        showToast('error', result.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
       }
     } catch (error) {
-      showToast('error', '保存失败');
+      showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -128,15 +140,15 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
 
   const handleSave = async () => {
     if (!imageGenConfig.model.trim()) {
-      showToast('error', '请输入模型名称');
+      showToast('error', lang === 'zh' ? '请输入模型名称' : 'Please enter model name');
       return;
     }
     if (!imageGenConfig.apiUrl.trim()) {
-      showToast('error', '请输入 API 地址');
+      showToast('error', lang === 'zh' ? '请输入 API 地址' : 'Please enter API URL');
       return;
     }
     if (!imageGenConfig.apiKey.trim()) {
-      showToast('error', '请输入 API Key');
+      showToast('error', lang === 'zh' ? '请输入 API Key' : 'Please enter API Key');
       return;
     }
 
@@ -144,9 +156,11 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
 
     try {
       await api.saveImageGenerationToolConfig(imageGenConfig);
-      showToast('success', '配置保存成功');
+      showToast('success', lang === 'zh' ? '配置保存成功' : 'Configuration saved');
     } catch (error) {
-      showToast('error', `保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      showToast('error', lang === 'zh'
+        ? `保存失败: ${error instanceof Error ? error.message : '未知错误'}`
+        : `Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -155,7 +169,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-gray-500">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>
       </div>
     );
   }
@@ -163,9 +177,9 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">工具配置</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{lang === 'zh' ? '工具配置' : 'Tool Configuration'}</h3>
         <p className="text-sm text-gray-500">
-          配置系统工具的参数和连接信息
+          {lang === 'zh' ? '配置系统工具的参数和连接信息' : 'Configure tool parameters and connection settings'}
         </p>
       </div>
 
@@ -180,7 +194,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            图片生成
+            {lang === 'zh' ? '图片生成' : 'Image Generation'}
           </button>
           <button
             onClick={() => setActiveTab('websearch')}
@@ -190,7 +204,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            网络搜索
+            {lang === 'zh' ? '网络搜索' : 'Web Search'}
           </button>
           <button
             onClick={() => setActiveTab('browser')}
@@ -200,7 +214,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            浏览器
+            {lang === 'zh' ? '浏览器' : 'Browser'}
           </button>
           <button
             onClick={() => setActiveTab('email')}
@@ -210,7 +224,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            邮件发送
+            {lang === 'zh' ? '邮件发送' : 'Email'}
           </button>
           <button
             onClick={() => setActiveTab('manage')}
@@ -220,7 +234,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
-            工具管理
+            {lang === 'zh' ? '工具管理' : 'Tool Management'}
           </button>
         </nav>
       </div>
@@ -229,16 +243,18 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
       {activeTab === 'image' && (
         <div className="space-y-4">
           <div>
-            <h4 className="text-base font-medium text-gray-900 mb-2">图片生成工具配置</h4>
+            <h4 className="text-base font-medium text-gray-900 mb-2">{lang === 'zh' ? '图片生成工具配置' : 'Image Generation Tool Config'}</h4>
             <p className="text-sm text-gray-600 mb-4">
-              配置 AI 图片生成能力，支持根据文字描述或参考图生成图片。如需调用其他提供商，可通过安装 Skill 扩展。
+              {lang === 'zh'
+                ? '配置 AI 图片生成能力，支持根据文字描述或参考图生成图片。如需调用其他提供商，可通过安装 Skill 扩展。'
+                : 'Configure AI image generation. Supports generating images from text descriptions or reference images. Install Skills to use other providers.'}
             </p>
           </div>
 
           {/* 提供商选择 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              提供商
+              {lang === 'zh' ? '提供商' : 'Provider'}
             </label>
             <select
               value={imageGenConfig.provider}
@@ -249,14 +265,14 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               <option value="qwen">Qwen Image</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              选择预设提供商
+              {lang === 'zh' ? '选择预设提供商' : 'Select a preset provider'}
             </p>
           </div>
 
           {/* API 地址 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              API 地址 <span className="text-red-500">*</span>
+              {lang === 'zh' ? 'API 地址' : 'API URL'} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -266,16 +282,16 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {imageGenConfig.provider === 'deepbot' && '无需魔法，直连 Nano Banana 2'}
-              {imageGenConfig.provider === 'qwen' && 'Qwen Image 图片生成 API 地址'}
-              {imageGenConfig.provider === 'gemini' && '预设提供商的 API 地址（可修改）'}
+              {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '无需魔法，直连 Nano Banana 2' : 'Direct connection to Nano Banana 2, no proxy needed')}
+              {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? 'Qwen Image 图片生成 API 地址' : 'Qwen Image generation API URL')}
+              {imageGenConfig.provider === 'gemini' && (lang === 'zh' ? '预设提供商的 API 地址（可修改）' : 'Preset provider API URL (editable)')}
             </p>
           </div>
 
           {/* 模型 ID */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              模型 ID <span className="text-red-500">*</span>
+              {lang === 'zh' ? '模型 ID' : 'Model ID'} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -290,8 +306,8 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {(imageGenConfig.provider === 'gemini' || imageGenConfig.provider === 'deepbot') && '默认: gemini-3.1-flash-image-preview'}
-              {imageGenConfig.provider === 'qwen' && '推荐: qwen-image-2.0-pro（可选: qwen-image-2.0, qwen-image-max, qwen-image-plus）'}
+              {(imageGenConfig.provider === 'gemini' || imageGenConfig.provider === 'deepbot') && (lang === 'zh' ? '默认: gemini-3.1-flash-image-preview' : 'Default: gemini-3.1-flash-image-preview')}
+              {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? '推荐: qwen-image-2.0-pro（可选: qwen-image-2.0, qwen-image-max, qwen-image-plus）' : 'Recommended: qwen-image-2.0-pro (options: qwen-image-2.0, qwen-image-max, qwen-image-plus)')}
             </p>
           </div>
 
@@ -303,20 +319,20 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
                 onClick={() => setShowApiKeyHelp(true)}
                 style={{ fontSize: '11px', color: 'var(--settings-accent)', cursor: 'pointer' }}
               >
-                如何获取？
+                {lang === 'zh' ? '如何获取？' : 'How to get?'}
               </span>
             </div>
             <input
               type="password"
               value={imageGenConfig.apiKey}
               onChange={(e) => setImageGenConfig({ ...imageGenConfig, apiKey: e.target.value })}
-              placeholder="输入 API Key"
+              placeholder={lang === 'zh' ? '输入 API Key' : 'Enter API Key'}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {imageGenConfig.provider === 'gemini' && '用于访问 Gemini API 的密钥'}
-              {imageGenConfig.provider === 'deepbot' && '点击「如何获取」获得 API Key，或使用自己的 Gemini API Key'}
-              {imageGenConfig.provider === 'qwen' && '用于访问 Qwen API 的密钥（DashScope API Key）'}
+              {imageGenConfig.provider === 'gemini' && (lang === 'zh' ? '用于访问 Gemini API 的密钥' : 'Key for accessing Gemini API')}
+              {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '点击「如何获取」获得 API Key，或使用自己的 Gemini API Key' : 'Click "How to get" for an API Key, or use your own Gemini API Key')}
+              {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? '用于访问 Qwen API 的密钥（DashScope API Key）' : 'Key for accessing Qwen API (DashScope API Key)')}
             </p>
           </div>
 
@@ -327,7 +343,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               disabled={saving}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
             >
-              {saving ? '保存中...' : '保存配置'}
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存配置' : 'Save Config')}
             </button>
           </div>
         </div>
@@ -347,42 +363,53 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
       {activeTab === 'email' && (
         <div className="space-y-4">
           <div>
-            <h4 className="text-base font-medium text-gray-900 mb-2">邮件收发工具</h4>
+            <h4 className="text-base font-medium text-gray-900 mb-2">{lang === 'zh' ? '邮件收发工具' : 'Email Tool'}</h4>
             <p className="text-sm text-gray-600 mb-4">
-              推荐使用 <strong>imap-smtp-email-chinese</strong> Skill，支持 IMAP 收件、SMTP 发件，兼容 Gmail、Outlook、163、QQ 等主流邮箱。
+              {lang === 'zh'
+                ? <>推荐使用 <strong>imap-smtp-email-chinese</strong> Skill，支持 IMAP 收件、SMTP 发件，兼容 Gmail、Outlook、163、QQ 等主流邮箱。</>
+                : <>Recommended: <strong>imap-smtp-email-chinese</strong> Skill. Supports IMAP receive and SMTP send, compatible with Gmail, Outlook, 163, QQ and more.</>}
             </p>
           </div>
 
           {/* 安装 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-blue-900 mb-2">📦 安装</h5>
+            <h5 className="text-sm font-semibold text-blue-900 mb-2">{lang === 'zh' ? '📦 安装' : '📦 Install'}</h5>
             <p className="text-sm text-blue-800 mb-2">
-              打开聊天界面的 <code className="bg-blue-100 px-1 rounded">[skill]</code> 按钮，搜索「imap-smtp-email-chinese」，点击安装。
+              {lang === 'zh'
+                ? <>打开聊天界面的 <code className="bg-blue-100 px-1 rounded">[skill]</code> 按钮，搜索「imap-smtp-email-chinese」，点击安装。</>
+                : <>Open the <code className="bg-blue-100 px-1 rounded">[skill]</code> button in the chat interface, search for "imap-smtp-email-chinese", and click Install.</>}
             </p>
           </div>
 
           {/* 配置 */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-2">⚙️ 配置</h5>
+            <h5 className="text-sm font-semibold text-gray-900 mb-2">{lang === 'zh' ? '⚙️ 配置' : '⚙️ Configuration'}</h5>
             <p className="text-sm text-gray-700 mb-3">
-              三种方式任选其一：
+              {lang === 'zh' ? '三种方式任选其一：' : 'Choose one of three methods:'}
             </p>
             <div className="space-y-2 mb-3">
               <div className="text-sm text-gray-700">
-                <strong>方式一：</strong>直接告诉 DeepBot 配置信息，它会自动写入 .env 文件
+                {lang === 'zh'
+                  ? <><strong>方式一：</strong>直接告诉 DeepBot 配置信息，它会自动写入 .env 文件</>
+                  : <><strong>Method 1:</strong> Tell DeepBot the config info directly, it will write to the .env file automatically</>}
               </div>
               <div className="bg-white border border-gray-200 rounded p-2 text-xs font-mono text-gray-800">
-                帮我配置 imap-smtp-email-chinese skill，邮箱是 your@163.com，授权码是 xxxx，使用 163 邮箱
+                {lang === 'zh'
+                  ? '帮我配置 imap-smtp-email-chinese skill，邮箱是 your@163.com，授权码是 xxxx，使用 163 邮箱'
+                  : 'Configure imap-smtp-email-chinese skill, email is your@163.com, auth code is xxxx, using 163 mail'}
               </div>
               <div className="text-sm text-gray-700 mt-2">
-                <strong>方式二：</strong>在 Skill 管理器中点击「环境变量」按钮编辑，配置会保存到 Skill 目录下的 <code className="bg-gray-200 px-1 rounded">.env</code> 文件
+                {lang === 'zh'
+                  ? <><strong>方式二：</strong>在 Skill 管理器中点击「环境变量」按钮编辑，配置会保存到 Skill 目录下的 <code className="bg-gray-200 px-1 rounded">.env</code> 文件</>
+                  : <><strong>Method 2:</strong> Click the "Environment Variables" button in Skill Manager to edit. Config is saved to the <code className="bg-gray-200 px-1 rounded">.env</code> file in the Skill directory</>}
               </div>
             </div>
             <p className="text-sm text-gray-700 mb-2">
-              .env 文件格式参考：
+              {lang === 'zh' ? '.env 文件格式参考：' : '.env file format reference:'}
             </p>
             <pre className="bg-gray-800 text-gray-100 px-3 py-2 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap">
-{`# IMAP 收件配置
+{lang === 'zh'
+  ? `# IMAP 收件配置
 IMAP_HOST=imap.163.com
 IMAP_PORT=993
 IMAP_USER=your@163.com
@@ -395,21 +422,35 @@ SMTP_PORT=465
 SMTP_SECURE=true
 SMTP_USER=your@163.com
 SMTP_PASS=your_auth_code
+SMTP_FROM=your@163.com`
+  : `# IMAP receive config
+IMAP_HOST=imap.163.com
+IMAP_PORT=993
+IMAP_USER=your@163.com
+IMAP_PASS=your_auth_code
+IMAP_TLS=true
+
+# SMTP send config
+SMTP_HOST=smtp.163.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your@163.com
+SMTP_PASS=your_auth_code
 SMTP_FROM=your@163.com`}
             </pre>
           </div>
 
           {/* 常见邮箱服务器 */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-3">📮 常见邮箱服务器</h5>
+            <h5 className="text-sm font-semibold text-gray-900 mb-3">{lang === 'zh' ? '📮 常见邮箱服务器' : '📮 Common Email Servers'}</h5>
             <div className="overflow-x-auto">
               <table className="text-xs w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-200">
-                    <th className="text-left p-2 border border-gray-300">邮箱</th>
-                    <th className="text-left p-2 border border-gray-300">IMAP 服务器</th>
-                    <th className="text-left p-2 border border-gray-300">SMTP 服务器</th>
-                    <th className="text-left p-2 border border-gray-300">SMTP 端口</th>
+                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? '邮箱' : 'Email'}</th>
+                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? 'IMAP 服务器' : 'IMAP Server'}</th>
+                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? 'SMTP 服务器' : 'SMTP Server'}</th>
+                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? 'SMTP 端口' : 'SMTP Port'}</th>
                   </tr>
                 </thead>
                 <tbody className="text-gray-700">
@@ -417,7 +458,7 @@ SMTP_FROM=your@163.com`}
                     ['163.com', 'imap.163.com', 'smtp.163.com', '465'],
                     ['126.com', 'imap.126.com', 'smtp.126.com', '465'],
                     ['QQ Mail', 'imap.qq.com', 'smtp.qq.com', '587'],
-                    ['腾讯企业邮', 'imap.exmail.qq.com', 'smtp.exmail.qq.com', '465'],
+                    [lang === 'zh' ? '腾讯企业邮' : 'Tencent Biz Mail', 'imap.exmail.qq.com', 'smtp.exmail.qq.com', '465'],
                     ['Gmail', 'imap.gmail.com', 'smtp.gmail.com', '587'],
                     ['Outlook', 'outlook.office365.com', 'smtp.office365.com', '587'],
                   ].map(([name, imap, smtp, port]) => (
@@ -435,33 +476,57 @@ SMTP_FROM=your@163.com`}
 
           {/* 使用示例 */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-2">💬 使用示例</h5>
+            <h5 className="text-sm font-semibold text-gray-900 mb-2">{lang === 'zh' ? '💬 使用示例' : '💬 Usage Examples'}</h5>
             <div className="space-y-2 text-sm text-gray-700">
-              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件给 xxx@163.com，主题"会议纪要"，内容是今天的会议记录</div>
-              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">检查收件箱最新 10 封未读邮件</div>
-              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">搜索来自 boss@company.com 的邮件</div>
-              <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件并附上 /path/to/report.pdf</div>
+              {lang === 'zh' ? (
+                <>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件给 xxx@163.com，主题"会议纪要"，内容是今天的会议记录</div>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">检查收件箱最新 10 封未读邮件</div>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">搜索来自 boss@company.com 的邮件</div>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件并附上 /path/to/report.pdf</div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Send an email to xxx@163.com, subject "Meeting Notes", content is today's meeting summary</div>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Check the latest 10 unread emails in inbox</div>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Search for emails from boss@company.com</div>
+                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Send an email with attachment /path/to/report.pdf</div>
+                </>
+              )}
             </div>
           </div>
 
           {/* 安全提示 */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-yellow-900 mb-2">🔒 安全提示</h5>
+            <h5 className="text-sm font-semibold text-yellow-900 mb-2">{lang === 'zh' ? '🔒 安全提示' : '🔒 Security Tips'}</h5>
             <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-              <li>163/QQ 邮箱需使用<strong>授权码</strong>，不是登录密码</li>
-              <li>Gmail 需开启两步验证并使用<strong>应用专用密码</strong></li>
-              <li>配置保存在 Skill 目录的 .env 文件中，请妥善保管</li>
+              {lang === 'zh' ? (
+                <>
+                  <li>163/QQ 邮箱需使用<strong>授权码</strong>，不是登录密码</li>
+                  <li>Gmail 需开启两步验证并使用<strong>应用专用密码</strong></li>
+                  <li>配置保存在 Skill 目录的 .env 文件中，请妥善保管</li>
+                </>
+              ) : (
+                <>
+                  <li>163/QQ Mail requires an <strong>authorization code</strong>, not your login password</li>
+                  <li>Gmail requires 2-step verification and an <strong>app-specific password</strong></li>
+                  <li>Config is saved in the .env file in the Skill directory — keep it safe</li>
+                </>
+              )}
             </ul>
           </div>
         </div>
       )}
+
       {/* 工具管理 */}
       {activeTab === 'manage' && (
         <div className="space-y-4">
           <div>
-            <h4 className="text-base font-medium text-gray-900 mb-2">工具管理</h4>
+            <h4 className="text-base font-medium text-gray-900 mb-2">{lang === 'zh' ? '工具管理' : 'Tool Management'}</h4>
             <p className="text-sm text-gray-600 mb-4">
-              勾选表示启用，取消勾选表示禁用。保存后立即生效。如果你已安装对应功能的 Skill，可以关闭内置工具，优先使用 Skill。
+              {lang === 'zh'
+                ? '勾选表示启用，取消勾选表示禁用。保存后立即生效。如果你已安装对应功能的 Skill，可以关闭内置工具，优先使用 Skill。'
+                : 'Check to enable, uncheck to disable. Changes take effect after saving. If you have installed a Skill with the same functionality, you can disable the built-in tool and use the Skill instead.'}
             </p>
           </div>
           <div className="space-y-2">
@@ -492,7 +557,7 @@ SMTP_FROM=your@163.com`}
               disabled={saving}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
             >
-              {saving ? '保存中...' : '保存配置'}
+              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存配置' : 'Save Config')}
             </button>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { CheckCircle, Download, RefreshCw, XCircle, ArrowRight } from 'lucide-re
 import { APP_VERSION } from '../../../shared/constants/version';
 import { api } from '../../api';
 import { isElectron } from '../../utils/platform';
+import { getLanguage } from '../../i18n';
 import iconUrl from '../../assets/icon.png';
 
 type UpdateStatus =
@@ -25,6 +26,7 @@ interface AppVersionProps {
 }
 
 export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
+  const lang = getLanguage();
   const [status, setStatus] = useState<UpdateStatus>(initialUpdateInfo ? 'available' : 'idle');
   const [updateInfo, setUpdateInfo] = useState<{ version: string } | null>(initialUpdateInfo || null);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -77,7 +79,7 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
         checkTimerRef.current = null;
       }
       setStatus('error');
-      setErrorMsg('检查更新失败，请检查网络连接');
+      setErrorMsg(lang === 'zh' ? '检查更新失败，请检查网络连接' : 'Update check failed. Please check your network connection');
     }
   };
 
@@ -113,7 +115,7 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
                 DeepBot Terminal
               </div>
               <div style={{ fontSize: '13px', color: 'var(--settings-text-dim)', marginTop: '2px' }}>
-                版本 {APP_VERSION}
+                {lang === 'zh' ? '版本' : 'Version'} {APP_VERSION}
               </div>
             </div>
           </div>
@@ -130,19 +132,19 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
           {/* 状态提示 */}
           {status === 'idle' && (
             <p style={{ fontSize: '13px', color: 'var(--settings-text-dim)', marginBottom: '12px' }}>
-              点击下方按钮检查是否有新版本可用
+              {lang === 'zh' ? '点击下方按钮检查是否有新版本可用' : 'Click the button below to check for updates'}
             </p>
           )}
           {status === 'checking' && (
             <p style={{ fontSize: '13px', color: 'var(--settings-text-dim)', marginBottom: '12px' }}>
-              正在检查更新...
+              {lang === 'zh' ? '正在检查更新...' : 'Checking for updates...'}
             </p>
           )}
           {status === 'up-to-date' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
               <CheckCircle size={16} color="var(--settings-success, #34c759)" />
               <p style={{ fontSize: '13px', color: 'var(--settings-success, #34c759)' }}>
-                当前已是最新版本
+                {lang === 'zh' ? '当前已是最新版本' : 'You are on the latest version'}
               </p>
             </div>
           )}
@@ -157,7 +159,7 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <Download size={16} color="var(--settings-accent)" />
                 <p style={{ fontSize: '14px', color: 'var(--settings-accent)', fontWeight: '600' }}>
-                  发现新版本 v{updateInfo.version}
+                  {lang === 'zh' ? `发现新版本 v${updateInfo.version}` : `New version v${updateInfo.version} available`}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
@@ -166,14 +168,14 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
                 <span style={{ fontSize: '12px', color: 'var(--settings-accent)', fontWeight: '600' }}>v{updateInfo.version}</span>
               </div>
               <p style={{ fontSize: '12px', color: 'var(--settings-text-dim)' }}>
-                下载完成后将自动安装，应用会重启以完成更新
+                {lang === 'zh' ? '下载完成后将自动安装，应用会重启以完成更新' : 'The update will be installed automatically and the app will restart'}
               </p>
             </div>
           )}
           {status === 'downloading' && (
             <div style={{ marginBottom: '12px' }}>
               <p style={{ fontSize: '13px', color: 'var(--settings-text-dim)', marginBottom: '8px' }}>
-                正在下载更新... {downloadProgress}%
+                {lang === 'zh' ? `正在下载更新... ${downloadProgress}%` : `Downloading update... ${downloadProgress}%`}
               </p>
               <div style={{
                 height: '4px',
@@ -195,7 +197,7 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
               <CheckCircle size={16} color="var(--settings-success, #34c759)" />
               <p style={{ fontSize: '13px', color: 'var(--settings-success, #34c759)' }}>
-                更新已下载完成，点击安装并重启
+                {lang === 'zh' ? '更新已下载完成，点击安装并重启' : 'Update downloaded. Click to install and restart'}
               </p>
             </div>
           )}
@@ -217,13 +219,13 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
                 style={{ background: 'var(--settings-accent)', color: '#fff', borderColor: 'var(--settings-accent)', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <RefreshCw size={14} />
-                检查更新
+                {lang === 'zh' ? '检查更新' : 'Check for Updates'}
               </button>
             )}
             {status === 'checking' && (
               <button className="settings-button" disabled style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                检查中...
+                {lang === 'zh' ? '检查中...' : 'Checking...'}
               </button>
             )}
             {status === 'available' && updateInfo && (
@@ -233,7 +235,7 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
                 style={{ background: 'var(--settings-accent)', color: '#fff', borderColor: 'var(--settings-accent)', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <Download size={14} />
-                下载 v{updateInfo.version}
+                {lang === 'zh' ? `下载 v${updateInfo.version}` : `Download v${updateInfo.version}`}
               </button>
             )}
             {status === 'downloaded' && (
@@ -244,7 +246,7 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
                 style={{ background: 'var(--settings-accent)', color: '#fff', borderColor: 'var(--settings-accent)', display: 'flex', alignItems: 'center', gap: '6px', opacity: installing ? 0.7 : 1 }}
               >
                 <RefreshCw size={14} style={installing ? { animation: 'spin 1s linear infinite' } : {}} />
-                {installing ? '正在重启...' : '安装并重启'}
+                {installing ? (lang === 'zh' ? '正在重启...' : 'Restarting...') : (lang === 'zh' ? '安装并重启' : 'Install & Restart')}
               </button>
             )}
           </div>
