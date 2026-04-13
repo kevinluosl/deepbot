@@ -529,9 +529,21 @@ export class GatewayConnectorHandler {
             : `❌ 未知指令: /${commandName}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /memory - 查看和管理记忆\n- /history - 查看对话历史统计\n- /reload-env - 刷新环境变量\n- /stop - 停止当前正在执行的任务\n- /status - 查看当前任务执行状态`;
       }
 
+      // /new 命令需要延迟发送结果，确保 clear-chat 先被前端处理
+      if (commandName.toLowerCase() === 'new') {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      // 先发送内容（创建消息），再发送完成标记
       sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
         messageId,
         content: resultText,
+        done: false,
+        sessionId,
+      });
+      sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+        messageId,
+        content: '',
         done: true,
         sessionId,
       });
