@@ -49,11 +49,23 @@ RUN mkdir -p /tmp/prod/node_modules/electron && \
 # ---- 运行阶段 ----
 FROM node:22-bookworm-slim
 
-# 安装运行时依赖：Python 3.11、pip、Playwright 系统依赖
+# 配置 apt 信任官方 Debian 源（跳过 GPG 签名验证，避免密钥过期问题）
+RUN echo 'Acquire::AllowInsecureRepositories "true";' > /etc/apt/apt.conf.d/99allow-insecure && \
+    echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99allow-insecure
+
+# 安装运行时依赖：Python 3.11、pip、常用工具、Playwright 系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
+    # 常用工具（AI 执行命令时经常需要）
+    curl \
+    wget \
+    git \
+    jq \
+    zip \
+    unzip \
+    ffmpeg \
     # Playwright Chromium 运行时依赖
     libnss3 \
     libnspr4 \

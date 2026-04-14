@@ -262,7 +262,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
   // 复制消息内容
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message.content);
+      // navigator.clipboard 在非 HTTPS 环境（如 Docker http://localhost）下不可用
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(message.content);
+      } else {
+        // fallback: 使用 textarea + execCommand
+        const textarea = document.createElement('textarea');
+        textarea.value = message.content;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
