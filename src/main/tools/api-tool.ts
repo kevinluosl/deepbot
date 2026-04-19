@@ -24,8 +24,8 @@ import * as handlers from './api-tool.handlers';
  */
 export const apiToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'api-tool',
-    name: 'api',
+    id: 'api',
+    name: '系统配置 API',
     version: '1.0.0',
     description: '访问 DeepBot 系统配置。支持查询和设置工作目录、模型、工具等配置',
     author: 'DeepBot',

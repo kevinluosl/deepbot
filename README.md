@@ -338,7 +338,7 @@ Covers the full Feishu Open Platform setup, permission configuration, and securi
 
 ### Creating Custom Tools
 
-All tools are built-in and live in `src/main/tools/`. You can add your own by following the pattern below.
+All tools use the unified `ToolPlugin` interface and live in `src/main/tools/`.
 
 #### Quick Start
 
@@ -349,27 +349,52 @@ Create a new file in `src/main/tools/` (e.g., `my-tool.ts`):
 ```typescript
 import { Type } from '@sinclair/typebox';
 import type { ToolPlugin } from './registry/tool-interface';
+import { TOOL_NAMES } from './tool-names';
 
 export const myToolPlugin: ToolPlugin = {
+  // 工具元数据（用于 UI 展示和管理）
   metadata: {
-    id: 'my-tool',
-    name: 'my_tool',
+    id: 'my-tool',              // 唯一标识，kebab-case
+    name: 'My Tool',            // 显示名称（给用户看）
     description: 'My custom tool',
     version: '1.0.0',
+    author: 'DeepBot',
+    category: 'custom',         // 分类：file | network | system | ai | custom
+    tags: ['custom'],
   },
   
+  // 创建工具实例，接收运行时上下文（工作目录、会话 ID、配置等）
   create: (options) => ({
-    name: 'my_tool',
-    label: 'My Tool',
-    description: 'Execute custom operations',
+    name: TOOL_NAMES.MY_TOOL,   // AI 调用时使用的工具名（必须在 tool-names.ts 中注册）
+    label: 'My Tool',           // 执行步骤中显示的标签
+    description: 'Execute custom operations',  // 告诉 AI 这个工具做什么
+    // 参数定义（使用 TypeBox，AI 会根据 description 自动填充参数）
+    // 常见参数类型示例：
+    //   Type.String({ description: '...' })                    — 字符串
+    //   Type.Number({ description: '...' })                    — 数字
+    //   Type.Boolean({ description: '...' })                   — 布尔值
+    //   Type.Optional(Type.String({ description: '...' }))     — 可选参数
+    //   Type.Union([Type.Literal('a'), Type.Literal('b')])     — 枚举（AI 只能选其中一个）
     parameters: Type.Object({
-      input: Type.String({ description: 'Input content' }),
+      action: Type.Union([
+        Type.Literal('search'),
+        Type.Literal('create'),
+        Type.Literal('delete'),
+      ], { description: 'Operation type' }),
+      query: Type.String({ description: 'Search keyword or target name' }),
+      limit: Type.Optional(Type.Number({ description: 'Max results (default 10)' })),
+      force: Type.Optional(Type.Boolean({ description: 'Skip confirmation' })),
     }),
     
     execute: async (toolCallId, params, signal) => {
-      // Implement tool logic
+      // signal: AbortSignal，用户停止时会触发
+      // params: 已经过 schema 验证的参数对象
+      
       return {
+        // content: 返回给 AI 的内容（AI 会基于此决定下一步）
         content: [{ type: 'text', text: 'Success' }],
+        // details: 结构化数据，用于 UI 渲染或日志记录（AI 不可见）
+        details: { success: true },
       };
     },
   }),
@@ -383,16 +408,24 @@ Edit `src/main/tools/registry/tool-loader.ts`:
 ```typescript
 import { myToolPlugin } from '../my-tool';
 
-// Inside loadBuiltinTools()
-const myTools = myToolPlugin.create({
-  workspaceDir: this.workspaceDir,
-  sessionId: this.sessionId,
-  configStore,
-});
-tools.push(myTools);
+// Inside loadTools(), add with other plugins:
+tools.push(...await resolvePluginTools(myToolPlugin.create(pluginOpts)));
 ```
 
-3. **Add tool instructions**
+3. **Add tool name constant**
+
+Edit `src/main/tools/tool-names.ts`:
+
+```typescript
+export const TOOL_NAMES = {
+  // ...existing tools
+  MY_TOOL: 'my_tool',
+};
+```
+
+Then use `TOOL_NAMES.MY_TOOL` in your tool definition instead of the hardcoded string.
+
+4. **Add tool instructions**
 
 Edit `src/main/prompts/templates/CUSTOM-TOOLS.md` to document how the AI should use your tool.
 
@@ -493,7 +526,7 @@ Using the Email tool as an example:
 
 #### References
 
-- 📖 [Full Development Guide](src/main/tools/registry/README.md)
+- 📖 [Full Development Guide](src/main/tools/registry/TOOL-DEVELOPMENT-GUIDE.md)
 - 📝 [Example Tool Template](src/main/tools/registry/example-tool.ts)
 - 🔧 [Email Tool Example](src/main/tools/email-tool.ts) — complete example with config and external dependencies
 

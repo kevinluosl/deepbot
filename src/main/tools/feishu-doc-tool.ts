@@ -158,8 +158,8 @@ function extractBlockText(block: any): string {
 
 export const feishuDocToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'feishu-doc-tool',
-    name: 'feishu_doc',
+    id: 'feishu-doc',
+    name: '飞书云文档',
     version: '1.0.0',
     description: '操作飞书云文档：创建、读取、追加内容、更新块、删除块、获取所有块、插入丰富格式内容、插入嵌套块',
     author: 'DeepBot',

@@ -18,6 +18,7 @@ import type { SystemConfigStore } from '../database/system-config-store';
 import { generateImageWithGemini, analyzeImageWithGemini } from './providers/gemini-provider';
 import { generateImageWithQwen } from './providers/qwen-provider';
 import { expandPath, getMimeType } from './providers/image-utils';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
 // 默认输出目录
 const DEFAULT_OUTPUT_DIR = join(homedir(), '.deepbot', 'generated-images');
@@ -362,3 +363,23 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
     },
   };
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const imageGenerationToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'image-generation',
+    name: '图片生成',
+    version: '1.0.0',
+    description: '支持多个图片生成提供商（Gemini、Qwen）',
+    author: 'DeepBot',
+    category: 'ai',
+    tags: ['image', 'generation', 'gemini', 'qwen'],
+    requiresConfig: true,
+  },
+  create: (options: ToolCreateOptions) => {
+    if (!options.configStore) throw new Error('imageGenerationToolPlugin 需要 configStore');
+    return createImageGenerationTool(options.configStore);
+  },
+};

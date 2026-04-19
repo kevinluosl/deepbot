@@ -18,6 +18,7 @@ import { httpGet } from '../../shared/utils/http-utils';
 import { getErrorMessage } from '../../shared/utils/error-handler';
 import { TIMEOUTS } from '../config/timeouts';
 import { TOOL_NAMES } from './tool-names';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
 /**
  * Web Fetch 模式
@@ -740,3 +741,19 @@ export function createWebFetchTool(): AgentTool {
     },
   };
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const webFetchToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'web-fetch',
+    name: 'Web 内容获取',
+    version: '1.0.0',
+    description: '从 URL 获取网页内容并提取主要内容，转换为 Markdown 格式',
+    author: 'DeepBot',
+    category: 'network',
+    tags: ['web', 'fetch', 'url', 'readability'],
+  },
+  create: (_options: ToolCreateOptions) => createWebFetchTool(),
+};

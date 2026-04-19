@@ -32,6 +32,7 @@ import { isBlockingInteractiveCommand, getBlockingCommandSuggestion } from './ex
 import { TIMEOUTS } from '../config/timeouts';
 import { assertPathAllowed } from '../utils/path-security';
 import { SystemConfigStore } from '../database/system-config-store';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
 function securityError(error: unknown, command: string, unsafePath: string): Error {
   const isEn = SystemConfigStore.getInstance().getAppSetting('language') === 'en';
@@ -362,13 +363,13 @@ function isDangerousCommand(command: string): boolean {
 
 
 /**
- * 包装工具，添加安全检查、PATH 处理和日志
+ * 包装 bash 工具，添加命令安全检查（危险命令 + 阻塞命令 + 路径安全）和空输出处理
  * 
  * @param tool - 原始工具
  * @param shellPath - 合并后的 PATH
  * @returns 包装后的工具
  */
-function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
+function wrapBashToolWithCommandCheck(tool: AgentTool, shellPath: string): AgentTool {
   return {
     ...tool,
     execute: async (toolCallId, params, signal, onUpdate) => {
@@ -376,15 +377,21 @@ function wrapToolWithSecurity(tool: AgentTool, shellPath: string): AgentTool {
       const record = params && typeof params === 'object' ? params as Record<string, unknown> : undefined;
       const command = record?.command;
       
-      // 安全检查：验证命令
+      // 安全检查：统一在此处完成所有前置检查
       if (typeof command === 'string' && command.trim()) {
-        // 1. 危险命令检查
-        if (isDangerousCommand(command)) {
-          throw new Error(`危险命令被拦截: ${command}`);
+        // 1. 阻塞命令检查（vim、npm run dev 等会卡住的命令）
+        if (isBlockingInteractiveCommand(command)) {
+          const suggestion = getBlockingCommandSuggestion(command);
+          throw new Error(suggestion);
         }
         
-        // 2. 🔥 路径安全检查（严格模式）
-        // 使用 assertPathAllowed 检查命令中的所有路径
+        // 2. 危险命令检查（rm -rf /、format c: 等）
+        if (isDangerousCommand(command)) {
+          const isEn = SystemConfigStore.getInstance().getAppSetting('language') === 'en';
+          throw new Error(isEn ? `Dangerous command blocked: ${command}` : `危险命令被拦截: ${command}`);
+        }
+        
+        // 3. 路径安全检查（扫描命令中的所有路径参数）
         checkCommandPathSecurity(command);
       }
       
@@ -455,7 +462,7 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
     timeoutMs: 15_000,
   });
   
-  // shellPath 供 wrapToolWithSecurity fallback 使用
+  // shellPath 供 wrapBashToolWithCommandCheck 使用
   const shellPath = getShellEnvFromLoginShell({ env: process.env, timeoutMs: 15_000 }).PATH || process.env.PATH || '';
   
   // 创建基础工具（使用 pi-coding-agent）
@@ -463,21 +470,16 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
   const bashTool = createBashTool(workspaceDir, {
     operations: {
       exec: async (command: string, cwd: string, options: any) => {
-        // 🔥 检查是否是阻塞的交互式命令
-        if (isBlockingInteractiveCommand(command)) {
-          const suggestion = getBlockingCommandSuggestion(command);
-          throw new Error(suggestion);
-        }
-        
         // 🔥 检查工作目录是否安全（严格模式）
+        // 注意：cwd 由 pi-coding-agent 内部传入，外层 wrapBashToolWithCommandCheck 拿不到，必须在这里检查
         try {
           assertPathAllowed(cwd);
         } catch (error) {
           throw new Error(`工作目录安全检查失败：${error instanceof Error ? error.message : '未知错误'}\n工作目录：${cwd}`);
         }
         
-        // 🔥 检查命令中的路径是否安全（严格模式）
-        checkCommandPathSecurity(command);
+        // 命令安全检查（危险命令 + 阻塞命令 + 路径安全）已在外层 wrapBashToolWithCommandCheck 中统一处理
+        // 这里只负责执行逻辑
         
         // 🔥 使用完整的 shell 环境变量（每次动态获取，支持 /reload-env 刷新）
         const env: Record<string, string> = { ...getShellEnvFromLoginShell({ env: process.env, timeoutMs: 15_000 }) };
@@ -575,8 +577,24 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
     },
   }) as unknown as AgentTool;
   
-  // 包装安全检查和 PATH 处理
-  const secureBashTool = wrapToolWithSecurity(bashTool, shellPath);
+  // 包装命令安全检查
+  const secureBashTool = wrapBashToolWithCommandCheck(bashTool, shellPath);
   
   return [secureBashTool];
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const execToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'exec',
+    name: '命令执行',
+    version: '1.0.0',
+    description: 'Shell 命令执行，带安全检查和环境变量注入',
+    author: 'DeepBot',
+    category: 'system',
+    tags: ['bash', 'exec', 'shell', 'command'],
+  },
+  create: (options: ToolCreateOptions) => getExecTools(options.workspaceDir),
+};

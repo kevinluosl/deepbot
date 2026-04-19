@@ -15,7 +15,7 @@
  * 
  * 1. 在 `src/main/tools/` 创建工具文件（如 `my-tool.ts`）
  * 2. 实现 `ToolPlugin` 接口
- * 3. 在 `tool-loader.ts` 的 `loadBuiltinTools()` 方法中导入并加载
+ * 3. 在 `tool-loader.ts` 的 `loadTools()` 方法中导入并加载
  * 4. 如需配置，在工具执行时从用户目录读取配置文件
  * 5. 如需外部依赖，使用动态 `require()` 加载
  * 

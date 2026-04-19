@@ -223,8 +223,8 @@ async function sendFileToTarget(target: ResolvedTarget, filePath: string, fileNa
 
 export const connectorToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'connector-tool',
-    name: 'connector',
+    id: 'connector',
+    name: '连接器',
     version: '2.0.0',
     description: '向飞书用户发送消息、图片、文件。支持连接器会话和普通 Tab',
     author: 'DeepBot',

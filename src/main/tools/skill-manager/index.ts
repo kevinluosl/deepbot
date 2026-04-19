@@ -18,6 +18,7 @@ import { TOOL_NAMES } from '../tool-names';
 import { initDatabase } from './database';
 import { searchSkillsOnGitHub } from './search';
 import { installSkill } from './install';
+import type { ToolPlugin, ToolCreateOptions } from '../registry/tool-interface';
 import { listInstalledSkills, uninstallSkill, getSkillInfo, getSkillEnv, setSkillEnv } from './manage';
 import { resetShellPathCache } from '../shell-env';
 
@@ -177,3 +178,19 @@ export function createSkillManagerTool(): AgentTool {
     },
   };
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const skillManagerToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'skill-manager',
+    name: 'Skill 管理',
+    version: '1.0.0',
+    description: '搜索、安装、管理 Skill 扩展能力',
+    author: 'DeepBot',
+    category: 'system',
+    tags: ['skill', 'manager', 'install', 'plugin'],
+  },
+  create: (_options: ToolCreateOptions) => createSkillManagerTool(),
+};

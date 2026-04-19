@@ -152,8 +152,8 @@ function createTransporter(config: EmailConfig): Transporter {
  */
 export const emailToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'email-tool',
-    name: TOOL_NAMES.SEND_EMAIL,
+    id: 'email',
+    name: '邮件发送',
     version: '1.0.0',
     description: '通过 SMTP 发送邮件。支持纯文本/HTML 邮件、附件、抄送、密送。兼容所有主流邮件服务商（QQ、Gmail、Outlook、163 等）',
     author: 'DeepBot',

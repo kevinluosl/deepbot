@@ -8,6 +8,7 @@ import { AgentTool } from '@mariozechner/pi-agent-core';
 import { Type } from '@sinclair/typebox';
 import { execSync } from 'node:child_process';
 import { TOOL_NAMES } from './tool-names';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 import { SystemConfigStore } from '../database/system-config-store';
 import { TIMEOUTS } from '../config/timeouts';
 import { getErrorMessage } from '../../shared/utils/error-handler';
@@ -316,3 +317,19 @@ export function createEnvironmentCheckTool(): AgentTool {
     },
   };
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const environmentCheckToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'environment-check',
+    name: '环境检查',
+    version: '1.0.0',
+    description: '检查系统环境依赖（Python、Node.js 等）',
+    author: 'DeepBot',
+    category: 'system',
+    tags: ['environment', 'check', 'python', 'node'],
+  },
+  create: (_options: ToolCreateOptions) => createEnvironmentCheckTool(),
+};

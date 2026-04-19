@@ -22,8 +22,8 @@ const CommandToolSchema = Type.Object({
  */
 export const commandToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'command-tool',
-    name: TOOL_NAMES.SYSTEM_COMMAND,
+    id: 'command',
+    name: '系统指令',
     version: '1.0.0',
     description: '执行系统指令（如 /new 清空会话）',
   },

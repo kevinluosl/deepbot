@@ -12,7 +12,7 @@
  * 1. **工具代码**：在 `src/main/tools/` 中创建（如 `my-tool.ts`）
  * 2. **配置文件**：在 `~/.deepbot/tools/my-tool/config.json` 中存储（运行时读取）
  * 3. **外部依赖**：在 `~/.deepbot/tools/my-tool/node_modules/` 中安装（按需安装）
- * 4. **工具加载**：在 `tool-loader.ts` 的 `loadBuiltinTools()` 方法中导入
+ * 4. **工具加载**：在 `tool-loader.ts` 的 `loadTools()` 方法中导入
  * 
  * ### 创建新工具的步骤
  * 
@@ -22,13 +22,8 @@
  *    ```typescript
  *    import { myToolPlugin } from '../my-tool';
  *    
- *    // 在 loadBuiltinTools() 方法中添加
- *    const myTools = myToolPlugin.create({
- *      workspaceDir: this.workspaceDir,
- *      sessionId: this.sessionId,
- *      configStore,
- *    });
- *    tools.push(...(Array.isArray(myTools) ? myTools : [myTools]));
+ *    // 在 loadTools() 方法中添加
+ *    tools.push(...await resolvePluginTools(myToolPlugin.create(pluginOpts)));
  *    ```
  * 4. 如果需要配置文件，在工具执行时从 `~/.deepbot/tools/my-tool/config.json` 读取
  * 5. 如果需要外部依赖，使用动态 `require()` 加载（参考 `email-tool.ts`）
@@ -73,7 +68,7 @@ const ExampleToolSchema = Type.Object({
 export const plugin: ToolPlugin = {
   // 工具元数据
   metadata: {
-    id: 'example-tool',
+    id: 'example',
     name: '示例工具',
     description: '这是一个示例工具，展示如何创建自定义工具',
     version: '1.0.0',

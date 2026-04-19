@@ -48,8 +48,8 @@ const CrossTabCallSchema = Type.Object({
  */
 export const crossTabCallToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'cross-tab-call-tool',
-    name: TOOL_NAMES.CROSS_TAB_CALL,
+    id: 'cross-tab-call',
+    name: '跨 Tab 调用',
     version: '1.0.0',
     description: '向其他 Tab 发送消息。用于多 Agent 协作场景，Tab 之间可以互相对话',
     author: 'DeepBot',

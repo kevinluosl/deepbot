@@ -38,6 +38,7 @@ import { TaskScheduler } from '../scheduled-tasks/scheduler';
 import { TaskExecutor } from '../scheduled-tasks/executor';
 import type { Gateway } from '../gateway';
 import type { TaskSchedule, TaskCreateInput } from '../scheduled-tasks/types';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 import { TOOL_NAMES } from './tool-names';
 
 // ==================== 全局实例 ====================
@@ -625,3 +626,19 @@ export function stopScheduler(): void {
   // TaskStore 使用单例模式，不需要手动关闭
   // 数据库连接会在应用退出时自动关闭
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const scheduledTaskToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'scheduled-task',
+    name: '定时任务',
+    version: '1.0.0',
+    description: '定时任务管理工具，支持一次性、周期性和 Cron 表达式调度',
+    author: 'DeepBot',
+    category: 'system',
+    tags: ['scheduled', 'task', 'cron', 'timer'],
+  },
+  create: (_options: ToolCreateOptions) => createScheduledTaskTool(),
+};

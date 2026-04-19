@@ -12,6 +12,7 @@ import { TOOL_NAMES } from './tool-names';
 import { getErrorMessage } from '../../shared/utils/error-handler';
 import { safeJsonParse } from '../../shared/utils/json-utils';
 import type { SystemConfigStore } from '../database/system-config-store';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
 // 创建禁用 SSL 验证的 Agent
 const httpsAgent = new https.Agent({
@@ -530,3 +531,23 @@ export function createWebSearchTool(configStore: SystemConfigStore): AgentTool {
     },
   };
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const webSearchToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'web-search',
+    name: 'Web 搜索',
+    version: '1.0.0',
+    description: '使用搜索引擎进行网络搜索',
+    author: 'DeepBot',
+    category: 'network',
+    tags: ['web', 'search', 'internet'],
+    requiresConfig: true,
+  },
+  create: (options: ToolCreateOptions) => {
+    if (!options.configStore) throw new Error('webSearchToolPlugin 需要 configStore');
+    return createWebSearchTool(options.configStore);
+  },
+};

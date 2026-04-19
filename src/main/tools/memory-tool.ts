@@ -407,8 +407,8 @@ ${context ? `执行结果：\n"""\n${context}\n"""\n` : ''}
  */
 export const memoryToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'memory-tool',
-    name: TOOL_NAMES.MEMORY,
+    id: 'memory',
+    name: '记忆管理',
     version: '1.0.0',
     description: '管理智能体的核心记忆。支持读取和更新记忆，自动提炼和分类信息',
     author: 'DeepBot',

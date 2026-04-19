@@ -1,8 +1,8 @@
 /**
  * 工具加载器
  * 
- * 负责加载内置工具（src/main/tools/）
- * 配置文件在工具执行时动态读取
+ * 负责加载所有工具（统一使用 ToolPlugin 接口）
+ * 工具的配置在执行时动态读取
  */
 
 import { join } from 'node:path';
@@ -15,24 +15,34 @@ import { safeJsonParse } from '../../../shared/utils/json-utils';
 import { TOOL_NAMES } from '../tool-names';
 
 // 导入内置工具
-import { getFileTools } from '../file-tool';
-import { getExecTools } from '../exec-tool';
+import { fileToolPlugin } from '../file-tool';
+import { execToolPlugin } from '../exec-tool';
 import { browserToolPlugin } from '../browser-tool';
-import { getCalendarTools } from '../calendar-tool';
-import { createSkillManagerTool } from '../skill-manager-tool';
-import { createScheduledTaskTool } from '../scheduled-task-tool';
-import { createEnvironmentCheckTool } from '../environment-check-tool';
-import { createImageGenerationTool } from '../image-generation-tool';
-import { createWebSearchTool } from '../web-search-tool';
-import { createWebFetchTool } from '../web-fetch-tool';
+import { calendarToolPlugin } from '../calendar-tool';
+import { skillManagerToolPlugin } from '../skill-manager';
+import { scheduledTaskToolPlugin } from '../scheduled-task-tool';
+import { environmentCheckToolPlugin } from '../environment-check-tool';
+import { imageGenerationToolPlugin } from '../image-generation-tool';
+import { webSearchToolPlugin } from '../web-search-tool';
+import { webFetchToolPlugin } from '../web-fetch-tool';
 import { memoryToolPlugin } from '../memory-tool';
-import { createChatTool } from '../chat-tool';
+import { chatToolPlugin } from '../chat-tool';
 import { emailToolPlugin } from '../email-tool';
 import { apiToolPlugin } from '../api-tool';
 import { connectorToolPlugin } from '../connector-tool';
 import { crossTabCallToolPlugin } from '../cross-tab-call-tool';
 import { commandToolPlugin } from '../command-tool';
 import { feishuDocToolPlugin } from '../feishu-doc-tool';
+
+/**
+ * 解析 plugin.create() 的返回值，统一处理 Promise 和数组/单个工具
+ */
+async function resolvePluginTools(
+  result: AgentTool | AgentTool[] | Promise<AgentTool | AgentTool[]>
+): Promise<AgentTool[]> {
+  const resolved = result instanceof Promise ? await result : result;
+  return Array.isArray(resolved) ? resolved : [resolved];
+}
 
 /**
  * 工具加载器类
@@ -60,9 +70,9 @@ export class ToolLoader {
     // 1. 加载工具配置（可选，用于启用/禁用工具）
     this.loadToolConfigs();
     
-    // 2. 加载内置工具
-    const builtinTools = await this.loadBuiltinTools(configStore);
-    console.log(`✅ 内置工具: ${builtinTools.length} 个`);
+    // 2. 加载工具
+    const builtinTools = await this.loadTools(configStore);
+    console.log(`✅ 工具: ${builtinTools.length} 个`);
     
     console.log(`📦 工具加载完成: 共 ${builtinTools.length} 个工具`);
     console.log(`   工具列表: ${builtinTools.map(t => t.name).join(', ')}`);
@@ -99,14 +109,13 @@ export class ToolLoader {
   }
   
   /**
-   * 加载内置工具
-   * 所有工具都在 src/main/tools/ 中定义
-   * 工具的配置文件在执行时动态读取
+   * 加载所有工具
+   * 统一使用 ToolPlugin 接口加载
    * 
    * @param configStore - 系统配置存储
    * @returns 工具数组
    */
-  private async loadBuiltinTools(configStore?: any): Promise<AgentTool[]> {
+  private async loadTools(configStore?: any): Promise<AgentTool[]> {
     const tools: AgentTool[] = [];
     
     // 获取禁用工具列表
@@ -114,184 +123,75 @@ export class ToolLoader {
     const isEnabled = (name: string) => !disabledTools.has(name);
     
     try {
-      // 文件工具
-      const fileTools = await getFileTools(this.workspaceDir);
-      tools.push(...fileTools);
+      // 统一使用 plugin 模式加载所有工具
+      const pluginOpts = { workspaceDir: this.workspaceDir, sessionId: this.sessionId, configStore };
+
+      // 文件工具（read, write, edit）
+      tools.push(...await resolvePluginTools(fileToolPlugin.create(pluginOpts)));
       
-      // 执行工具
-      const execTools = await getExecTools(this.workspaceDir);
-      tools.push(...execTools);
+      // 执行工具（bash）
+      tools.push(...await resolvePluginTools(execToolPlugin.create(pluginOpts)));
       
       // 浏览器工具
       if (isEnabled(TOOL_NAMES.BROWSER)) {
-        const browserToolsResult = browserToolPlugin.create({
-          workspaceDir: this.workspaceDir,
-          sessionId: this.sessionId,
-          configStore,
-        });
-        const browserTools = browserToolsResult instanceof Promise
-          ? await browserToolsResult
-          : browserToolsResult;
-        if (Array.isArray(browserTools)) {
-          tools.push(...browserTools);
-        } else {
-          tools.push(browserTools);
-        }
+        tools.push(...await resolvePluginTools(browserToolPlugin.create(pluginOpts)));
       }
 
       // 日历工具
       if (isEnabled(TOOL_NAMES.CALENDAR_GET_EVENTS) || isEnabled(TOOL_NAMES.CALENDAR_CREATE_EVENT)) {
-        const calendarTools = getCalendarTools();
-        // 按各自开关过滤
+        const calendarTools = await resolvePluginTools(calendarToolPlugin.create(pluginOpts));
         for (const t of calendarTools) {
           if (isEnabled(t.name)) tools.push(t);
         }
       }
       
       // Skill 管理工具
-      const skillManagerTool = createSkillManagerTool();
-      tools.push(skillManagerTool);
+      tools.push(...await resolvePluginTools(skillManagerToolPlugin.create(pluginOpts)));
       
       // 定时任务工具
-      const scheduledTaskTool = createScheduledTaskTool();
-      tools.push(scheduledTaskTool);
+      tools.push(...await resolvePluginTools(scheduledTaskToolPlugin.create(pluginOpts)));
       
       // 环境检查工具
-      const environmentCheckTool = createEnvironmentCheckTool();
-      tools.push(environmentCheckTool);
+      tools.push(...await resolvePluginTools(environmentCheckToolPlugin.create(pluginOpts)));
       
       // 图片生成工具
       if (configStore && isEnabled(TOOL_NAMES.IMAGE_GENERATION)) {
-        const imageGenerationTool = createImageGenerationTool(configStore);
-        tools.push(imageGenerationTool);
+        tools.push(...await resolvePluginTools(imageGenerationToolPlugin.create(pluginOpts)));
       }
       
       // 网络搜索工具
       if (configStore && isEnabled(TOOL_NAMES.WEB_SEARCH)) {
-        const webSearchTool = createWebSearchTool(configStore);
-        tools.push(webSearchTool);
+        tools.push(...await resolvePluginTools(webSearchToolPlugin.create(pluginOpts)));
       }
       
       // Web 内容获取工具
-      const webFetchTool = createWebFetchTool();
-      tools.push(webFetchTool);
+      tools.push(...await resolvePluginTools(webFetchToolPlugin.create(pluginOpts)));
       
       // 记忆工具
-      const memoryToolsResult = memoryToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
-      
-      // 处理可能的 Promise 返回值
-      const memoryTools = memoryToolsResult instanceof Promise 
-        ? await memoryToolsResult 
-        : memoryToolsResult;
-      
-      if (Array.isArray(memoryTools)) {
-        tools.push(...memoryTools);
-      } else {
-        tools.push(memoryTools);
-      }
+      tools.push(...await resolvePluginTools(memoryToolPlugin.create(pluginOpts)));
       
       // Chat 工具（AI 对话）
       if (configStore) {
-        const chatTool = createChatTool(configStore);
-        tools.push(chatTool);
+        tools.push(...await resolvePluginTools(chatToolPlugin.create(pluginOpts)));
       }
       
       // 邮件工具（已屏蔽，推荐使用 imap-smtp-email-chinese skill 代替）
-      // const emailToolsResult = emailToolPlugin.create({...});
+      // tools.push(...await resolvePluginTools(emailToolPlugin.create(pluginOpts)));
       
       // API 工具（系统配置访问）
-      const apiToolsResult = apiToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
+      tools.push(...await resolvePluginTools(apiToolPlugin.create(pluginOpts)));
       
-      // 处理可能的 Promise 返回值
-      const apiTools = apiToolsResult instanceof Promise 
-        ? await apiToolsResult 
-        : apiToolsResult;
+      // 连接器工具（在连接器会话中发送图片和文件）
+      tools.push(...await resolvePluginTools(connectorToolPlugin.create(pluginOpts)));
       
-      if (Array.isArray(apiTools)) {
-        tools.push(...apiTools);
-      } else {
-        tools.push(apiTools);
-      }
+      // 跨 Tab 调用工具（多 Agent 协作）
+      tools.push(...await resolvePluginTools(crossTabCallToolPlugin.create(pluginOpts)));
       
-      // 连接器工具
-      // 用于在连接器会话中发送图片和文件
-      const connectorToolsResult = connectorToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
-      
-      // 处理可能的 Promise 返回值
-      const connectorTools = connectorToolsResult instanceof Promise 
-        ? await connectorToolsResult 
-        : connectorToolsResult;
-      
-      if (Array.isArray(connectorTools)) {
-        tools.push(...connectorTools);
-      } else {
-        tools.push(connectorTools);
-      }
-      
-      // 跨 Tab 调用工具
-      // 用于多 Agent 协作，调用其他 Tab 执行任务并获取结果
-      const crossTabCallToolsResult = crossTabCallToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
-      
-      // 处理可能的 Promise 返回值
-      const crossTabCallTools = crossTabCallToolsResult instanceof Promise 
-        ? await crossTabCallToolsResult 
-        : crossTabCallToolsResult;
-      
-      if (Array.isArray(crossTabCallTools)) {
-        tools.push(...crossTabCallTools);
-      } else {
-        tools.push(crossTabCallTools);
-      }
-      
-      // 系统指令工具
-      // 处理系统级别的指令，如 /new（清空会话）
-      const commandToolsResult = commandToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
-      
-      // 处理可能的 Promise 返回值
-      const commandTools = commandToolsResult instanceof Promise 
-        ? await commandToolsResult 
-        : commandToolsResult;
-      
-      if (Array.isArray(commandTools)) {
-        tools.push(...commandTools);
-      } else {
-        tools.push(commandTools);
-      }
+      // 系统指令工具（/new 等系统级指令）
+      tools.push(...await resolvePluginTools(commandToolPlugin.create(pluginOpts)));
 
       // 飞书云文档工具
-      const feishuDocToolsResult = feishuDocToolPlugin.create({
-        workspaceDir: this.workspaceDir,
-        sessionId: this.sessionId,
-        configStore,
-      });
-      const feishuDocTools = feishuDocToolsResult instanceof Promise
-        ? await feishuDocToolsResult
-        : feishuDocToolsResult;
-      if (Array.isArray(feishuDocTools)) {
-        tools.push(...feishuDocTools);
-      } else {
-        tools.push(feishuDocTools);
-      }
+      tools.push(...await resolvePluginTools(feishuDocToolPlugin.create(pluginOpts)));
 
     } catch (error) {
       console.error('❌ 加载内置工具失败:', error);

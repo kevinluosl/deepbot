@@ -27,6 +27,7 @@ import * as fs from 'fs';
 import { assertPathAllowed } from '../utils/path-security';
 import { expandUserPath } from '../../shared/utils/path-utils';
 import { ensureDirectoryExists, isFile } from '../../shared/utils/fs-utils';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
 /**
  * 规范化工具参数（支持 Claude 风格参数）
@@ -138,14 +139,14 @@ function improveReadResult(result: any, filePath: string): any {
 }
 
 /**
- * 包装工具，添加安全检查和参数规范化
+ * 包装文件工具，添加路径安全检查和参数规范化
  * 
  * @param tool - 原始工具
  * @param workspaceDir - 工作区目录
  * @param isReadTool - 是否是 read 工具
  * @returns 包装后的工具
  */
-function wrapToolWithSecurity(
+function wrapFileToolWithPathCheck(
   tool: AgentTool,
   workspaceDir: string,
   isReadTool: boolean = false
@@ -206,9 +207,9 @@ export async function getFileTools(workspaceDir: string): Promise<AgentTool[]> {
   const editTool = createEditTool(workspaceDir) as unknown as AgentTool;
   
   // 包装安全检查（read 工具需要改进返回结果）
-  const secureReadTool = wrapToolWithSecurity(readTool, workspaceDir, true);
-  const secureWriteTool = wrapToolWithSecurity(writeTool, workspaceDir, false);
-  const secureEditTool = wrapToolWithSecurity(editTool, workspaceDir, false);
+  const secureReadTool = wrapFileToolWithPathCheck(readTool, workspaceDir, true);
+  const secureWriteTool = wrapFileToolWithPathCheck(writeTool, workspaceDir, false);
+  const secureEditTool = wrapFileToolWithPathCheck(editTool, workspaceDir, false);
   
   console.info(`[File Tool] ✅ File Tools 创建完成`);
   console.info(`  工作区: ${workspaceDir}`);
@@ -216,3 +217,19 @@ export async function getFileTools(workspaceDir: string): Promise<AgentTool[]> {
   
   return [secureReadTool, secureWriteTool, secureEditTool];
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const fileToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'file',
+    name: '文件操作',
+    version: '1.0.0',
+    description: '文件读取、写入、编辑，带路径安全检查',
+    author: 'DeepBot',
+    category: 'file',
+    tags: ['file', 'read', 'write', 'edit'],
+  },
+  create: (options: ToolCreateOptions) => getFileTools(options.workspaceDir),
+};

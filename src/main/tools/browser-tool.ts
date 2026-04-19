@@ -172,8 +172,8 @@ const BrowserToolSchema = Type.Object({
  */
 export const browserToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'browser-tool',
-    name: TOOL_NAMES.BROWSER,
+    id: 'browser',
+    name: '浏览器控制',
     version: '2.0.0',
     description: '使用 agent-browser 控制浏览器。支持：打开网页、获取快照、点击、填充表单、截图等操作。使用 @ref 系统进行元素定位',
     author: 'DeepBot',

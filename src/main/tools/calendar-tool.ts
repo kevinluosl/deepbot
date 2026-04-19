@@ -28,6 +28,7 @@ import { Type } from '@sinclair/typebox';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { generateId } from '../../shared/utils/id-generator';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
 const execAsync = promisify(exec);
 
@@ -449,3 +450,19 @@ export function getCalendarTools(): AgentTool[] {
     createCreateEventTool()
   ];
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const calendarToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'calendar',
+    name: '日历管理',
+    version: '1.0.0',
+    description: '日历事件读取和创建（仅支持 macOS）',
+    author: 'DeepBot',
+    category: 'system',
+    tags: ['calendar', 'event', 'macos', 'applescript'],
+  },
+  create: (_options: ToolCreateOptions) => getCalendarTools(),
+};

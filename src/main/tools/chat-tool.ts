@@ -9,6 +9,7 @@ import type { Model } from '@mariozechner/pi-ai';
 import { getErrorMessage } from '../../shared/utils/error-handler';
 import { TOOL_NAMES } from './tool-names';
 import type { SystemConfigStore } from '../database/system-config-store';
+import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
 const ChatToolSchema = Type.Object({
   prompt: Type.String({ description: '用户提示词或问题' }),
@@ -269,3 +270,23 @@ export function createChatTool(configStore: SystemConfigStore): AgentTool {
     },
   };
 }
+
+
+// ── ToolPlugin 接口 ──────────────────────────────────────────────────────────
+
+export const chatToolPlugin: ToolPlugin = {
+  metadata: {
+    id: 'chat',
+    name: 'AI 对话',
+    version: '1.0.0',
+    description: '调用 AI 模型进行对话，支持流式输出和长文本分段',
+    author: 'DeepBot',
+    category: 'ai',
+    tags: ['chat', 'ai', 'conversation'],
+    requiresConfig: true,
+  },
+  create: (options: ToolCreateOptions) => {
+    if (!options.configStore) throw new Error('chatToolPlugin 需要 configStore');
+    return createChatTool(options.configStore);
+  },
+};
