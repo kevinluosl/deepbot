@@ -235,10 +235,13 @@ export class GatewayConnectorHandler {
           // connector tab 的系统指令需要把结果回复给用户
           // （executeSystemCommand 只发到前端 UI，connector 用户看不到）
           if (tab.type === 'connector') {
-            try {
-              await this.sendResponseToConnector(tab.id, this.getSystemCommandReply(commandName));
-            } catch (replyError) {
-              logger.error('❌ 回复系统指令结果失败:', replyError);
+            const reply = this.getSystemCommandReply(commandName);
+            if (reply) {
+              try {
+                await this.sendResponseToConnector(tab.id, reply);
+              } catch (replyError) {
+                logger.error('❌ 回复系统指令结果失败:', replyError);
+              }
             }
           }
           return;
@@ -535,18 +538,21 @@ export class GatewayConnectorHandler {
       }
 
       // 先发送内容（创建消息），再发送完成标记
-      sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
-        messageId,
-        content: resultText,
-        done: false,
-        sessionId,
-      });
-      sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
-        messageId,
-        content: '',
-        done: true,
-        sessionId,
-      });
+      // 如果 resultText 为空（如 /memory 命令由 Agent 异步处理），跳过发送
+      if (resultText) {
+        sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+          messageId,
+          content: resultText,
+          done: false,
+          sessionId,
+        });
+        sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
+          messageId,
+          content: '',
+          done: true,
+          sessionId,
+        });
+      }
     } catch (error) {
       logger.error(`❌ 执行系统命令失败: /${commandName}`, error);
       this.sendErrorFn(`执行命令失败: ${getErrorMessage(error)}`, sessionId);
@@ -614,7 +620,7 @@ export class GatewayConnectorHandler {
       }
     }, 100);
 
-    return isEn ? '✅ Querying memory...' : '✅ 正在查询记忆系统...';
+    return '';
   }
 
   /**
@@ -625,8 +631,8 @@ export class GatewayConnectorHandler {
     switch (commandName.toLowerCase()) {
       case 'stop': return '⏹️ ' + (isEn ? 'Task stopped' : '任务已停止');
       case 'new': return '✅ ' + (isEn ? 'Session cleared, starting fresh' : '已清空会话历史，开始新对话');
-      case 'memory': return '✅ ' + (isEn ? 'Querying memory...' : '正在查询记忆系统...');
-      case 'history': return '✅ ' + (isEn ? 'Analyzing history...' : '正在分析对话历史...');
+      case 'memory': return '';  // Agent 会异步回复记忆内容
+      case 'history': return '';  // Agent 会异步回复历史分析
       case 'status': return '📊 ' + (isEn ? 'Getting status...' : '正在获取当前状态...');
       default: return `❌ ${isEn ? 'Unknown command' : '未知指令'}: /${commandName}`;
     }
@@ -792,7 +798,7 @@ Use the file_read tool to read the file content.`
       }
     }, 100);
 
-    return isEn ? '✅ Analyzing history...' : '✅ 正在分析对话历史...';
+    return '';
   }
 
   /**
