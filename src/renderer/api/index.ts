@@ -193,6 +193,26 @@ export const api = {
     return { success: true, settings: updatedSettings };
   },
 
+  async addWorkspaceDir(dir: string): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.addWorkspaceDir(dir);
+    const config = await webClient.getConfig();
+    const currentSettings = config.workspace || {};
+    const currentDirs = currentSettings.workspaceDirs || [currentSettings.workspaceDir || ''];
+    const updatedSettings = { ...currentSettings, workspaceDirs: [...currentDirs, dir] };
+    await webClient.updateConfig({ workspace: updatedSettings });
+    return { success: true, settings: updatedSettings };
+  },
+
+  async removeWorkspaceDir(dir: string): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.removeWorkspaceDir(dir);
+    const config = await webClient.getConfig();
+    const currentSettings = config.workspace || {};
+    const currentDirs = (currentSettings.workspaceDirs || []).filter((d: string) => d !== dir);
+    const updatedSettings = { ...currentSettings, workspaceDirs: currentDirs, workspaceDir: currentDirs[0] || '' };
+    await webClient.updateConfig({ workspace: updatedSettings });
+    return { success: true, settings: updatedSettings };
+  },
+
   async launchChromeWithDebug(port: number): Promise<any> {
     if (isElectron()) return (window as any).deepbot.launchChromeWithDebug(port);
     return webClient.post('/api/tools/launch-chrome', { port });

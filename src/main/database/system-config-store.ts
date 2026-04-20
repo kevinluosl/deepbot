@@ -378,6 +378,18 @@ export class SystemConfigStore {
     return WorkspaceConfigModule.setDefaultSkillDir(this.db, newDefaultDir);
   }
 
+  addWorkspaceDir(newDir: string): WorkspaceSettings {
+    return WorkspaceConfigModule.addWorkspaceDir(this.db, newDir);
+  }
+
+  removeWorkspaceDir(dirToRemove: string): WorkspaceSettings {
+    return WorkspaceConfigModule.removeWorkspaceDir(this.db, dirToRemove);
+  }
+
+  saveWorkspaceDirs(workspaceDirs: string[]): void {
+    return WorkspaceConfigModule.saveWorkspaceDirs(this.db, workspaceDirs);
+  }
+
   // ========== 模型配置 ==========
 
   getModelConfig(): ModelConfig | null {

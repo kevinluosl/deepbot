@@ -25,6 +25,7 @@ export function getDefaultWorkspaceSettings(): WorkspaceSettings {
     const imageDir = process.env.IMAGES_DIR || '/data/images';
     return {
       workspaceDir,
+      workspaceDirs: [workspaceDir],
       scriptDir,
       skillDirs: [skillsDir],
       defaultSkillDir: skillsDir,
@@ -34,14 +35,16 @@ export function getDefaultWorkspaceSettings(): WorkspaceSettings {
     };
   }
 
+  const defaultDir = homedir();
   return {
-    workspaceDir: homedir(), // 默认工作目录为用户主目录
+    workspaceDir: defaultDir,
+    workspaceDirs: [defaultDir],
     scriptDir: join(homedir(), '.deepbot', 'scripts'),
     skillDirs: [join(homedir(), '.agents', 'skills')],
     defaultSkillDir: join(homedir(), '.agents', 'skills'),
     imageDir: join(homedir(), '.deepbot', 'generated-images'),
     memoryDir: join(homedir(), '.deepbot', 'memory'),
-    sessionDir: join(homedir(), '.deepbot', 'sessions'), // session 目录
+    sessionDir: join(homedir(), '.deepbot', 'sessions'),
   };
 }
 
@@ -60,12 +63,13 @@ export function getWorkspaceSettings(db: Database.Database): WorkspaceSettings {
   try {
     const values = getKeyValueBatch(db, 'workspace_settings', [
       'workspaceDir',
+      'workspaceDirs',
       'scriptDir',
       'skillDirs',
       'defaultSkillDir',
       'imageDir',
       'memoryDir',
-      'sessionDir' // 🔥 新增
+      'sessionDir'
     ]);
 
     // 解析 skillDirs（JSON 数组）
@@ -73,14 +77,21 @@ export function getWorkspaceSettings(db: Database.Database): WorkspaceSettings {
       ? safeJsonParse<string[]>(values.skillDirs, defaultSettings.skillDirs)
       : defaultSettings.skillDirs;
 
+    // 解析 workspaceDirs（JSON 数组），向后兼容：如果没有 workspaceDirs，用 workspaceDir 构造
+    const workspaceDir = values.workspaceDir || defaultSettings.workspaceDir;
+    const workspaceDirs = values.workspaceDirs
+      ? safeJsonParse<string[]>(values.workspaceDirs, [workspaceDir])
+      : [workspaceDir];
+
     return {
-      workspaceDir: values.workspaceDir || defaultSettings.workspaceDir,
+      workspaceDir: workspaceDirs[0] || workspaceDir,
+      workspaceDirs,
       scriptDir: values.scriptDir || defaultSettings.scriptDir,
       skillDirs,
       defaultSkillDir: values.defaultSkillDir || defaultSettings.defaultSkillDir,
       imageDir: values.imageDir || defaultSettings.imageDir,
       memoryDir: values.memoryDir || defaultSettings.memoryDir,
-      sessionDir: values.sessionDir || defaultSettings.sessionDir, // 🔥 新增
+      sessionDir: values.sessionDir || defaultSettings.sessionDir,
     };
   } catch (error) {
     console.error('获取工作目录配置失败:', error);
@@ -93,12 +104,13 @@ export function getWorkspaceSettings(db: Database.Database): WorkspaceSettings {
  */
 export function saveWorkspaceSettings(db: Database.Database, settings: WorkspaceSettings): void {
   saveWorkspaceDir(db, settings.workspaceDir);
+  saveWorkspaceDirs(db, settings.workspaceDirs);
   saveScriptDir(db, settings.scriptDir);
   saveSkillDirs(db, settings.skillDirs);
   saveDefaultSkillDir(db, settings.defaultSkillDir);
   saveImageDir(db, settings.imageDir);
   saveMemoryDir(db, settings.memoryDir);
-  saveSessionDir(db, settings.sessionDir); // 🔥 新增
+  saveSessionDir(db, settings.sessionDir);
 }
 
 /**
@@ -106,7 +118,18 @@ export function saveWorkspaceSettings(db: Database.Database, settings: Workspace
  */
 function saveWorkspaceDir(db: Database.Database, workspaceDir: string): void {
   setKeyValue(db, 'workspace_settings', 'workspaceDir', workspaceDir);
-  console.info('[SystemConfigStore] ✅ 默认工作目录已保存:', workspaceDir);
+}
+
+/**
+ * 保存工作目录列表
+ */
+export function saveWorkspaceDirs(db: Database.Database, workspaceDirs: string[]): void {
+  setKeyValue(db, 'workspace_settings', 'workspaceDirs', safeJsonStringify(workspaceDirs));
+  // 同步更新 workspaceDir（主工作目录 = 第一个）
+  if (workspaceDirs.length > 0) {
+    setKeyValue(db, 'workspace_settings', 'workspaceDir', workspaceDirs[0]);
+  }
+  console.info('[SystemConfigStore] ✅ 工作目录列表已保存:', workspaceDirs);
 }
 
 /**
@@ -213,6 +236,46 @@ export function setDefaultSkillDir(db: Database.Database, newDefaultDir: string)
   // 设置默认目录
   settings.defaultSkillDir = newDefaultDir;
   saveDefaultSkillDir(db, newDefaultDir);
+  
+  return settings;
+}
+
+
+/**
+ * 添加工作目录
+ */
+export function addWorkspaceDir(db: Database.Database, newDir: string): WorkspaceSettings {
+  const settings = getWorkspaceSettings(db);
+  
+  if (settings.workspaceDirs.includes(newDir)) {
+    throw new Error(`工作目录已存在: ${newDir}`);
+  }
+  
+  settings.workspaceDirs.push(newDir);
+  saveWorkspaceDirs(db, settings.workspaceDirs);
+  settings.workspaceDir = settings.workspaceDirs[0];
+  
+  return settings;
+}
+
+/**
+ * 删除工作目录
+ */
+export function removeWorkspaceDir(db: Database.Database, dirToRemove: string): WorkspaceSettings {
+  const settings = getWorkspaceSettings(db);
+  
+  if (settings.workspaceDirs.length <= 1) {
+    throw new Error('至少需要保留一个工作目录');
+  }
+  
+  const index = settings.workspaceDirs.indexOf(dirToRemove);
+  if (index === -1) {
+    throw new Error(`工作目录不存在: ${dirToRemove}`);
+  }
+  
+  settings.workspaceDirs.splice(index, 1);
+  saveWorkspaceDirs(db, settings.workspaceDirs);
+  settings.workspaceDir = settings.workspaceDirs[0];
   
   return settings;
 }

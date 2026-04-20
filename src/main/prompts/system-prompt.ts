@@ -47,7 +47,7 @@ export async function buildSystemPrompt(params: SystemPromptParams, sessionId?: 
   // 工作目录信息（实时从数据库读取，确保配置修改后立即生效）
   const settings = configStore.getWorkspaceSettings();
   lines.push('## 工作目录', '');
-  lines.push(`- 工作目录: ${settings.workspaceDir}`);
+  lines.push(`- 工作目录: ${settings.workspaceDirs.join(', ')}`);
   lines.push(`- 脚本目录: ${settings.scriptDir}`);
   lines.push(`- 图片目录: ${settings.imageDir}`);
   lines.push(`- 记忆目录: ${settings.memoryDir}`);

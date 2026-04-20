@@ -19,7 +19,7 @@ export function ensureWorkspaceDirectories(): void {
     const settings = store.getWorkspaceSettings();
     
     const directories = [
-      { path: settings.workspaceDir, name: '工作目录' },
+      ...settings.workspaceDirs.map((dir, i) => ({ path: dir, name: i === 0 ? '主工作目录' : `工作目录 ${i + 1}` })),
       { path: settings.scriptDir, name: 'Python 脚本目录' },
       { path: settings.defaultSkillDir, name: '默认 Skill 目录' },
       { path: settings.imageDir, name: '图片生成目录' },

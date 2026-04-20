@@ -596,6 +596,30 @@ function registerIpcHandlers() {
     }
   });
 
+  // 添加工作目录
+  ipcMain.handle(IPC_CHANNELS.ADD_WORKSPACE_DIR, async (_event, { dir }) => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const settings = store.addWorkspaceDir(dir);
+      return { success: true, settings };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
+  // 删除工作目录
+  ipcMain.handle(IPC_CHANNELS.REMOVE_WORKSPACE_DIR, async (_event, { dir }) => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const settings = store.removeWorkspaceDir(dir);
+      return { success: true, settings };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
   // 读取图片并转换为 base64
   ipcMain.handle(IPC_CHANNELS.READ_IMAGE, async (_event, { path: imagePath }) => {
     try {

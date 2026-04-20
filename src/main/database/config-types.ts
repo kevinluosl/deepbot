@@ -19,7 +19,8 @@ export interface EnvironmentConfig {
  * 工作目录配置
  */
 export interface WorkspaceSettings {
-  workspaceDir: string;    // 默认工作目录（必须设置，所有操作限制在此目录及其子目录）
+  workspaceDir: string;    // 主工作目录（向后兼容，等于 workspaceDirs[0]）
+  workspaceDirs: string[]; // 所有工作目录（Electron 支持多个，Docker 固定一个）
   scriptDir: string;       // Python 脚本目录（单一路径）
   skillDirs: string[];     // Skill 目录列表（支持多个路径）
   defaultSkillDir: string; // 默认 Skill 目录

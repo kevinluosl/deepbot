@@ -18,12 +18,13 @@ interface WorkspaceConfigProps {
 
 interface WorkspaceSettings {
   workspaceDir: string;
+  workspaceDirs: string[];
   scriptDir: string;
   skillDirs: string[];
   defaultSkillDir: string;
   imageDir: string;
   memoryDir: string;
-  sessionDir: string; // 🔥 新增
+  sessionDir: string;
 }
 
 export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
@@ -31,6 +32,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
 
   const [settings, setSettings] = useState<WorkspaceSettings>({
     workspaceDir: '',
+    workspaceDirs: [],
     scriptDir: '',
     skillDirs: [],
     defaultSkillDir: '',
@@ -40,6 +42,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
   });
   const [defaultSettings, setDefaultSettings] = useState<WorkspaceSettings>({
     workspaceDir: '',
+    workspaceDirs: [],
     scriptDir: '',
     skillDirs: [],
     defaultSkillDir: '',
@@ -95,12 +98,20 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       ]);
       
       if (settingsResult.success && settingsResult.settings) {
-        setSettings(settingsResult.settings);
+        // 向后兼容：旧配置可能没有 workspaceDirs
+        const s = settingsResult.settings;
+        if (!s.workspaceDirs) {
+          s.workspaceDirs = s.workspaceDir ? [s.workspaceDir] : [];
+        }
+        setSettings(s);
       }
       
       if (defaultResult.success && defaultResult.settings) {
-        setDefaultSettings(defaultResult.settings);
-        // 检测 Docker 模式
+        const ds = defaultResult.settings;
+        if (!ds.workspaceDirs) {
+          ds.workspaceDirs = ds.workspaceDir ? [ds.workspaceDir] : [];
+        }
+        setDefaultSettings(ds);
         if (defaultResult.isDocker) {
           setIsDocker(true);
         }
@@ -110,30 +121,6 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       showToast('error', lang === 'zh' ? '加载配置失败' : 'Failed to load config');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSaveWorkspaceDir = async () => {
-    if (!settings.workspaceDir.trim()) {
-      showToast('error', lang === 'zh' ? '默认工作目录不能为空' : 'Default workspace directory cannot be empty');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const result = await api.saveWorkspaceSettings(settings);
-      
-      if (result.success) {
-        showToast('success', lang === 'zh' ? '默认工作目录已保存' : 'Default workspace directory saved');
-        clearDirty('workspaceDir');
-      } else {
-        showToast('error', result.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
-      }
-    } catch (error) {
-      console.error('保存默认工作目录失败:', error);
-      showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -243,18 +230,6 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
       showToast('error', lang === 'zh' ? '设置失败' : 'Set failed');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleResetWorkspaceDir = async () => {
-    try {
-      const result = await api.getDefaultWorkspaceSettings();
-      if (result.success && result.settings) {
-        setSettings({ ...settings, workspaceDir: result.settings.workspaceDir });
-        markDirty('workspaceDir');
-      }
-    } catch (error) {
-      showToast('error', lang === 'zh' ? '获取默认路径失败' : 'Failed to get default path');
     }
   };
 
@@ -384,54 +359,158 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
         </div>
       )}
 
-      {/* 默认工作目录 - 放在第一个位置 */}
+      {/* 工作目录 */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          {lang === 'zh' ? '默认工作目录' : 'Default Workspace Directory'} <span className="text-red-500">*</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-gray-700">
+            {lang === 'zh' ? '工作目录' : 'Workspace Directories'} <span className="text-red-500">*</span>
+          </label>
+        </div>
         <p className="text-xs text-gray-500 mb-2">
           {lang === 'zh'
-            ? '所有文件操作（读写、执行命令等）将限制在此目录及其子目录内，必须设置'
-            : 'All file operations (read/write, commands, etc.) are restricted to this directory and its subdirectories. Required.'}
+            ? 'AI 只能操作这些目录及其子目录内的文件，支持配置多个工作目录'
+            : 'AI can only access files within these directories and their subdirectories. Multiple directories supported.'}
         </p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={settings.workspaceDir}
-            onChange={(e) => { setSettings({ ...settings, workspaceDir: e.target.value }); markDirty('workspaceDir'); }}
-            disabled={isDocker}
-            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            placeholder={defaultSettings.workspaceDir || '~/'}
-            required
-          />
-          {isElectron() && !isDocker && (
+
+        {/* 主工作目录（可编辑） */}
+        <div className="space-y-1">
+          <span className="text-xs text-blue-500">{lang === 'zh' ? '主工作目录' : 'Primary Directory'}</span>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={settings.workspaceDirs[0] || ''}
+              onChange={(e) => {
+                const newDirs = [...settings.workspaceDirs];
+                newDirs[0] = e.target.value;
+                setSettings({ ...settings, workspaceDirs: newDirs, workspaceDir: e.target.value });
+                markDirty('workspaceDir');
+              }}
+              disabled={isDocker}
+              className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              placeholder={defaultSettings.workspaceDir || '~/'}
+              required
+            />
+            {isElectron() && !isDocker && (
+              <button
+                onClick={async () => {
+                  const result = await api.selectFolder();
+                  if (result.success && result.path) {
+                    const newDirs = [...settings.workspaceDirs];
+                    newDirs[0] = result.path;
+                    setSettings({ ...settings, workspaceDirs: newDirs, workspaceDir: result.path });
+                    markDirty('workspaceDir');
+                  }
+                }}
+                className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap"
+              >
+                {lang === 'zh' ? '浏览' : 'Browse'}
+              </button>
+            )}
             <button
-              onClick={() => handleBrowse('workspaceDir')}
-              className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors whitespace-nowrap"
+              onClick={async () => {
+                try {
+                  const result = await api.getDefaultWorkspaceSettings();
+                  if (result.success && result.settings) {
+                    const defaultDir = result.settings.workspaceDir || result.settings.workspaceDirs?.[0] || '';
+                    const newDirs = [...settings.workspaceDirs];
+                    newDirs[0] = defaultDir;
+                    setSettings({ ...settings, workspaceDirs: newDirs, workspaceDir: defaultDir });
+                    markDirty('workspaceDir');
+                  }
+                } catch {
+                  showToast('error', lang === 'zh' ? '获取默认路径失败' : 'Failed to get default path');
+                }
+              }}
+              disabled={isDocker}
+              className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {lang === 'zh' ? '浏览' : 'Browse'}
+              {lang === 'zh' ? '重置' : 'Reset'}
             </button>
-          )}
-          <button
-            onClick={handleResetWorkspaceDir}
-            disabled={isDocker}
-            className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {lang === 'zh' ? '重置' : 'Reset'}
-          </button>
-          {dirtyFields.has('workspaceDir') && (
-            <button
-              onClick={handleSaveWorkspaceDir}
-              disabled={saving || !settings.workspaceDir.trim() || isDocker}
-              className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存' : 'Save')}
-            </button>
-          )}
+            {dirtyFields.has('workspaceDir') && (
+              <button
+                onClick={async () => {
+                  try {
+                    setSaving(true);
+                    await api.saveWorkspaceSettings(settings);
+                    showToast('success', lang === 'zh' ? '主工作目录已保存' : 'Primary workspace directory saved');
+                    clearDirty('workspaceDir');
+                  } catch {
+                    showToast('error', lang === 'zh' ? '保存失败' : 'Save failed');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={saving || !(settings.workspaceDirs[0] || '').trim() || isDocker}
+                className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {saving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存' : 'Save')}
+              </button>
+            )}
+          </div>
         </div>
-        <p className="text-xs text-gray-400">
-          {lang === 'zh' ? '默认' : 'Default'}：{defaultSettings.workspaceDir || (lang === 'zh' ? '用户主目录' : 'Home directory')}
-        </p>
+
+        {/* 额外工作目录列表 */}
+        {settings.workspaceDirs.length > 1 && (
+          <div className="space-y-2 mt-2">
+            <span className="text-xs text-gray-500">{lang === 'zh' ? '额外工作目录' : 'Additional Directories'}</span>
+            {settings.workspaceDirs.slice(1).map((dir) => (
+              <div key={dir} className="flex items-center gap-2 bg-gray-50 rounded-md px-3 py-2">
+                <span className="flex-1 text-sm text-gray-700 truncate" title={dir}>{dir}</span>
+                {!isDocker && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await api.removeWorkspaceDir(dir);
+                        if (res.success) {
+                          const newDirs = res.settings.workspaceDirs || [];
+                          setSettings({ ...settings, workspaceDirs: newDirs, workspaceDir: newDirs[0] || '' });
+                          showToast('success', lang === 'zh' ? '工作目录已删除' : 'Workspace directory removed');
+                        } else {
+                          showToast('error', res.error || (lang === 'zh' ? '删除失败' : 'Failed to remove'));
+                        }
+                      } catch {
+                        showToast('error', lang === 'zh' ? '删除失败' : 'Failed to remove');
+                      }
+                    }}
+                    className="text-red-400 hover:text-red-600 transition-colors"
+                    title={lang === 'zh' ? '删除' : 'Remove'}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 添加额外目录按钮 */}
+        {!isDocker && (
+          <button
+            onClick={async () => {
+              if (isElectron()) {
+                const result = await api.selectFolder();
+                if (result?.path) {
+                  try {
+                    const res = await api.addWorkspaceDir(result.path);
+                    if (res.success) {
+                      const newDirs = res.settings.workspaceDirs || [];
+                      setSettings({ ...settings, workspaceDirs: newDirs, workspaceDir: newDirs[0] || '' });
+                      showToast('success', lang === 'zh' ? '工作目录已添加' : 'Workspace directory added');
+                    } else {
+                      showToast('error', res.error || (lang === 'zh' ? '添加失败' : 'Failed to add'));
+                    }
+                  } catch {
+                    showToast('error', lang === 'zh' ? '添加失败' : 'Failed to add');
+                  }
+                }
+              }
+            }}
+            className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+          >
+            + {lang === 'zh' ? '添加工作目录' : 'Add Directory'}
+          </button>
+        )}
+
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-2">
           <div className="flex">
             <svg className="w-5 h-5 text-yellow-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -442,7 +521,7 @@ export function WorkspaceConfig({ onClose }: WorkspaceConfigProps) {
               <p>
                 {lang === 'zh'
                   ? '为了安全，AI 只能操作工作目录及其子目录内的文件，无法访问其他目录'
-                  : 'For security, AI can only access files within the workspace directory and its subdirectories.'}
+                  : 'For security, AI can only access files within the workspace directories and their subdirectories.'}
               </p>
             </div>
           </div>

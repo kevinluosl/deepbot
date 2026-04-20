@@ -31,6 +31,8 @@ const IPC_CHANNELS = {
   ADD_SKILL_DIR: 'workspace:add-skill-dir',
   REMOVE_SKILL_DIR: 'workspace:remove-skill-dir',
   SET_DEFAULT_SKILL_DIR: 'workspace:set-default-skill-dir',
+  ADD_WORKSPACE_DIR: 'workspace:add-workspace-dir',
+  REMOVE_WORKSPACE_DIR: 'workspace:remove-workspace-dir',
   READ_IMAGE: 'image:read',
   UPLOAD_IMAGE: 'image:upload',
   UPLOAD_FILE: 'file:upload',
@@ -127,6 +129,14 @@ contextBridge.exposeInMainWorld('deepbot', {
 
   setDefaultSkillDir: (dir: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SET_DEFAULT_SKILL_DIR, { dir });
+  },
+
+  addWorkspaceDir: (dir: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.ADD_WORKSPACE_DIR, { dir });
+  },
+
+  removeWorkspaceDir: (dir: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.REMOVE_WORKSPACE_DIR, { dir });
   },
 
   // 读取图片

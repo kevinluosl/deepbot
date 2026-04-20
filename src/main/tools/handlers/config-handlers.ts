@@ -88,6 +88,7 @@ export async function handleGetConfig(
 export async function handleSetWorkspaceConfig(
   params: Partial<{
     workspaceDir: string;
+    workspaceDirs: string[];
     scriptDir: string;
     skillDirs: string[];
     defaultSkillDir: string;
@@ -110,6 +111,7 @@ export async function handleSetWorkspaceConfig(
     // 合并配置
     const newSettings = {
       workspaceDir: params.workspaceDir || currentSettings.workspaceDir,
+      workspaceDirs: params.workspaceDirs || currentSettings.workspaceDirs,
       scriptDir: params.scriptDir || currentSettings.scriptDir,
       skillDirs: params.skillDirs || currentSettings.skillDirs,
       defaultSkillDir: params.defaultSkillDir || currentSettings.defaultSkillDir,

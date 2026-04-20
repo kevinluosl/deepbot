@@ -35,7 +35,7 @@ export function getAllowedDirectories(): string[] {
   const extraDir = getDbDir();
 
   const dirs = [
-    path.resolve(settings.workspaceDir),
+    ...settings.workspaceDirs.map(dir => path.resolve(dir)),
     path.resolve(extraDir),
     path.resolve(settings.scriptDir),
     ...settings.skillDirs.map(dir => path.resolve(dir)),
@@ -124,7 +124,7 @@ export function assertPathAllowed(filePath: string): void {
         ? `Security restriction: Can only access files within configured directories\n` +
           `Allowed directories:\n` +
           `  - Default workspace: ${extraDir}\n` +
-          `  - User workspace: ${settings.workspaceDir}\n` +
+          `  - Workspace directories: ${settings.workspaceDirs.join(', ')}\n` +
           `  - Script directory: ${settings.scriptDir}\n` +
           `  - Skill directories: ${settings.skillDirs.join(', ')}\n` +
           `  - Image directory: ${settings.imageDir}\n` +
@@ -136,7 +136,7 @@ export function assertPathAllowed(filePath: string): void {
         : `安全限制：只能访问配置的目录及其子目录内的文件\n` +
           `允许的目录：\n` +
           `  - 默认工作目录: ${extraDir}\n` +
-          `  - 用户工作目录: ${settings.workspaceDir}\n` +
+          `  - 工作目录: ${settings.workspaceDirs.join(', ')}\n` +
           `  - 脚本目录: ${settings.scriptDir}\n` +
           `  - Skill 目录: ${settings.skillDirs.join(', ')}\n` +
           `  - 图片目录: ${settings.imageDir}\n` +
