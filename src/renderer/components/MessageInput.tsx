@@ -81,6 +81,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
     { name: 'merge-memory', description: lang === 'zh' ? '合并其他 Tab 的记忆（用法：/merge-memory Tab名称）' : 'Merge memory from another Tab (usage: /merge-memory Tab name)' },
     { name: 'clone', description: lang === 'zh' ? '克隆其他 Tab 的历史和记忆（用法：/clone Tab名称）' : 'Clone history and memory from another Tab (usage: /clone Tab name)' },
     { name: 'history', description: lang === 'zh' ? '查看对话历史统计' : 'View conversation history stats' },
+    { name: 'reload-path', description: lang === 'zh' ? '刷新环境变量（外部安装工具后使用）' : 'Reload PATH environment variables' },
     ...(isConnectorTab ? [{ name: 'stop', description: lang === 'zh' ? '停止当前正在执行的任务' : 'Stop the current running task' }] : []),
   ];
 

@@ -4,7 +4,7 @@
  * 职责：
  * - 从登录 shell 获取完整的环境变量（PATH + 用户自定义变量）
  * - 解决 Electron 主进程环境变量不完整的问题（macOS Dock 启动时不加载 .zshrc）
- * - 支持 /reload-env 指令刷新缓存
+ * - 支持 /reload-path 指令刷新缓存
  */
 
 import { execFileSync } from 'node:child_process';
@@ -327,7 +327,7 @@ export function getShellPathFromLoginShell(opts: {
 }
 
 /**
- * 重置缓存（/reload-env 指令调用）
+ * 重置缓存（/reload-path 指令调用）
  */
 export function resetShellPathCache(): void {
   cachedShellPath = undefined;

@@ -62,7 +62,7 @@ export const commandToolPlugin: ToolPlugin = {
                 content: [
                   {
                     type: 'text' as const,
-                    text: `❌ 未知指令: /${command}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /reload-env - 刷新环境变量`,
+                    text: `❌ 未知指令: /${command}\n\n可用指令：\n- /new - 清空当前会话历史，开始新对话\n- /reload-path - 刷新环境变量`,
                   },
                 ],
                 details: {

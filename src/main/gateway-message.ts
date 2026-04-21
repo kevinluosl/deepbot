@@ -88,7 +88,7 @@ export class GatewayMessageHandler {
     const commandMatch = content.trim().match(/^\/([\w-]+)(?:\s+(.*))?$/);
     if (commandMatch) {
       const [, commandName, commandArgs] = commandMatch;
-      const supportedCommands = ['new', 'memory', 'history', 'reload-env', 'merge-memory', 'clone'];
+      const supportedCommands = ['new', 'memory', 'history', 'reload-path', 'merge-memory', 'clone'];
       
       if (supportedCommands.includes(commandName.toLowerCase())) {
         console.log(`[MessageHandler] 🎯 检测到系统命令: /${commandName}，直接执行`);

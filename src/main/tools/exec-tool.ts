@@ -395,7 +395,7 @@ function wrapBashToolWithCommandCheck(tool: AgentTool, shellPath: string): Agent
         checkCommandPathSecurity(command);
       }
       
-      // 🔥 应用完整的 shell 环境变量（动态获取，支持 /reload-env 刷新）
+      // 🔥 应用完整的 shell 环境变量（动态获取，支持 /reload-path 刷新）
       if (record && !record.env) {
         const env = { ...getShellEnvFromLoginShell({ env: process.env, timeoutMs: 15_000 }) };
         record.env = env;
@@ -481,7 +481,7 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
         // 命令安全检查（危险命令 + 阻塞命令 + 路径安全）已在外层 wrapBashToolWithCommandCheck 中统一处理
         // 这里只负责执行逻辑
         
-        // 🔥 使用完整的 shell 环境变量（每次动态获取，支持 /reload-env 刷新）
+        // 🔥 使用完整的 shell 环境变量（每次动态获取，支持 /reload-path 刷新）
         const env: Record<string, string> = { ...getShellEnvFromLoginShell({ env: process.env, timeoutMs: 15_000 }) };
         
         // 🔥 Windows 中文编码处理：设置代码页为 UTF-8
