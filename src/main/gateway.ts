@@ -772,8 +772,8 @@ export class Gateway {
    * @param commandArgs - 命令参数（可选）
    * @param sessionId - 会话 ID
    */
-  private async executeSystemCommand(commandName: string, commandArgs: string | undefined, sessionId: string): Promise<void> {
-    await this.connectorHandler.executeSystemCommand(commandName, commandArgs, sessionId);
+  private async executeSystemCommand(commandName: string, commandArgs: string | undefined, sessionId: string): Promise<string> {
+    return await this.connectorHandler.executeSystemCommand(commandName, commandArgs, sessionId);
   }
 
 }

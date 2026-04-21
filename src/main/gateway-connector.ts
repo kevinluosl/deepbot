@@ -61,7 +61,7 @@ export class GatewayConnectorHandler {
   private sendAIResponseFn: ((runtime: AgentRuntime, message: string, sessionId: string, sentAt?: number) => Promise<void>) | null = null;
   private sendErrorFn: ((error: string, sessionId?: string) => void) | null = null;
   private resetSessionRuntimeFn: ((sessionId: string, options: { reason?: string; recreate?: boolean }) => Promise<AgentRuntime | null>) | null = null;
-  private executeSystemCommandFn: ((commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<void>) | null = null;
+  private executeSystemCommandFn: ((commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<string>) | null = null;
 
   constructor() {}
 
@@ -78,7 +78,7 @@ export class GatewayConnectorHandler {
     sendAIResponse: (runtime: AgentRuntime, message: string, sessionId: string, sentAt?: number) => Promise<void>;
     sendError: (error: string, sessionId?: string) => void;
     resetSessionRuntime: (sessionId: string, options: { reason?: string; recreate?: boolean }) => Promise<AgentRuntime | null>;
-    executeSystemCommand: (commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<void>;
+    executeSystemCommand: (commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<string>;
   }): void {
     this.mainWindow = deps.mainWindow;
     this.connectorManager = deps.connectorManager;
@@ -236,19 +236,16 @@ export class GatewayConnectorHandler {
           }
 
           // 其他系统指令正常处理
-          await this.executeSystemCommandFn(commandName, commandArgs, tab.id);
+          const resultText = await this.executeSystemCommandFn(commandName, commandArgs, tab.id);
           logger.info('✅ 系统指令已执行');
 
           // connector tab 的系统指令需要把结果回复给用户
           // （executeSystemCommand 只发到前端 UI，connector 用户看不到）
-          if (tab.type === 'connector') {
-            const reply = this.getSystemCommandReply(commandName);
-            if (reply) {
-              try {
-                await this.sendResponseToConnector(tab.id, reply);
-              } catch (replyError) {
-                logger.error('❌ 回复系统指令结果失败:', replyError);
-              }
+          if (tab.type === 'connector' && resultText) {
+            try {
+              await this.sendResponseToConnector(tab.id, resultText);
+            } catch (replyError) {
+              logger.error('❌ 回复系统指令结果失败:', replyError);
             }
           }
           return;
@@ -511,10 +508,10 @@ export class GatewayConnectorHandler {
   /**
    * 执行系统命令
    */
-  async executeSystemCommand(commandName: string, commandArgs: string | undefined, sessionId: string): Promise<void> {
+  async executeSystemCommand(commandName: string, commandArgs: string | undefined, sessionId: string): Promise<string> {
     if (!this.sendErrorFn) {
       logger.error('sendError 未设置');
-      return;
+      return '';
     }
 
     const messageId = generateMessageId();
@@ -583,9 +580,12 @@ export class GatewayConnectorHandler {
           sessionId,
         });
       }
+
+      return resultText;
     } catch (error) {
       logger.error(`❌ 执行系统命令失败: /${commandName}`, error);
       this.sendErrorFn(`执行命令失败: ${getErrorMessage(error)}`, sessionId);
+      return '';
     }
   }
 
@@ -651,21 +651,6 @@ export class GatewayConnectorHandler {
     }, 100);
 
     return '';
-  }
-
-  /**
-   * 获取系统指令的简短回复文本（用于 connector 回复用户）
-   */
-  private getSystemCommandReply(commandName: string): string {
-    const isEn = SystemConfigStore.getInstance().getAppSetting('language') === 'en';
-    switch (commandName.toLowerCase()) {
-      case 'stop': return '⏹️ ' + (isEn ? 'Task stopped' : '任务已停止');
-      case 'new': return '✅ ' + (isEn ? 'Session cleared, starting fresh' : '已清空会话历史，开始新对话');
-      case 'memory': return '';  // Agent 会异步回复记忆内容
-      case 'history': return '';  // Agent 会异步回复历史分析
-      case 'status': return '📊 ' + (isEn ? 'Getting status...' : '正在获取当前状态...');
-      default: return `❌ ${isEn ? 'Unknown command' : '未知指令'}: /${commandName}`;
-    }
   }
 
   /**

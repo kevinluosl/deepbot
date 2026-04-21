@@ -39,7 +39,7 @@ export class GatewayMessageHandler {
   // 回调函数
   private getOrCreateRuntimeFn: ((sessionId: string) => AgentRuntime) | null = null;
   private resetSessionRuntimeFn: ((sessionId: string, options: { reason?: string; recreate?: boolean }) => Promise<AgentRuntime | null>) | null = null;
-  private executeSystemCommandFn: ((commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<void>) | null = null;
+  private executeSystemCommandFn: ((commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<string>) | null = null;
   private sendResponseToConnectorFn: ((tabId: string, response: string) => Promise<void>) | null = null;
   
   constructor() {}
@@ -52,7 +52,7 @@ export class GatewayMessageHandler {
     sessionManager: SessionManager | null;
     getOrCreateRuntime: (sessionId: string) => AgentRuntime;
     resetSessionRuntime: (sessionId: string, options: { reason?: string; recreate?: boolean }) => Promise<AgentRuntime | null>;
-    executeSystemCommand: (commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<void>;
+    executeSystemCommand: (commandName: string, commandArgs: string | undefined, sessionId: string) => Promise<string>;
     sendResponseToConnector: (tabId: string, response: string) => Promise<void>;
   }): void {
     this.mainWindow = deps.mainWindow;
