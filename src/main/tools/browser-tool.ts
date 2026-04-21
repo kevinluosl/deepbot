@@ -749,14 +749,17 @@ export const browserToolPlugin: ToolPlugin = {
                   fullPage,
                 });
                 
+                // Windows 路径转正斜杠，避免 Markdown 渲染时反斜杠被当作转义字符
+                const displayPath = path.replace(/\\/g, '/');
+                
                 return {
                   content: [{
                     type: 'text',
-                    text: `✅ 截图已保存: ${path}${fullPage ? ' (完整页面)' : ' (可见区域)'}`,
+                    text: `✅ 截图已保存: ${displayPath}${fullPage ? ' (完整页面)' : ' (可见区域)'}`,
                   }],
                   details: {
                     success: true,
-                    path,
+                    path: displayPath,
                     fullPage,
                   },
                 };

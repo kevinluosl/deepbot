@@ -306,6 +306,8 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
 
         // 保存图片（使用配置的输出目录）
         const savedPath = saveImage(imageData, mimeType, outputDir, params.outputPath);
+        // Windows 路径转正斜杠，避免 Markdown 渲染时反斜杠被当作转义字符
+        const displayPath = savedPath.replace(/\\/g, '/');
 
         console.log('[Image Generation] ✅ 图片生成成功');
         console.log(`   保存路径: ${savedPath}`);
@@ -316,7 +318,7 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
             success: true,
             action: 'generate',
             provider: toolConfig.provider,
-            path: savedPath,
+            path: displayPath,
             aspectRatio: params.aspectRatio || '16:9',
             resolution: params.resolution || '1K',
             referenceCount: params.referenceImages?.length || 0,
@@ -329,7 +331,7 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
                 action: 'generate',
                 provider: toolConfig.provider,
                 message: '图片生成成功，显示图片预览时，必须使用path中的完整路径作为图片路径，禁止只显示图片的名字',
-                path: savedPath,
+                path: displayPath,
                 aspectRatio: params.aspectRatio || '16:9',
                 resolution: params.resolution || '1K',
                 referenceCount: params.referenceImages?.length || 0,

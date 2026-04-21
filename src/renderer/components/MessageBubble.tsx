@@ -59,7 +59,8 @@ const ImageLoader: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
     }
     
     // 3. 处理相对路径（相对于用户目录）
-    if (!filePath.startsWith('/') && !filePath.startsWith('~')) {
+    // Windows 绝对路径以盘符开头（如 C:\ 或 C:/），不需要加前缀
+    if (!filePath.startsWith('/') && !filePath.startsWith('~') && !/^[A-Za-z]:[/\\]/.test(filePath)) {
       filePath = `~/${filePath}`;
     }
     
