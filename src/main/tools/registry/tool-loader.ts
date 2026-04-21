@@ -30,6 +30,7 @@ import { chatToolPlugin } from '../chat-tool';
 import { emailToolPlugin } from '../email-tool';
 import { apiToolPlugin } from '../api-tool';
 import { connectorToolPlugin } from '../connector-tool';
+import { wechatToolPlugin } from '../wechat-tool';
 import { crossTabCallToolPlugin } from '../cross-tab-call-tool';
 import { commandToolPlugin } from '../command-tool';
 import { feishuDocToolPlugin } from '../feishu-doc-tool';
@@ -183,6 +184,9 @@ export class ToolLoader {
       
       // 连接器工具（在连接器会话中发送图片和文件）
       tools.push(...await resolvePluginTools(connectorToolPlugin.create(pluginOpts)));
+      
+      // 微信工具
+      tools.push(...await resolvePluginTools(wechatToolPlugin.create(pluginOpts)));
       
       // 跨 Tab 调用工具（多 Agent 协作）
       tools.push(...await resolvePluginTools(crossTabCallToolPlugin.create(pluginOpts)));

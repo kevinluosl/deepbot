@@ -163,8 +163,11 @@ export class GatewayConnectorHandler {
             const senderName = message.source.senderName || '';
             title = senderName ? `FS-${senderName}` : 'feishu';
           }
+        } else if (message.source.connectorId === 'wechat') {
+          const existingWxTabs = this.tabManager.getAllTabs().filter(t => t.title?.startsWith('WX-'));
+          const nextNum = existingWxTabs.length + 1;
+          title = `WX-用户${nextNum}`;
         } else {
-          // 其他连接器使用 connectorId
           title = message.source.connectorId || 'unknown';
         }
         
@@ -319,38 +322,53 @@ export class GatewayConnectorHandler {
 
     // 根据消息类型构建正文
     if (message.content.type === 'image' && message.content.imagePath) {
-      content = `[系统通知: 用户发送了一张图片]\n\n图片已自动下载并保存到: ${message.content.imagePath}\n\n请立即回复用户:\n1. 确认收到图片\n2. 告知图片保存位置\n3. 询问用户需要对图片做什么操作`;
+      content = `[系统提示: 用户发送了一张图片\n\n图片已自动下载并保存到: ${message.content.imagePath}\n\n请立即回复用户:\n1. 确认收到图片\n2. 告知图片保存位置\n3. 询问用户需要对图片做什么操作；不要调用其他任何工具]`;
       displayContent = `[收到图片]`;
+    } else if (message.content.type === 'video' && message.content.filePath) {
+      const fileName = message.content.fileName || '未知视频';
+      content = `[系统提示: 用户发送了一个视频\n\n文件名: ${fileName}\n视频已自动下载并保存到: ${message.content.filePath}\n\n请立即回复用户:\n1. 确认收到视频\n2. 告知视频保存位置\n3. 询问用户需要对视频做什么操作；不要调用其他任何工具]`;
+      displayContent = `[收到视频]`;
     } else if (message.content.type === 'file' && message.content.filePath) {
       const fileName = message.content.fileName || '未知文件';
-      content = `[系统通知: 用户发送了文件]\n\n文件名: ${fileName}\n文件已自动下载并保存到: ${message.content.filePath}\n\n请立即回复用户:\n1. 确认收到文件\n2. 告知文件保存位置\n3. 询问用户需要对文件做什么操作`;
+      content = `[系统提示: 用户发送了文件\n\n文件名: ${fileName}\n文件已自动下载并保存到: ${message.content.filePath}\n\n请立即回复用户:\n1. 确认收到文件\n2. 告知文件保存位置\n3. 询问用户需要对文件做什么操作；不要调用其他任何工具]`;
       displayContent = `[收到文件]`;
     } else {
       displayContent = content;
     }
 
-    // 飞书专用工具提示（固定注入）
-    const feishuToolsHint = `\n\n[系统提示: 这是飞书通讯会话，除了系统的工具，你还可以根据用户的需求使用以下专用工具:
-- connector_send_image: 发送图片给对方
-- connector_send_file: 发送文件给对方
+    // 连接器专用工具提示（根据连接器类型注入）
+    let connectorToolsHint = '';
+    if (message.source.connectorId === 'feishu') {
+      connectorToolsHint = `\n\n[系统提示: 这是飞书通讯会话，除了系统的工具，你还可以根据用户的需求使用以下专用工具:
+- feishu_send_image: 发送图片给对方
+- feishu_send_file: 发送文件给对方
 - feishu_doc_create: 创建飞书云文档（参数: title, folder_token?）
 - feishu_doc_get: 获取文档信息和纯文本内容（参数: document_id）
-- feishu_doc_get_blocks: 获取文档所有块列表，更新/删除块前先调用此工具获取 block_id（参数: document_id）
+- feishu_doc_get_blocks: 获取文档所有块列表（参数: document_id）
 - feishu_doc_update_block: 更新指定块的文本内容（参数: document_id, block_id, content）
-- feishu_doc_delete_blocks: 删除文档中指定范围的块（参数: document_id, start_index, end_index，parent_block_id 可选默认同 document_id）
-- feishu_doc_delete_file: 永久删除整篇文档文件，不可恢复（参数: document_id）
+- feishu_doc_delete_blocks: 删除文档中指定范围的块（参数: document_id, start_index, end_index）
+- feishu_doc_delete_file: 永久删除整篇文档文件（参数: document_id）
 - feishu_doc_add_comment: 在文档中添加评论（参数: document_id, content）
 - feishu_drive_download: 下载飞书云空间文件到本地（参数: file_token, file_name?）
-- feishu_doc_insert_rich_blocks: 将 Markdown/HTML 内容转换为丰富格式文档块并插入文档，支持标题、表格、列表、代码块、引用、图片等（参数: document_id, content, content_type?, index?, parent_block_id?）
+- feishu_doc_insert_rich_blocks: 将 Markdown/HTML 内容插入文档（参数: document_id, content）
 
 注意：
 1. feishu_doc_add_comment 是添加文档评论，不是追加正文内容
-2. 不要用markdown格式回复内容，不要使用表格回复内容，飞书只能接收无格式的的字符，除非需要创建飞书文档
+2. 不要用markdown格式回复内容，飞书只能接收无格式的字符，除非需要创建飞书文档
 3. 回复的内容超过1000个字，创建飞书文档回复
-4. 创建飞书文档时，使用 feishu_doc_insert_rich_blocks 插入丰富格式内容（Markdown）
+4. 创建飞书文档时，使用 feishu_doc_insert_rich_blocks 插入丰富格式内容
 5. 回复的时候根据回复的内容，带上用户的名字
-6. 来自信息中包含了发送信息的用户的姓名，群消息还包含群名称，收到消息中的“我”就是发送者，如果当前信息来自群，“我”指代群本身。执行任务时需要用正确名称代替。
+6. 来自信息中包含了发送信息的用户的姓名，群消息还包含群名称
 7. 不要使用 feishu_send_message 工具回复，除非收到明确指令要给具体目标发送消息]`;
+    } else if (message.source.connectorId === 'wechat') {
+      connectorToolsHint = `\n\n[系统提示: 这是微信通讯会话，除了系统的工具，你还可以根据用户的需求使用以下专用工具:
+- wechat_send_image: 发送图片给对方
+- wechat_send_file: 发送文件给对方
+
+注意：
+1. 不要用markdown格式回复内容，微信只能接收纯文本
+2. 禁止使用 wechat_send_message 工具]`;
+    }
 
     // 额外系统通知（由连接器按需注入，如首次管理员授权提示）
     const extraNotice = message.systemContext ? `\n\n${message.systemContext}` : '';
@@ -362,7 +380,7 @@ export class GatewayConnectorHandler {
     } else {
       sourceLabel = `发送信息者：${senderName}`;
     }
-    const contentForAgent = `[来自: ${sourceLabel}]\n${content}${feishuToolsHint}${extraNotice}`;
+    const contentForAgent = `[来自: ${sourceLabel}]\n${content}${connectorToolsHint}${extraNotice}`;
 
     return { contentForAgent, displayContent };
   }

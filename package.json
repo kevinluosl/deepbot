@@ -1,6 +1,6 @@
 {
   "name": "deepbot",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "DeepBot - 系统级 AI 助手，专注企业生产提效",
   "main": "dist-electron/main/index.js",
   "author": "K Luo",
@@ -74,6 +74,7 @@
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
     "ws": "^8.19.0",
+    "@wechatbot/wechatbot": "^2.1.1",
     "zod": "^3.22.0",
     "zustand": "^4.4.0"
   },

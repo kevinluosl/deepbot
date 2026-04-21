@@ -61,9 +61,14 @@ export const TOOL_NAMES = {
   API_GET_DATETIME: 'api_get_datetime',
   
   // 连接器工具
-  CONNECTOR_SEND_IMAGE: 'connector_send_image',
-  CONNECTOR_SEND_FILE: 'connector_send_file',
+  FEISHU_SEND_IMAGE: 'feishu_send_image',
+  FEISHU_SEND_FILE: 'feishu_send_file',
   FEISHU_SEND_MESSAGE: 'feishu_send_message',
+
+  // 微信工具
+  WECHAT_SEND_MESSAGE: 'wechat_send_message',
+  WECHAT_SEND_IMAGE: 'wechat_send_image',
+  WECHAT_SEND_FILE: 'wechat_send_file',
   
   // 飞书云文档工具
   FEISHU_DOC_CREATE: 'feishu_doc_create',

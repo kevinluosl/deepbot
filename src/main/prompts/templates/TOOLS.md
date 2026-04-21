@@ -1308,8 +1308,8 @@ cp ~/path/to/my\ file.txt ~/another/path/
 
 ### 工具列表
 - `feishu_send_message` - 向已配对的飞书用户发送文本消息
-- `connector_send_image` - 向飞书用户发送图片
-- `connector_send_file` - 向飞书用户发送文件
+- `feishu_send_image` - 向飞书用户发送图片
+- `feishu_send_file` - 向飞书用户发送文件
 
 ### 核心原则
 
@@ -1359,7 +1359,7 @@ cp ~/path/to/my\ file.txt ~/another/path/
 **2. 发送图片给指定用户（普通 Tab）**
 ```json
 {
-  "tool": "connector_send_image",
+  "tool": "feishu_send_image",
   "imagePath": "~/path/to/report.png",
   "caption": "本周数据报告",
   "userId": "ou_xxxxxxxx"
@@ -1369,7 +1369,7 @@ cp ~/path/to/my\ file.txt ~/another/path/
 **3. 发送文件给指定用户（普通 Tab）**
 ```json
 {
-  "tool": "connector_send_file",
+  "tool": "feishu_send_file",
   "filePath": "~/path/to/report.xlsx",
   "userId": "ou_xxxxxxxx"
 }
@@ -1378,7 +1378,7 @@ cp ~/path/to/my\ file.txt ~/another/path/
 **4. 在飞书会话中直接发送（无需 userId）**
 ```json
 {
-  "tool": "connector_send_image",
+  "tool": "feishu_send_image",
   "imagePath": "~/path/to/result.png",
   "caption": "生成结果"
 }
@@ -1390,12 +1390,12 @@ cp ~/path/to/my\ file.txt ~/another/path/
 - `message`（必填）：要发送的文本内容
 - `userId`（非飞书会话时必填）：目标用户的飞书 openId（open_id，`ou_` 开头），可通过 `api_get_pairing_records` 查询
 
-**connector_send_image**
+**feishu_send_image**
 - `imagePath`（必填）：图片路径，支持 `~` 符号
 - `caption`（可选）：图片说明文字
 - `userId`（非飞书会话时必填）：目标用户的飞书 openId（open_id，`ou_` 开头）
 
-**connector_send_file**
+**feishu_send_file**
 - `filePath`（必填）：文件路径，支持 `~` 符号
 - `fileName`（可选）：自定义文件名
 - `userId`（非飞书会话时必填）：目标用户的飞书 openId（open_id，`ou_` 开头）
@@ -1404,5 +1404,73 @@ cp ~/path/to/my\ file.txt ~/another/path/
 - ⚠️ 飞书连接器必须已启动且配置正确，否则发送会失败
 - ⚠️ `userId` 必须是已完成配对（approved）的用户，未配对用户无法接收消息
 - ⚠️ 发送失败时，工具会自动列出当前已配对的用户供参考
+
+---
+
+## 微信工具
+
+向微信用户发送消息、图片、文件。需要先在系统设置中启动微信连接器并扫码登录。
+
+### 工具列表
+- `wechat_send_message` - 向微信用户发送文本消息
+- `wechat_send_image` - 向微信用户发送图片
+- `wechat_send_file` - 向微信用户发送文件
+
+### 使用场景
+- ✅ 在微信会话 Tab 中回复用户消息
+- ✅ 在普通 Tab 中通过 userId 或 tabName 发送消息给微信用户
+- ✅ 定时任务完成后通知微信用户
+
+### 参数说明
+
+**wechat_send_message**
+- `message`（必填）：文本消息内容
+- `userId`（非微信会话时必填）：目标用户 ID
+- `tabName`（可选）：目标 Tab 名称（如 "WX-张三"）
+
+**wechat_send_image**
+- `imagePath`（必填）：图片路径，支持 `~` 符号
+- `caption`（可选）：图片说明文字
+- `userId`（非微信会话时必填）：目标用户 ID
+
+**wechat_send_file**
+- `filePath`（必填）：文件路径，支持 `~` 符号
+- `fileName`（可选）：自定义文件名
+- `userId`（非微信会话时必填）：目标用户 ID
+
+### 注意事项
+- 不要用 markdown 格式回复，微信只能接收纯文本
+- 不要使用 `wechat_send_message` 回复当前会话消息，直接回复即可，除非需要发给其他目标
+- 在微信会话 Tab 中调用时不需要提供 `userId` 或 `tabName`，自动发给当前会话
+
+### 示例
+
+
+**1. 发送图片**
+```json
+{
+  "tool": "wechat_send_image",
+  "imagePath": "~/.deepbot/generated-images/chart.png",
+  "caption": "数据图表"
+}
+```
+
+**2. 发送文件**
+```json
+{
+  "tool": "wechat_send_file",
+  "filePath": "~/Documents/report.pdf",
+  "fileName": "月度报告.pdf"
+}
+```
+
+**3. 从普通 Tab 发送给微信用户**
+```json
+{
+  "tool": "wechat_send_message",
+  "message": "定时任务执行完成",
+  "tabName": "WX-用户1"
+}
+```
 
 ---

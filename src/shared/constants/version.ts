@@ -3,7 +3,7 @@
  * 
  * 注意：修改版本号时需要同步更新 package.json
  */
-export const APP_VERSION = '0.4.6';
+export const APP_VERSION = '0.4.7';
 
 /**
  * 应用名称

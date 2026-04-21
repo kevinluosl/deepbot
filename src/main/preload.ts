@@ -362,6 +362,15 @@ contextBridge.exposeInMainWorld('deepbot', {
     };
   },
 
+  // 监听微信二维码
+  onWechatQrCode: (callback: (data: { url: string }) => void) => {
+    const listener = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('wechat:qr-code', listener);
+    return () => {
+      ipcRenderer.removeListener('wechat:qr-code', listener);
+    };
+  },
+
   // 监听流式消息
   onMessageStream: (callback: (chunk: any) => void) => {
     const listener = (_event: any, chunk: any) => callback(chunk);

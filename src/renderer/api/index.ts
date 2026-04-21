@@ -411,6 +411,11 @@ export const api = {
     return this._registerWebEvent('pending-count:update', callback);
   },
 
+  onWechatQrCode(callback: (data: { url: string }) => void): () => void {
+    if (isElectron()) return (window as any).deepbot.onWechatQrCode(callback);
+    return this._registerWebEvent('wechat:qr-code', callback);
+  },
+
   onClearAllMessages(callback: () => void): () => void {
     if (isElectron()) return (window as any).deepbot.onClearAllMessages(callback);
     return this._registerWebEvent('clear-all-messages', callback);

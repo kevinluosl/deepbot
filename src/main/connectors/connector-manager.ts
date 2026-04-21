@@ -14,7 +14,7 @@ import type {
   ConnectorId,
   ConnectorConfig,
   GatewayMessage,
-  FeishuIncomingMessage,
+  ConnectorIncomingMessage,
 } from '../../types/connector';
 import { getErrorMessage } from '../../shared/utils/error-handler';
 
@@ -129,7 +129,7 @@ export class ConnectorManager {
    */
   async handleIncomingMessage(
     connectorId: ConnectorId,
-    parsedMessage: FeishuIncomingMessage
+    parsedMessage: ConnectorIncomingMessage
   ): Promise<void> {
     console.log(`[ConnectorManager] 收到外部消息: ${connectorId}`, {
       messageId: parsedMessage.messageId,
@@ -329,6 +329,20 @@ export class ConnectorManager {
       }
     } catch (error) {
       console.error('[ConnectorManager] 推送待授权数量失败:', error);
+    }
+  }
+
+  /**
+   * 推送微信二维码到前端
+   */
+  broadcastWechatQrCode(url: string): void {
+    try {
+      const mainWindow = this.gateway.getMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('wechat:qr-code', { url });
+      }
+    } catch (error) {
+      console.error('[ConnectorManager] 推送微信二维码失败:', error);
     }
   }
 

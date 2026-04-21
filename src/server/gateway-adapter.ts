@@ -144,6 +144,12 @@ export class GatewayAdapter extends EventEmitter {
         break;
       }
       
+      case 'wechat:qr-code': {
+        // 微信二维码推送 - 转发到 WebSocket
+        this.emit('wechat_qr_code', data);
+        break;
+      }
+      
       case 'agent:status': {
         this.emit('agent_status', {
           tabId: data.sessionId || 'default',

@@ -73,6 +73,12 @@ export class Gateway {
     const feishuConnector = new FeishuConnector(this.connectorManager);
     this.connectorManager.registerConnector(feishuConnector);
     console.log('[Gateway] ✅ 飞书连接器已注册');
+
+    // 注册微信连接器
+    const { WechatConnector } = require('./connectors/wechat/wechat-connector');
+    const wechatConnector = new WechatConnector(this.connectorManager);
+    this.connectorManager.registerConnector(wechatConnector);
+    console.log('[Gateway] ✅ 微信连接器已注册');
     
     // 设置 Gateway 实例供 scheduled-task-tool 使用
     setGatewayInstance(this);
@@ -86,6 +92,11 @@ export class Gateway {
     const { setGatewayForConnectorTool } = require('./tools/connector-tool');
     setGatewayForConnectorTool(this);
     console.info('[Gateway] Gateway 实例已传递给 Connector Tool');
+
+    // 设置 Gateway 实例供 wechat-tool 使用
+    const { setGatewayForWechatTool } = require('./tools/wechat-tool');
+    setGatewayForWechatTool(this);
+    console.info('[Gateway] Gateway 实例已传递给 Wechat Tool');
     
     // 设置 configStore 供飞书云文档工具使用
     const { setConfigStoreForFeishuDocTool } = require('./tools/feishu-doc-tool');

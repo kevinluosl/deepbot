@@ -49,7 +49,7 @@ export interface GatewayMessage {
   
   // 消息内容
   content: {
-    type: 'text' | 'image' | 'file';
+    type: 'text' | 'image' | 'file' | 'voice' | 'video';
     text?: string;            // 文本内容
     fileUrl?: string;         // 文件 URL
     fileName?: string;        // 文件名（英文安全文件名，传给 AI 使用）
@@ -169,7 +169,7 @@ export interface FeishuIncomingMessage {
   };
   conversation: {
     id: string;
-    type: 'p2p' | 'group';  // 使用飞书原始值：p2p=私聊，group=群组
+    type: 'p2p' | 'group';
     name?: string;
   };
   mentions?: {
@@ -181,17 +181,56 @@ export interface FeishuIncomingMessage {
     text: string;
     fileUrl?: string;
     fileName?: string;
-    // 图片相关
-    imageKey?: string;        // 飞书图片 Key
-    imagePath?: string;       // 本地图片路径
-    // 文件相关
-    fileKey?: string;         // 飞书文件 Key
-    filePath?: string;        // 本地文件路径
+    imageKey?: string;
+    imagePath?: string;
+    fileKey?: string;
+    filePath?: string;
   };
-  // 系统上下文（注入给 agent 的额外提示）
   systemContext?: string;
   raw: any;
 }
+
+// ========== 微信特定类型 ==========
+
+/**
+ * 微信连接器配置（使用 iLink Bot SDK）
+ */
+export interface WechatConnectorConfig extends ConnectorConfig {
+  storageDir?: string;        // 凭证存储目录（默认 ~/.deepbot/wechat）
+  requirePairing?: boolean;   // 是否需要配对授权，默认 false
+}
+
+/**
+ * 微信消息（内部格式）
+ */
+export interface WechatIncomingMessage {
+  messageId: string;
+  timestamp: number;
+  sender: {
+    id: string;
+    name: string;
+  };
+  conversation: {
+    id: string;
+    type: 'p2p';             // 微信 iLink Bot 目前只支持私聊
+  };
+  content: {
+    type: 'text' | 'image' | 'file' | 'voice' | 'video';
+    text: string;
+    imagePath?: string;
+    filePath?: string;
+    fileName?: string;
+  };
+  systemContext?: string;
+  raw: any;
+}
+
+// ========== 通用连接器消息 ==========
+
+/**
+ * 通用连接器消息（ConnectorManager 使用）
+ */
+export type ConnectorIncomingMessage = FeishuIncomingMessage | WechatIncomingMessage;
 
 /**
  * Pairing 记录

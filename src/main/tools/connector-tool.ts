@@ -3,8 +3,8 @@
  *
  * 提供三个工具：
  * - feishu_send_message：向已配对的飞书用户发送文本消息
- * - connector_send_image：发送图片（连接器会话直接发，普通 Tab 通过 userId 指定目标）
- * - connector_send_file：发送文件（同上）
+ * - feishu_send_image：发送图片（连接器会话直接发，普通 Tab 通过 userId 指定目标）
+ * - feishu_send_file：发送文件（同上）
  *
  * 三个工具共用同一套"查找目标会话"逻辑：
  *   1. 当前 Tab 是 connector 类型 → 直接发到当前会话（receive_id_type=conversation_id）
@@ -223,8 +223,8 @@ async function sendFileToTarget(target: ResolvedTarget, filePath: string, fileNa
 
 export const connectorToolPlugin: ToolPlugin = {
   metadata: {
-    id: 'connector',
-    name: '连接器',
+    id: 'feishu-connector',
+    name: '飞书连接器',
     version: '2.0.0',
     description: '向飞书用户发送消息、图片、文件。支持连接器会话和普通 Tab',
     author: 'DeepBot',
@@ -299,9 +299,9 @@ export const connectorToolPlugin: ToolPlugin = {
         },
       },
 
-      // ── connector_send_image ──────────────────────────────────────────────
+      // ── feishu_send_image ──────────────────────────────────────────────
       {
-        name: TOOL_NAMES.CONNECTOR_SEND_IMAGE,
+        name: TOOL_NAMES.FEISHU_SEND_IMAGE,
         label: '发送图片到飞书',
         description: [
           '通过飞书发送图片。',
@@ -363,9 +363,9 @@ export const connectorToolPlugin: ToolPlugin = {
         },
       },
 
-      // ── connector_send_file ───────────────────────────────────────────────
+      // ── feishu_send_file ───────────────────────────────────────────────
       {
-        name: TOOL_NAMES.CONNECTOR_SEND_FILE,
+        name: TOOL_NAMES.FEISHU_SEND_FILE,
         label: '发送文件到飞书',
         description: [
           '通过飞书发送文件。',

@@ -320,6 +320,13 @@ export class WebSocketManager {
         pendingCount: event.pendingCount
       });
     });
+
+    this.gatewayAdapter.on('wechat_qr_code', (event: any) => {
+      this.broadcastToAll({
+        type: 'wechat:qr-code',
+        url: event.url
+      });
+    });
     
     // 监听 Tab 创建（广播给所有客户端）
     this.gatewayAdapter.on('tab_created', (event: any) => {
