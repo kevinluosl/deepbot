@@ -20,10 +20,10 @@ export function setLoadingStatusWindow(win: any): void {
 /**
  * 发送加载状态到前端
  */
-export function sendLoadingStatus(status: LoadingStatus): void {
+export function sendLoadingStatus(status: LoadingStatus, sessionId?: string): void {
   try {
     if (_mainWindow && !_mainWindow.isDestroyed()) {
-      _mainWindow.webContents.send('loading-status', { status });
+      _mainWindow.webContents.send('loading-status', { status, sessionId });
     }
   } catch {
     // 忽略错误

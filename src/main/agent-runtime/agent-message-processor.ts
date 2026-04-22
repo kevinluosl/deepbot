@@ -556,9 +556,9 @@ ${tailResponse}
         return;
       }
       
-      sendLoadingStatus('checking');
+      sendLoadingStatus('checking', this.runtimeConfig.sessionId);
       const hasUnfinishedIntent = await this.detectUnfinishedIntent(fullResponse, lastRoundHasToolCalls, anyRoundHasToolCalls);
-      sendLoadingStatus('processing');
+      sendLoadingStatus('processing', this.runtimeConfig.sessionId);
       
       if (hasUnfinishedIntent) {
         if (abortController?.signal.aborted) {

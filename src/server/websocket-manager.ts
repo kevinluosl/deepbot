@@ -350,7 +350,8 @@ export class WebSocketManager {
     this.gatewayAdapter.on('loading-status', (event: any) => {
       this.broadcastToAll({
         type: 'loading-status',
-        status: event.status
+        status: event.status,
+        sessionId: event.sessionId
       });
     });
   }

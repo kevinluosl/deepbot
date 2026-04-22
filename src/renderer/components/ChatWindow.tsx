@@ -156,7 +156,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
 
   // 监听加载状态变化（processing / checking）
   useEffect(() => {
-    const unsubscribe = api.onLoadingStatus((data: { status: string }) => {
+    const unsubscribe = api.onLoadingStatus((data: { status: string; sessionId?: string }) => {
+      // 只处理当前 Tab 的状态
+      if (data.sessionId && data.sessionId !== (activeTabId || 'default')) return;
       if (data.status === 'checking') {
         setLoadingText('Checking Result');
       } else {
@@ -164,7 +166,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
       }
     });
     return unsubscribe;
-  }, []);
+  }, [activeTabId]);
 
   // isLoading 变为 true 时重置为默认文本
   useEffect(() => {

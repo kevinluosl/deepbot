@@ -202,7 +202,8 @@ export class GatewayAdapter extends EventEmitter {
       case 'loading-status': {
         // 加载状态变化 - 转发到 WebSocket
         this.emit('loading-status', {
-          status: data.status
+          status: data.status,
+          sessionId: data.sessionId
         });
         break;
       }
