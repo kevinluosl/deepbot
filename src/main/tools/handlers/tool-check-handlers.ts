@@ -16,6 +16,44 @@ export async function checkBrowserToolStatus(): Promise<{
   try {
     const { platform } = await import('os');
     const { existsSync } = await import('fs');
+    const { isDockerMode } = await import('../../../shared/utils/docker-utils');
+    
+    // Docker 模式：检查 Playwright 内置 Chromium
+    if (isDockerMode()) {
+      try {
+        const { execSync } = await import('child_process');
+        const chromiumPath = execSync(
+          'find /ms-playwright -name "chrome" -path "*/chrome-linux/*" 2>/dev/null | head -1',
+          { encoding: 'utf-8', timeout: 5000 }
+        ).trim();
+        
+        if (chromiumPath && existsSync(chromiumPath)) {
+          return {
+            chromeInstalled: true,
+            chromePath: chromiumPath,
+          };
+        }
+      } catch {
+        // find 命令失败，继续检查常见路径
+      }
+      
+      // 降级：检查常见 Chromium 路径
+      const linuxPaths = [
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+      ];
+      const found = linuxPaths.find(p => existsSync(p));
+      if (found) {
+        return { chromeInstalled: true, chromePath: found };
+      }
+      
+      return {
+        chromeInstalled: false,
+        error: 'Playwright Chromium 未安装，请执行: npx playwright install chromium --with-deps',
+      };
+    }
     
     const platformName = platform();
     let chromePath: string;
@@ -24,15 +62,20 @@ export async function checkBrowserToolStatus(): Promise<{
     if (platformName === 'darwin') {
       chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
     } else if (platformName === 'win32') {
-      // Windows 常见路径
       const possiblePaths = [
         'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
       ];
       chromePath = possiblePaths.find(p => existsSync(p)) || possiblePaths[0];
     } else {
-      // Linux
-      chromePath = '/usr/bin/google-chrome';
+      // Linux（非 Docker）
+      const linuxPaths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+      ];
+      chromePath = linuxPaths.find(p => existsSync(p)) || '/usr/bin/google-chrome';
     }
     
     const installed = existsSync(chromePath);
