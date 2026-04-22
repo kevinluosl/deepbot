@@ -367,7 +367,7 @@ export class GatewayConnectorHandler {
 4. 创建飞书文档时，使用 feishu_doc_insert_rich_blocks 插入丰富格式内容
 5. 回复的时候根据回复的内容，带上用户的名字
 6. 来自信息中包含了发送信息的用户的姓名，群消息还包含群名称
-7. 不要使用 feishu_send_message 工具回复，除非收到明确指令要给具体目标发送消息]`;
+7. 绝对不要使用 feishu_send_message 工具回复消息，除非收到明确指令要给具体目标发送消息]`;
     } else if (message.source.connectorId?.startsWith('wechat')) {
       connectorToolsHint = `\n\n[系统提示: 这是微信通讯会话，除了系统的工具，你还可以根据用户的需求使用以下专用工具:
 - wechat_send_image: 发送图片给对方
@@ -375,7 +375,7 @@ export class GatewayConnectorHandler {
 
 注意：
 1. 不要用markdown格式回复内容，微信只能接收纯文本
-2. 禁止使用 wechat_send_message 工具]`;
+2. 绝对不要使用 wechat_send_message 工具回复信息，除非收到明确指令要给具体目标发送消息]`;
     }
 
     // 额外系统通知（由连接器按需注入，如首次管理员授权提示）

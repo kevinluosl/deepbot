@@ -332,12 +332,14 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
             const qrUrl = wechatQrMap[wc.id] || null;
             const health = connectorHealthMap[wc.id];
             const isFirst = index === 0;
+            const num = wc.id.match(/wechat-(\d+)/)?.[1] || '1';
+            const wcDisplayName = lang === 'zh' ? `微信 ${num}` : `WeChat ${num}`;
 
             return (
               <div key={wc.id} className="border border-gray-200 rounded-md p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{wc.name}</span>
+                    <span className="text-sm font-medium text-gray-900">{wcDisplayName}</span>
                     {wc.enabled && health === 'healthy' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">{lang === 'zh' ? '运行中' : 'Running'}</span>}
                     {wc.enabled && health === 'unhealthy' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">{lang === 'zh' ? '连接失败' : 'Failed'}</span>}
                     {wc.enabled && health === 'checking' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{lang === 'zh' ? '检查中' : 'Checking'}</span>}
@@ -346,7 +348,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
                     {!isFirst && !wc.enabled && (
                       <button
                         onClick={async () => {
-                          if (!confirm(lang === 'zh' ? `确定要删除 ${wc.name} 吗？` : `Delete ${wc.name}?`)) return;
+                          if (!confirm(lang === 'zh' ? `确定要删除 ${wcDisplayName} 吗？` : `Delete ${wcDisplayName}?`)) return;
                           try {
                             await api.connectorRemoveWechat(wc.id);
                             showToast('success', lang === 'zh' ? '已删除' : 'Deleted');
@@ -554,8 +556,12 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
             <div className="py-3 px-4 text-sm text-gray-400">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>
           ) : connectors.filter(c => !c.id.startsWith('wechat-') || c.id === connectors.find(x => x.id.startsWith('wechat'))?.id).map((connector) => {
             // 微信只显示第一个实例的 tab，内容面板统一管理所有实例
-            const displayName = connector.id.startsWith('wechat') ? (lang === 'zh' ? '微信' : 'WeChat') : connector.name;
             const isWechatTab = connector.id.startsWith('wechat');
+            const displayName = isWechatTab
+              ? (lang === 'zh' ? '微信' : 'WeChat')
+              : connector.id === 'feishu'
+                ? (lang === 'zh' ? '飞书' : 'Feishu')
+                : connector.name;
             // 微信 tab 不显示状态（每个实例内部已有独立状态）
             const health = isWechatTab ? undefined : connectorHealthMap[connector.id];
 
