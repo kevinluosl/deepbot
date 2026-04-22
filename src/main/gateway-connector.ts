@@ -289,6 +289,22 @@ export class GatewayConnectorHandler {
         tab.pendingMessages = [];
       }
 
+      // 队列满时拒绝新消息
+      const MAX_QUEUE_SIZE = 5;
+      if (tab.pendingMessages.length >= MAX_QUEUE_SIZE) {
+        logger.warn(`⚠️ 消息队列已满（${MAX_QUEUE_SIZE}），拒绝新消息`);
+        if (tab.type === 'connector') {
+          const isEn = SystemConfigStore.getInstance().getAppSetting('language') === 'en';
+          const fullMsg = isEn
+            ? `⚠️ Whoa, I've got ${MAX_QUEUE_SIZE} messages lined up already! Let me catch up first — send me more in a bit 😊`
+            : `⚠️ 哎呀，我手头已经积了 ${MAX_QUEUE_SIZE} 条消息啦，让我先处理完，稍后再发给我吧 😊`;
+          try {
+            await this.sendResponseToConnector(tab.id, fullMsg, true);
+          } catch { /* 静默处理 */ }
+        }
+        return;
+      }
+
       // 加入队列
       tab.pendingMessages.push(pendingMessage);
       logger.info('📥 消息已加入队列:', {
@@ -303,6 +319,20 @@ export class GatewayConnectorHandler {
         await this.processNextMessage(tab.id);
       } else {
         logger.info('⏳ 有消息正在处理中，当前消息已排队等待');
+
+        // 立即回复用户，告知消息已收到正在排队
+        if (tab.type === 'connector') {
+          const isEn = SystemConfigStore.getInstance().getAppSetting('language') === 'en';
+          const queuePos = tab.pendingMessages.length;
+          const busyMsg = isEn
+            ? `⏳ Got it! I'm currently working on a previous message. This message is #${queuePos} in queue and will be handled shortly.`
+            : `⏳ 收到！我正在处理上一条消息，当前消息排在第 ${queuePos} 位，稍后会按顺序回复。`;
+          try {
+            await this.sendResponseToConnector(tab.id, busyMsg, true);
+          } catch {
+            // 静默处理
+          }
+        }
       }
     } catch (error) {
       logger.error('❌ 处理连接器消息失败:', error);
@@ -674,20 +704,44 @@ export class GatewayConnectorHandler {
 
     logger.info(`执行 /stop 指令，停止任务: ${sessionId}`);
 
+    // 1. 清空消息队列
+    let queueCleared = 0;
+    if (this.tabManager) {
+      const tab = this.tabManager.getTab(sessionId);
+      if (tab?.pendingMessages && tab.pendingMessages.length > 0) {
+        queueCleared = tab.pendingMessages.length;
+        tab.pendingMessages = [];
+        tab.processingMessageId = undefined;
+        logger.info(`✅ 已清空 ${queueCleared} 条排队消息`);
+      }
+    }
+
+    // 2. 停止当前正在执行的 Agent
     const runtime = this.getOrCreateRuntimeFn(sessionId);
     const wasGenerating = runtime.isCurrentlyGenerating();
 
-    // 停止 agent（等同于点击 Stop 按钮）
     await this.resetSessionRuntimeFn(sessionId, {
       reason: '用户发送 /stop 指令',
       recreate: false,
     });
 
-    // 清除进度提醒定时器
+    // 3. 清除进度提醒定时器
     this.clearProgressTimers(sessionId);
 
     logger.info('✅ /stop 指令已执行');
-    return wasGenerating ? '⏹️ 任务已停止' : '⏹️ 当前没有正在执行的任务';
+
+    const isEn = SystemConfigStore.getInstance().getAppSetting('language') === 'en';
+    if (wasGenerating || queueCleared > 0) {
+      const parts: string[] = ['⏹️'];
+      if (wasGenerating) {
+        parts.push(isEn ? 'Current task stopped.' : '当前任务已停止。');
+      }
+      if (queueCleared > 0) {
+        parts.push(isEn ? `${queueCleared} queued message(s) cleared.` : `已清除 ${queueCleared} 条排队消息。`);
+      }
+      return parts.join(' ');
+    }
+    return isEn ? '⏹️ No task is currently running.' : '⏹️ 当前没有正在执行的任务';
   }
 
   /**
@@ -964,10 +1018,13 @@ export class GatewayConnectorHandler {
         await this.resetSessionRuntimeFn(sessionId, { reason: '/clone 指令', recreate: true });
       }
 
-      // 5. 通知前端重新加载历史消息
+      // 5. 通知前端清空当前 UI，然后重新加载历史消息
+      sendToWindow(this.mainWindow, 'command:clear-chat', { sessionId });
+      await new Promise(resolve => setTimeout(resolve, 300));
       if (this.tabManager) {
         await this.tabManager.loadTabHistory(sessionId, true);
       }
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // 6. 标记系统提示词需要重建
       const gateway = getGatewayInstance();
