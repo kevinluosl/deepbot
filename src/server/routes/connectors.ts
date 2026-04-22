@@ -209,6 +209,31 @@ export function createConnectorsRouter(gatewayAdapter: GatewayAdapter): Router {
   router.post('/:connectorId/pairing/:userId/admin', setAdminPairing);
   router.delete('/:connectorId/pairing/:userId', deletePairing);
   router.get('/pairing', getPairingRecords);
+
+  // 微信多实例管理
+  const createWechat: RequestHandler = async (req, res) => {
+    try {
+      const result = await gatewayAdapter.connectorCreateWechat();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: getErrorMessage(error) });
+    }
+  };
+
+  const removeWechat: RequestHandler = async (req, res) => {
+    try {
+      const connectorId = Array.isArray(req.params.connectorId)
+        ? req.params.connectorId[0]
+        : req.params.connectorId;
+      const result = await gatewayAdapter.connectorRemoveWechat(connectorId);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: getErrorMessage(error) });
+    }
+  };
+
+  router.post('/wechat/create', createWechat);
+  router.delete('/:connectorId', removeWechat);
   
   return router;
 }

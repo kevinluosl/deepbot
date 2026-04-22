@@ -50,7 +50,7 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   const [pairingRecords, setPairingRecords] = useState<PairingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [starting, setStarting] = useState(false);
+  const [startingMap, setStartingMap] = useState<Record<string, boolean>>({});
   const [loadingPairing, setLoadingPairing] = useState(false);
   const [connectorHealthMap, setConnectorHealthMap] = useState<Record<string, 'healthy' | 'unhealthy' | 'checking'>>({});
   const hasLoadedRef = useRef(false);
@@ -166,17 +166,19 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   };
 
   const handleStart = async (connectorId: string) => {
-    setStarting(true);
+    setStartingMap(prev => ({ ...prev, [connectorId]: true }));
     try {
-      if (connectorId === 'wechat') {
-        await api.connectorSaveConfig('wechat', { enabled: false });
+      if (connectorId.startsWith('wechat')) {
+        await api.connectorSaveConfig(connectorId, { enabled: false });
       }
       await api.connectorStart(connectorId);
       showToast('success', lang === 'zh' ? '连接器已启动' : 'Connector started');
-      // 清除旧的健康状态，避免显示过期信息
+
+      // 只更新当前连接器的状态，不刷新全部列表（避免干扰其他正在启动的连接器）
+      setConnectors(prev => prev.map(c => c.id === connectorId ? { ...c, enabled: true } : c));
       setConnectorHealthMap(prev => ({ ...prev, [connectorId]: 'checking' }));
-      await loadConnectors(true);
-      // 延迟重新检查健康状态（等待连接器完全启动）
+
+      // 延迟检查健康状态
       setTimeout(async () => {
         try {
           const hr = await api.connectorHealthCheck(connectorId);
@@ -187,41 +189,53 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
         }
       }, 2000);
     } catch (error) { showToast('error', `${lang === 'zh' ? '启动失败' : 'Start failed'}: ${error instanceof Error ? error.message : ''}`); }
-    finally { setStarting(false); }
+    finally { setStartingMap(prev => ({ ...prev, [connectorId]: false })); }
   };
 
   const handleStop = async (connectorId: string) => {
-    setStarting(true);
+    setStartingMap(prev => ({ ...prev, [connectorId]: true }));
     try {
       await api.connectorStop(connectorId);
+      // 清除该连接器的健康状态
+      setConnectorHealthMap(prev => {
+        const next = { ...prev };
+        delete next[connectorId];
+        return next;
+      });
+      // 只更新当前连接器的状态
+      setConnectors(prev => prev.map(c => c.id === connectorId ? { ...c, enabled: false } : c));
       showToast('success', lang === 'zh' ? '连接器已停止' : 'Connector stopped');
-      await loadConnectors(true);
     } catch (error) { showToast('error', `${lang === 'zh' ? '停止失败' : 'Stop failed'}: ${error instanceof Error ? error.message : ''}`); }
-    finally { setStarting(false); }
+    finally { setStartingMap(prev => ({ ...prev, [connectorId]: false })); }
   };
 
   const selectedConnectorData = connectors.find(c => c.id === selectedConnector);
 
   // ── 启停按钮（通用） ──────────────────────────────────────────────
-  const renderStartStopButtons = (connectorId: string) => (
+  const renderStartStopButtons = (connectorId: string) => {
+    const connectorData = connectors.find(c => c.id === connectorId);
+    const isStarting = startingMap[connectorId] || false;
+
+    return (
     <div className="flex space-x-3 pt-4">
-      {selectedConnectorData?.enabled ? (
-        <button onClick={() => handleStop(connectorId)} disabled={starting}
+      {connectorData?.enabled ? (
+        <button onClick={() => handleStop(connectorId)} disabled={isStarting}
           className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
-          {starting ? (lang === 'zh' ? '停止中...' : 'Stopping...') : (lang === 'zh' ? '停止连接器' : 'Stop Connector')}
+          {isStarting ? (lang === 'zh' ? '停止中...' : 'Stopping...') : (lang === 'zh' ? '停止连接器' : 'Stop Connector')}
         </button>
       ) : (
-        <button onClick={() => handleStart(connectorId)} disabled={starting || (connectorId === 'feishu' && !selectedConnectorData?.hasConfig)}
+        <button onClick={() => handleStart(connectorId)} disabled={isStarting || (connectorId === 'feishu' && !connectorData?.hasConfig)}
           className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
-          {starting
+          {isStarting
             ? (lang === 'zh' ? '启动中...' : 'Starting...')
-            : connectorId === 'wechat'
+            : connectorId.startsWith('wechat')
               ? (lang === 'zh' ? '启动连接器（扫码登录）' : 'Start Connector (QR Login)')
               : (lang === 'zh' ? '启动连接器' : 'Start Connector')}
         </button>
       )}
     </div>
-  );
+    );
+  };
 
   // ── 飞书配置面板 ──────────────────────────────────────────────────
   const renderFeishuConfig = () => (
@@ -284,56 +298,118 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
   );
 
   // ── 微信配置面板 ──────────────────────────────────────────────────
-  const [wechatQrUrl, setWechatQrUrl] = useState<string | null>(null);
+  const [wechatQrMap, setWechatQrMap] = useState<Record<string, string>>({});
 
-  // 监听微信二维码推送
+  // 监听微信二维码推送（带 connectorId）
   useEffect(() => {
-    const unsubscribe = api.onWechatQrCode((data: { url: string }) => {
-      setWechatQrUrl(data.url);
+    const unsubscribe = api.onWechatQrCode((data: { url: string; connectorId?: string }) => {
+      const cid = data.connectorId || 'wechat-1';
+      setWechatQrMap(prev => ({ ...prev, [cid]: data.url }));
     });
     return () => unsubscribe?.();
   }, []);
 
-  const renderWechatConfig = () => (
-    <div className="space-y-4">
-      <div className="bg-green-50 border border-green-200 rounded-md p-4">
-        <h4 className="text-sm font-medium text-green-900 mb-2">{lang === 'zh' ? '微信连接器说明' : 'WeChat Connector Info'}</h4>
-        <p className="text-sm text-green-800">
-          {lang === 'zh'
-            ? '微信连接器通过 iLink Bot 协议连接微信。启动后会生成二维码，使用微信扫码即可登录。登录凭证会自动保存，下次启动无需重新扫码。'
-            : 'WeChat connector uses the iLink Bot protocol. After starting, a QR code will be generated. Scan it with WeChat to login. Credentials are saved automatically.'}
-        </p>
-      </div>
-      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-        <p className="text-sm text-yellow-800">
-          <strong>{lang === 'zh' ? '注意：' : 'Note: '}</strong>
-          {lang === 'zh' ? '微信连接器目前仅支持私聊消息，不支持群组消息。' : 'Currently only supports private messages, not group messages.'}
-        </p>
-      </div>
+  const renderWechatConfig = () => {
+    // 获取所有微信连接器实例
+    const wechatConnectors = connectors.filter(c => c.id.startsWith('wechat'));
+    // 按 id 排序，确保 wechat-1 在最前面
+    wechatConnectors.sort((a, b) => a.id.localeCompare(b.id));
 
-      {/* 二维码显示区域 */}
-      {wechatQrUrl && !selectedConnectorData?.enabled && (
-        <div className="border border-gray-200 rounded-md p-4 text-center">
-          <p className="text-sm font-medium text-gray-700 mb-3">{lang === 'zh' ? '请使用微信扫描二维码登录' : 'Scan QR code with WeChat to login'}</p>
-          <div className="flex justify-center mb-3">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(wechatQrUrl)}`}
-              alt="WeChat QR Code"
-              className="w-48 h-48 rounded"
-            />
-          </div>
-          <button
-            onClick={() => { navigator.clipboard.writeText(wechatQrUrl); showToast('success', lang === 'zh' ? '链接已复制' : 'Link copied'); }}
-            className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {lang === 'zh' ? '复制链接' : 'Copy Link'}
-          </button>
+    return (
+      <div className="space-y-4">
+        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+          <h4 className="text-sm font-medium text-green-900 mb-2">{lang === 'zh' ? '微信连接器说明' : 'WeChat Connector Info'}</h4>
+          <p className="text-sm text-green-800">
+            {lang === 'zh'
+              ? '微信连接器通过 iLink Bot 协议连接微信。启动后会生成二维码，使用微信扫码即可登录。支持连接多个微信账号。'
+              : 'WeChat connector uses the iLink Bot protocol. Scan QR code to login. Supports multiple WeChat accounts.'}
+          </p>
         </div>
-      )}
 
-      {renderStartStopButtons('wechat')}
-    </div>
-  );
+        {/* 微信实例列表 */}
+        <div className="space-y-3">
+          {wechatConnectors.map((wc, index) => {
+            const qrUrl = wechatQrMap[wc.id] || null;
+            const health = connectorHealthMap[wc.id];
+            const isFirst = index === 0;
+
+            return (
+              <div key={wc.id} className="border border-gray-200 rounded-md p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">{wc.name}</span>
+                    {wc.enabled && health === 'healthy' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">{lang === 'zh' ? '运行中' : 'Running'}</span>}
+                    {wc.enabled && health === 'unhealthy' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">{lang === 'zh' ? '连接失败' : 'Failed'}</span>}
+                    {wc.enabled && health === 'checking' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{lang === 'zh' ? '检查中' : 'Checking'}</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isFirst && !wc.enabled && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(lang === 'zh' ? `确定要删除 ${wc.name} 吗？` : `Delete ${wc.name}?`)) return;
+                          try {
+                            await api.connectorRemoveWechat(wc.id);
+                            showToast('success', lang === 'zh' ? '已删除' : 'Deleted');
+                            await loadConnectors(true);
+                          } catch (e) {
+                            showToast('error', `${lang === 'zh' ? '删除失败' : 'Delete failed'}: ${e instanceof Error ? e.message : ''}`);
+                          }
+                        }}
+                        className="px-2 py-1 text-xs text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        {lang === 'zh' ? '删除' : 'Delete'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 二维码弹出显示 */}
+                {qrUrl && !wc.enabled && (
+                  <div className="border border-gray-200 rounded-md p-4 text-center mb-3 bg-gray-50">
+                    <p className="text-sm font-medium text-gray-700 mb-3">{lang === 'zh' ? '请使用微信扫描二维码登录' : 'Scan QR code with WeChat to login'}</p>
+                    <div className="flex justify-center mb-3">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`}
+                        alt="WeChat QR Code"
+                        className="w-48 h-48 rounded"
+                      />
+                    </div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(qrUrl); showToast('success', lang === 'zh' ? '链接已复制' : 'Link copied'); }}
+                      className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      {lang === 'zh' ? '复制链接' : 'Copy Link'}
+                    </button>
+                  </div>
+                )}
+
+                {renderStartStopButtons(wc.id)}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 新增微信连接按钮 */}
+        <button
+          onClick={async () => {
+            try {
+              const result = await api.connectorCreateWechat();
+              const actualResult = result.data || result;
+              if (actualResult.success) {
+                showToast('success', lang === 'zh' ? `已创建 ${actualResult.connectorId}` : `Created ${actualResult.connectorId}`);
+                await loadConnectors(true);
+              }
+            } catch (e) {
+              showToast('error', `${lang === 'zh' ? '创建失败' : 'Create failed'}: ${e instanceof Error ? e.message : ''}`);
+            }
+          }}
+          className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
+        >
+          {lang === 'zh' ? '+ 新增微信连接' : '+ Add WeChat Connection'}
+        </button>
+      </div>
+    );
+  };
 
   // ── Pairing 管理面板 ─────────────────────────────────────────────
   const renderPairingPanel = () => (
@@ -476,22 +552,30 @@ export function ConnectorConfig({ onClose }: ConnectorConfigProps) {
         <nav className="-mb-px flex space-x-1">
           {loading ? (
             <div className="py-3 px-4 text-sm text-gray-400">{lang === 'zh' ? '加载中...' : 'Loading...'}</div>
-          ) : connectors.map((connector) => (
+          ) : connectors.filter(c => !c.id.startsWith('wechat-') || c.id === connectors.find(x => x.id.startsWith('wechat'))?.id).map((connector) => {
+            // 微信只显示第一个实例的 tab，内容面板统一管理所有实例
+            const displayName = connector.id.startsWith('wechat') ? (lang === 'zh' ? '微信' : 'WeChat') : connector.name;
+            const isWechatTab = connector.id.startsWith('wechat');
+            // 微信 tab 不显示状态（每个实例内部已有独立状态）
+            const health = isWechatTab ? undefined : connectorHealthMap[connector.id];
+
+            return (
             <button key={connector.id}
-              onClick={() => { setSelectedConnector(connector.id); setActiveTab('config'); loadConnectorConfig(connector.id); }}
-              className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${selectedConnector === connector.id ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}>
-              {connector.name}
-              {connector.enabled && connectorHealthMap[connector.id] === 'healthy' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">{lang === 'zh' ? '运行中' : 'Running'}</span>}
-              {connector.enabled && connectorHealthMap[connector.id] === 'unhealthy' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">{lang === 'zh' ? '连接失败' : 'Failed'}</span>}
-              {connector.enabled && connectorHealthMap[connector.id] === 'checking' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{lang === 'zh' ? '检查中' : 'Checking'}</span>}
+              onClick={() => { setSelectedConnector(connector.id); setActiveTab('config'); if (!isWechatTab) loadConnectorConfig(connector.id); }}
+              className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${selectedConnector === connector.id || (isWechatTab && selectedConnector?.startsWith('wechat')) ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}>
+              {displayName}
+              {!isWechatTab && connector.enabled && health === 'healthy' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">{lang === 'zh' ? '运行中' : 'Running'}</span>}
+              {!isWechatTab && connector.enabled && health === 'unhealthy' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">{lang === 'zh' ? '连接失败' : 'Failed'}</span>}
+              {!isWechatTab && connector.enabled && health === 'checking' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{lang === 'zh' ? '检查中' : 'Checking'}</span>}
             </button>
-          ))}
+            );
+          })}
         </nav>
       </div>
 
       {/* 连接器配置面板（根据选中的连接器渲染） */}
       {selectedConnector === 'feishu' && renderFeishuConfig()}
-      {selectedConnector === 'wechat' && renderWechatConfig()}
+      {selectedConnector?.startsWith('wechat') && renderWechatConfig()}
     </div>
   );
 }

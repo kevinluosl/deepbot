@@ -263,6 +263,16 @@ export const api = {
     return webClient.delete(`/api/connectors/${connectorId}/pairing/${userId}`);
   },
 
+  async connectorCreateWechat(): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.connectorCreateWechat();
+    return webClient.post('/api/connectors/wechat/create', {});
+  },
+
+  async connectorRemoveWechat(connectorId: string): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.connectorRemoveWechat(connectorId);
+    return webClient.delete(`/api/connectors/${connectorId}`);
+  },
+
   async scheduledTask(request: any): Promise<any> {
     if (isElectron()) return (window as any).deepbot.scheduledTask(request);
     return webClient.post('/api/tasks', request);

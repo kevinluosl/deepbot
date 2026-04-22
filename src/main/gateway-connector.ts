@@ -167,9 +167,16 @@ export class GatewayConnectorHandler {
             const senderName = message.source.senderName || '';
             title = senderName ? `FS-${senderName}` : 'feishu';
           }
-        } else if (message.source.connectorId === 'wechat') {
+        } else if (message.source.connectorId?.startsWith('wechat')) {
+          // 微信消息：WX-用户N，取最大编号+1 避免重名
           const existingWxTabs = this.tabManager.getAllTabs().filter(t => t.title?.startsWith('WX-'));
-          const nextNum = existingWxTabs.length + 1;
+          const existingNums = existingWxTabs
+            .map(t => {
+              const match = t.title?.match(/^WX-用户(\d+)$/);
+              return match ? parseInt(match[1], 10) : 0;
+            })
+            .filter(n => n > 0);
+          const nextNum = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1;
           title = `WX-用户${nextNum}`;
         } else {
           title = message.source.connectorId || 'unknown';
@@ -361,7 +368,7 @@ export class GatewayConnectorHandler {
 5. 回复的时候根据回复的内容，带上用户的名字
 6. 来自信息中包含了发送信息的用户的姓名，群消息还包含群名称
 7. 不要使用 feishu_send_message 工具回复，除非收到明确指令要给具体目标发送消息]`;
-    } else if (message.source.connectorId === 'wechat') {
+    } else if (message.source.connectorId?.startsWith('wechat')) {
       connectorToolsHint = `\n\n[系统提示: 这是微信通讯会话，除了系统的工具，你还可以根据用户的需求使用以下专用工具:
 - wechat_send_image: 发送图片给对方
 - wechat_send_file: 发送文件给对方

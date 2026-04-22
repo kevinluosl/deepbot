@@ -533,6 +533,18 @@ export class GatewayAdapter extends EventEmitter {
     
     return { success: true, message: '配对已删除' };
   }
+
+  async connectorCreateWechat(): Promise<any> {
+    const connectorManager = this.gateway.getConnectorManager();
+    const connectorId = connectorManager.createWechatInstance();
+    return { success: true, connectorId };
+  }
+
+  async connectorRemoveWechat(connectorId: string): Promise<any> {
+    const connectorManager = this.gateway.getConnectorManager();
+    await connectorManager.removeWechatInstance(connectorId);
+    return { success: true };
+  }
   
   async connectorGetPairingRecords(): Promise<any> {
     const { SystemConfigStore } = await import('../main/database/system-config-store');

@@ -23,35 +23,41 @@ import { expandUserPath } from '../../../shared/utils/path-utils';
 const DEFAULT_STORAGE_DIR = '~/.deepbot/wechat';
 
 export class WechatConnector implements Connector {
-  readonly id = 'wechat' as const;
-  readonly name = '微信';
+  readonly id: string;
+  readonly name: string;
   readonly version = '1.0.0';
 
   private connectorConfig!: WechatConnectorConfig;
   private connectorManager: ConnectorManager;
   private isStarted: boolean = false;
   private bot: any = null; // WeChatBot 实例（动态导入 ESM）
+  private storageDir: string = ''; // 凭证存储目录
 
   // 消息去重
   private processedMessages: Set<string> = new Set();
   private readonly MAX_PROCESSED_MESSAGES = 1000;
 
-  constructor(connectorManager: ConnectorManager) {
+  constructor(connectorManager: ConnectorManager, instanceId?: string) {
     this.connectorManager = connectorManager;
+    // 支持多实例：wechat-1, wechat-2 等
+    this.id = instanceId || 'wechat';
+    // 显示名称带编号
+    const num = instanceId?.match(/wechat-(\d+)/)?.[1];
+    this.name = num ? `微信 ${num}` : '微信';
   }
 
   // ========== 配置管理 ==========
   config = {
     load: async (): Promise<WechatConnectorConfig | null> => {
       const store = SystemConfigStore.getInstance();
-      const result = store.getConnectorConfig('wechat');
+      const result = store.getConnectorConfig(this.id);
       if (!result) return null;
       return { ...result.config, enabled: result.enabled } as WechatConnectorConfig;
     },
 
     save: async (config: WechatConnectorConfig): Promise<void> => {
       const store = SystemConfigStore.getInstance();
-      store.saveConnectorConfig('wechat', '微信', config, false);
+      store.saveConnectorConfig(this.id, this.name, config, false);
     },
 
     validate: (config: WechatConnectorConfig): boolean => {
@@ -65,7 +71,11 @@ export class WechatConnector implements Connector {
   async initialize(config: WechatConnectorConfig): Promise<void> {
     this.connectorConfig = config;
 
-    const storageDir = expandUserPath(config.storageDir || DEFAULT_STORAGE_DIR);
+    // 每个实例使用独立的存储目录
+    const baseDir = config.storageDir || DEFAULT_STORAGE_DIR;
+    const num = this.id.replace('wechat-', '');
+    const storageDir = expandUserPath(`${baseDir}-${num}`);
+    this.storageDir = storageDir;
     ensureDirectoryExists(storageDir);
 
     // 动态导入 ESM 模块
@@ -139,12 +149,27 @@ export class WechatConnector implements Connector {
     console.log('[WechatConnector] ✅ 微信连接器已启动');
   }
 
-  async stop(): Promise<void> {
+  async stop(clearCredentials = true): Promise<void> {
     if (this.bot && this.isStarted) {
       this.bot.stop();
       this.isStarted = false;
       console.log('[WechatConnector] ✅ 微信连接器已停止');
     }
+
+    // 仅在用户主动停止时清除凭证缓存
+    if (clearCredentials && this.storageDir) {
+      try {
+        const files = fs.readdirSync(this.storageDir);
+        for (const file of files) {
+          fs.unlinkSync(path.join(this.storageDir, file));
+        }
+        console.log(`[WechatConnector] 🗑️ 已清除凭证缓存: ${this.storageDir}`);
+      } catch (error) {
+        console.warn('[WechatConnector] ⚠️ 清除凭证缓存失败:', getErrorMessage(error));
+      }
+    }
+
+    this.bot = null;
   }
 
   async healthCheck(): Promise<HealthStatus> {
@@ -283,7 +308,7 @@ export class WechatConnector implements Connector {
       }
 
       // 转发到 ConnectorManager
-      await this.connectorManager.handleIncomingMessage('wechat', parsedMessage);
+      await this.connectorManager.handleIncomingMessage(this.id, parsedMessage);
     } catch (error) {
       console.error('[WechatConnector] ❌ 处理消息失败:', getErrorMessage(error));
     }
@@ -305,7 +330,7 @@ export class WechatConnector implements Connector {
    */
   private notifyQrCode(url: string): void {
     try {
-      this.connectorManager.broadcastWechatQrCode(url);
+      this.connectorManager.broadcastWechatQrCode(url, this.id);
     } catch {
       // 静默处理
     }

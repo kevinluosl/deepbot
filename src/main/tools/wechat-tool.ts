@@ -33,12 +33,15 @@ export function setGatewayForWechatTool(gateway: Gateway): void {
  * 2. 提供了 tabName → 查找对应 Tab 的 conversationId
  * 3. 当前 Tab 是微信 connector → 直接用当前会话
  */
-function resolveWechatTarget(sessionId: string, userId?: string, tabName?: string): { conversationId: string } {
+function resolveWechatTarget(sessionId: string, userId?: string, tabName?: string): { conversationId: string; connectorId: string } {
   if (!gatewayInstance) throw new Error('Gateway 未初始化');
 
-  // 情况 1：提供了 userId
+  // 情况 1：提供了 userId — 需要从当前 tab 或第一个微信连接器获取 connectorId
   if (userId) {
-    return { conversationId: userId };
+    const tabs = gatewayInstance.getAllTabs();
+    const currentTab = tabs.find(t => t.id === sessionId);
+    const connectorId = currentTab?.connectorId?.startsWith('wechat') ? currentTab.connectorId : findFirstWechatConnectorId();
+    return { conversationId: userId, connectorId };
   }
 
   // 情况 2：提供了 tabName
@@ -47,22 +50,32 @@ function resolveWechatTarget(sessionId: string, userId?: string, tabName?: strin
     const normalizedQuery = tabName.replace(/\s+/g, '');
     const targetTab = tabs.find(t => t.title.replace(/\s+/g, '') === normalizedQuery);
     if (!targetTab) throw new Error(`未找到名为 "${tabName}" 的 Tab`);
-    if (targetTab.connectorId !== 'wechat' || !targetTab.conversationId) {
+    if (!targetTab.connectorId?.startsWith('wechat') || !targetTab.conversationId) {
       throw new Error(`Tab "${tabName}" 不是微信会话 Tab`);
     }
-    return { conversationId: targetTab.conversationId };
+    return { conversationId: targetTab.conversationId, connectorId: targetTab.connectorId };
   }
 
   // 情况 3：当前 Tab 是微信 connector
   const tabs = gatewayInstance.getAllTabs();
   const currentTab = tabs.find(t => t.id === sessionId);
-  if (currentTab?.type === 'connector' && currentTab.connectorId === 'wechat' && currentTab.conversationId) {
-    return { conversationId: currentTab.conversationId };
+  if (currentTab?.type === 'connector' && currentTab.connectorId?.startsWith('wechat') && currentTab.conversationId) {
+    return { conversationId: currentTab.conversationId, connectorId: currentTab.connectorId };
   }
 
   throw new Error('无法确定发送目标。请提供 userId 或 tabName 参数，或在微信会话 Tab 中调用');
 }
 
+/**
+ * 查找第一个可用的微信连接器 ID
+ */
+function findFirstWechatConnectorId(): string {
+  if (!gatewayInstance) throw new Error('Gateway 未初始化');
+  const connectorManager = gatewayInstance.getConnectorManager();
+  const allConnectors = connectorManager.getAllConnectors();
+  const wechatConnector = allConnectors.find(c => c.id.startsWith('wechat'));
+  return wechatConnector?.id || 'wechat-1';
+}
 
 // ── 工具插件 ──────────────────────────────────────────────────────────────────
 
@@ -102,7 +115,7 @@ export const wechatToolPlugin: ToolPlugin = {
             logger.info('发送微信消息:', { target, messageLength: args.message.length });
 
             const connectorManager = gatewayInstance.getConnectorManager();
-            await connectorManager.sendOutgoingMessage('wechat', target.conversationId, args.message);
+            await connectorManager.sendOutgoingMessage(target.connectorId, target.conversationId, args.message);
 
             return {
               content: [{ type: 'text', text: `✅ 微信消息已发送` }],
@@ -140,7 +153,7 @@ export const wechatToolPlugin: ToolPlugin = {
 
             const target = resolveWechatTarget(sessionId, args.userId, args.tabName);
             const connectorManager = gatewayInstance.getConnectorManager();
-            await connectorManager.sendImage('wechat', target.conversationId, expandedPath, args.caption);
+            await connectorManager.sendImage(target.connectorId, target.conversationId, expandedPath, args.caption);
 
             return {
               content: [{ type: 'text', text: `✅ 微信图片已发送` }],
@@ -178,7 +191,7 @@ export const wechatToolPlugin: ToolPlugin = {
 
             const target = resolveWechatTarget(sessionId, args.userId, args.tabName);
             const connectorManager = gatewayInstance.getConnectorManager();
-            await connectorManager.sendFile('wechat', target.conversationId, expandedPath, args.fileName);
+            await connectorManager.sendFile(target.connectorId, target.conversationId, expandedPath, args.fileName);
 
             return {
               content: [{ type: 'text', text: `✅ 微信文件已发送: ${args.fileName || basename(expandedPath)}` }],

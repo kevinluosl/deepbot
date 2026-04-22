@@ -74,11 +74,37 @@ export class Gateway {
     this.connectorManager.registerConnector(feishuConnector);
     console.log('[Gateway] ✅ 飞书连接器已注册');
 
-    // 注册微信连接器
+    // 注册微信连接器（从数据库恢复已有实例，没有则创建默认实例）
     const { WechatConnector } = require('./connectors/wechat/wechat-connector');
-    const wechatConnector = new WechatConnector(this.connectorManager);
-    this.connectorManager.registerConnector(wechatConnector);
-    console.log('[Gateway] ✅ 微信连接器已注册');
+    const { SystemConfigStore: ConfigStore } = require('./database/system-config-store');
+    const store = ConfigStore.getInstance();
+    const allConnectorConfigs = store.getAllConnectorConfigs();
+    const wechatConfigs = allConnectorConfigs.filter((c: any) => c.connectorId.startsWith('wechat'));
+    
+    if (wechatConfigs.length > 0) {
+      // 恢复已有的微信实例
+      for (const cfg of wechatConfigs) {
+        // 兼容旧数据：id 为 'wechat' 的迁移为 'wechat-1'
+        let instanceId = cfg.connectorId;
+        if (instanceId === 'wechat') {
+          instanceId = 'wechat-1';
+          // 迁移数据库：删除旧配置，以新 id 重新保存
+          store.deleteConnectorConfig('wechat');
+          store.saveConnectorConfig('wechat-1', '微信 1', cfg.config, cfg.enabled);
+          // 迁移已有 Tab 的 connectorId
+          this.migrateTabConnectorId('wechat', 'wechat-1');
+          console.log('[Gateway] 🔄 已迁移旧微信配置: wechat → wechat-1');
+        }
+        const wc = new WechatConnector(this.connectorManager, instanceId);
+        this.connectorManager.registerConnector(wc);
+        console.log(`[Gateway] ✅ 微信连接器已恢复: ${instanceId}`);
+      }
+    } else {
+      // 首次启动，创建默认实例
+      const wechatConnector = new WechatConnector(this.connectorManager, 'wechat-1');
+      this.connectorManager.registerConnector(wechatConnector);
+      console.log('[Gateway] ✅ 微信连接器已注册: wechat-1');
+    }
     
     // 设置 Gateway 实例供 scheduled-task-tool 使用
     setGatewayInstance(this);
@@ -753,6 +779,37 @@ export class Gateway {
    */
   getMainWindow(): any {
     return this.mainWindow;
+  }
+
+  /**
+   * 迁移 Tab 中的 connectorId（旧 id → 新 id）
+   * 同时更新数据库和内存中的 Tab 数据
+   */
+  private migrateTabConnectorId(oldId: string, newId: string): void {
+    try {
+      // 更新数据库
+      const { SystemConfigStore: ConfigStore } = require('./database/system-config-store');
+      const db = ConfigStore.getInstance().getDb();
+      const stmt = db.prepare('UPDATE agent_tabs SET connector_id = ? WHERE connector_id = ?');
+      const result = stmt.run(newId, oldId);
+      if (result.changes > 0) {
+        console.log(`[Gateway] 🔄 已迁移 ${result.changes} 个 Tab 的 connectorId: ${oldId} → ${newId}`);
+      }
+
+      // 更新内存中的 Tab
+      const allTabs = this.tabManager.getAllTabs();
+      for (const tab of allTabs) {
+        if (tab.connectorId === oldId) {
+          tab.connectorId = newId;
+          // conversationKey 也需要更新
+          if (tab.conversationKey?.startsWith(`${oldId}_`)) {
+            tab.conversationKey = tab.conversationKey.replace(`${oldId}_`, `${newId}_`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`[Gateway] ❌ 迁移 Tab connectorId 失败:`, error);
+    }
   }
   
   /**

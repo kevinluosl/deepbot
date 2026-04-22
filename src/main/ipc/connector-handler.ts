@@ -400,4 +400,36 @@ export function registerConnectorHandlers(): void {
       }
     }
   );
+
+  // 创建微信连接器实例
+  registerIpcHandler<void, { success: boolean; connectorId?: string; error?: string }>(
+    IPC_CHANNELS.CONNECTOR_CREATE_WECHAT,
+    async (): Promise<{ success: boolean; connectorId?: string; error?: string }> => {
+      try {
+        if (!gateway) throw new Error('Gateway 未初始化');
+        const connectorManager = gateway.getConnectorManager();
+        const connectorId = connectorManager.createWechatInstance();
+        return { success: true, connectorId };
+      } catch (error) {
+        console.error('[IPC] 创建微信实例失败:', error);
+        return { success: false, error: getErrorMessage(error) };
+      }
+    }
+  );
+
+  // 删除微信连接器实例
+  registerIpcHandler<{ connectorId: string }, { success: boolean; error?: string }>(
+    IPC_CHANNELS.CONNECTOR_REMOVE_WECHAT,
+    async (_event, request): Promise<{ success: boolean; error?: string }> => {
+      try {
+        if (!gateway) throw new Error('Gateway 未初始化');
+        const connectorManager = gateway.getConnectorManager();
+        await connectorManager.removeWechatInstance(request.connectorId);
+        return { success: true };
+      } catch (error) {
+        console.error('[IPC] 删除微信实例失败:', error);
+        return { success: false, error: getErrorMessage(error) };
+      }
+    }
+  );
 }

@@ -335,11 +335,11 @@ export class ConnectorManager {
   /**
    * 推送微信二维码到前端
    */
-  broadcastWechatQrCode(url: string): void {
+  broadcastWechatQrCode(url: string, connectorId?: string): void {
     try {
       const mainWindow = this.gateway.getMainWindow();
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('wechat:qr-code', { url });
+        mainWindow.webContents.send('wechat:qr-code', { url, connectorId: connectorId || 'wechat-1' });
       }
     } catch (error) {
       console.error('[ConnectorManager] 推送微信二维码失败:', error);
@@ -372,6 +372,60 @@ export class ConnectorManager {
   }
   
   /**
+   * 创建新的微信连接器实例
+   * 
+   * @returns 新实例的 connectorId
+   */
+  createWechatInstance(): string {
+    // 找到下一个可用编号
+    let nextNum = 1;
+    while (this.connectors.has(`wechat-${nextNum}`)) {
+      nextNum++;
+    }
+    const instanceId = `wechat-${nextNum}`;
+
+    const { WechatConnector } = require('./wechat/wechat-connector');
+    const connector = new WechatConnector(this, instanceId);
+    this.registerConnector(connector);
+
+    console.log(`[ConnectorManager] ✅ 创建微信实例: ${instanceId}`);
+    return instanceId;
+  }
+
+  /**
+   * 删除微信连接器实例
+   * 
+   * @param connectorId - 连接器实例 ID（如 wechat-1）
+   */
+  async removeWechatInstance(connectorId: string): Promise<void> {
+    if (!connectorId.startsWith('wechat')) {
+      throw new Error('只能删除微信连接器实例');
+    }
+
+    const connector = this.connectors.get(connectorId);
+    if (!connector) {
+      throw new Error(`连接器实例不存在: ${connectorId}`);
+    }
+
+    // 先停止
+    try {
+      await connector.stop();
+    } catch {
+      // 忽略停止错误
+    }
+
+    // 从 Map 中移除
+    this.connectors.delete(connectorId);
+
+    // 删除数据库配置
+    const { SystemConfigStore } = require('../database/system-config-store');
+    const store = SystemConfigStore.getInstance();
+    store.deleteConnectorConfig(connectorId);
+
+    console.log(`[ConnectorManager] ✅ 已删除微信实例: ${connectorId}`);
+  }
+
+  /**
    * 销毁所有连接器
    */
   async destroy(): Promise<void> {
@@ -379,7 +433,10 @@ export class ConnectorManager {
     
     for (const [connectorId, connector] of this.connectors.entries()) {
       try {
-        await connector.stop();
+        // 应用退出时不清除凭证缓存（下次启动可自动恢复登录）
+        if (typeof (connector as any).stop === 'function') {
+          await (connector as any).stop(false);
+        }
         console.log(`[ConnectorManager] 已停止连接器: ${connectorId}`);
       } catch (error) {
         console.error(`[ConnectorManager] 停止连接器失败: ${connectorId}`, error);

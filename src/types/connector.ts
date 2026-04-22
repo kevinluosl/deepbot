@@ -7,7 +7,7 @@
 /**
  * 连接器 ID
  */
-export type ConnectorId = 'feishu' | 'dingtalk' | 'wechat' | 'slack';
+export type ConnectorId = string;
 
 /**
  * 连接器配置
