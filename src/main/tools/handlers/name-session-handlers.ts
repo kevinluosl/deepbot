@@ -164,6 +164,7 @@ export async function handleSetNameConfig(
         store.updateTabAgentName(sessionId, params.agentName);
         
         // 更新 Tab 的 title
+        let finalTitle = params.agentName;
         const gateway = await getGatewayInstance();
         if (gateway) {
           const tabManager = (gateway as any).tabManager;
@@ -174,8 +175,16 @@ export async function handleSetNameConfig(
             const tab = tabs.get(sessionId);
             
             if (tab) {
-              tab.title = params.agentName;
-              logger.info(`已更新 Tab title: ${sessionId} -> ${params.agentName}`);
+              // 连接器 Tab 自动加前缀
+              if (tab.type === 'connector') {
+                if (tab.connectorId === 'feishu' && !params.agentName.startsWith('FS-')) {
+                  finalTitle = `FS-${params.agentName}`;
+                } else if (tab.connectorId?.startsWith('wechat') && !params.agentName.startsWith('WX-')) {
+                  finalTitle = `WX-${params.agentName}`;
+                }
+              }
+              tab.title = finalTitle;
+              logger.info(`已更新 Tab title: ${sessionId} -> ${finalTitle}`);
               
               // 如果 Tab 是持久化的，更新数据库
               if (tab.isPersistent) {
@@ -197,10 +206,10 @@ export async function handleSetNameConfig(
           }
         }
         
-        // 发送事件到前端
+        // 发送事件到前端（使用带前缀的完整标题）
         await sendToFrontend('name-config:updated', { 
           tabId: sessionId,
-          agentName: params.agentName,
+          agentName: finalTitle,
           userName: currentConfig.userName,
         });
         logger.info('已发送 Tab 名字更新事件到前端:', { sessionId, agentName: params.agentName });
