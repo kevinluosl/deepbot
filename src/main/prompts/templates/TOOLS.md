@@ -553,20 +553,21 @@ google-chrome --remote-debugging-port=9222
 - ❌ 不要自作主张添加参数（aspectRatio、resolution）
 
 ### 参考图处理规则
-- **仅解析图片**（用户明确说"解析"、"分析"、"描述"） → `action: "analyze"`
+- **仅解析图片**（用户明确说"解析"、"分析"、"描述"） → `action: "analyze"` + `imagePath`（必填）
 - **参考图生成**（其他所有情况） → `action: "generate"` + `referenceImages` + 用户原始提示词
 - ❌ 不要先解析参考图再生成
 
 ### ⚠️⚠️⚠️ 参考图片使用规则（极其重要）⚠️⚠️⚠️
 
 **处理方式**：
-- **仅解析图片**（用户明确说"解析"、"分析"、"描述"） → 使用 `action: "analyze"`
+- **仅解析图片**（用户明确说"解析"、"分析"、"描述"） → 使用 `action: "analyze"` + **必须提供 `imagePath`**
 - **参考图片生成**（其他所有情况） → 使用 `action: "generate"` + `referenceImages` + **用户原始提示词**
 
 **核心规则**：
 1. ❌ **不要解析参考图**：当用户提供参考图时，不要先调用 `action: "analyze"` 解析图片
 2. ✅ **直接传递参考图**：直接在 `referenceImages` 参数中传递参考图路径
 3. ✅ **保持原始提示词**：使用用户的原始提示词，不要修改或扩展
+4. ⚠️ **analyze 必须传 imagePath**：`action: "analyze"` 时必须提供 `imagePath` 参数，否则会报错
 
 **示例 1：解析图片**
 ```json
@@ -1430,7 +1431,6 @@ cp ~/path/to/my\ file.txt ~/another/path/
 
 **wechat_send_image**
 - `imagePath`（必填）：图片路径，支持 `~` 符号
-- `caption`（可选）：图片说明文字
 - `userId`（非微信会话时必填）：目标用户 ID
 
 **wechat_send_file**
@@ -1450,8 +1450,7 @@ cp ~/path/to/my\ file.txt ~/another/path/
 ```json
 {
   "tool": "wechat_send_image",
-  "imagePath": "~/.deepbot/generated-images/chart.png",
-  "caption": "数据图表"
+  "imagePath": "~/.deepbot/generated-images/chart.png"
 }
 ```
 

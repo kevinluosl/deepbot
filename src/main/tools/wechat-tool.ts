@@ -138,7 +138,6 @@ export const wechatToolPlugin: ToolPlugin = {
         description: '向微信用户发送图片。支持本地图片路径。',
         parameters: Type.Object({
           imagePath: Type.String({ description: '图片文件路径，支持 ~ 符号' }),
-          caption: Type.Optional(Type.String({ description: '图片说明文字（可选）' })),
           userId: Type.Optional(Type.String({ description: '目标用户 ID' })),
           tabName: Type.Optional(Type.String({ description: '目标 Tab 名称' })),
         }),
@@ -153,7 +152,7 @@ export const wechatToolPlugin: ToolPlugin = {
 
             const target = resolveWechatTarget(sessionId, args.userId, args.tabName);
             const connectorManager = gatewayInstance.getConnectorManager();
-            await connectorManager.sendImage(target.connectorId, target.conversationId, expandedPath, args.caption);
+            await connectorManager.sendImage(target.connectorId, target.conversationId, expandedPath);
 
             return {
               content: [{ type: 'text', text: `✅ 微信图片已发送` }],

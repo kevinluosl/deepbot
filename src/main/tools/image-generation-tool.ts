@@ -73,13 +73,13 @@ function getToolConfig(configStore: SystemConfigStore): {
 const ImageGenerationSchema = Type.Object({
   action: Type.Optional(Type.Union([
     Type.Literal('generate', { description: '生成图片（默认）' }),
-    Type.Literal('analyze', { description: '解析图片生成提示词' }),
+    Type.Literal('analyze', { description: '解析图片（必须同时提供 imagePath）' }),
   ])),
   prompt: Type.Optional(Type.String({
     description: '图片生成提示词（中文或英文）。action=generate 时必填',
   })),
   imagePath: Type.Optional(Type.String({
-    description: '要解析的图片路径。action=analyze 时必填',
+    description: '要解析的图片路径（action=analyze 时必填，不能为空）',
   })),
   analysisPrompt: Type.Optional(Type.String({
     description: '图片分析的自定义提示词（可选）。用于引导分析结果，例如："请识别图片中的文字"、"请分析图片中的情绪"、"请描述图片的艺术风格"等',

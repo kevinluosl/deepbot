@@ -40,6 +40,12 @@ export async function installSkill(
       // 文件系统不存在，清理数据库中的残留记录
       console.warn(`[Skill Manager] ⚠️ 数据库有 "${name}" 记录但文件不存在，清理残留记录`);
       db.prepare('DELETE FROM skills WHERE name = ?').run(name);
+    } else {
+      // 数据库无记录，但文件系统可能已存在（手动放入的 skill）
+      const skillMdPath = path.join(skillDir, 'SKILL.md');
+      if (fs.existsSync(skillMdPath)) {
+        throw new Error(`Skill "${name}" 已存在于 ${skillDir}，无需安装`);
+      }
     }
 
     // 2. 确保 skills 目录存在
