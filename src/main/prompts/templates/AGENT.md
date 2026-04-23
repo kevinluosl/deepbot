@@ -964,3 +964,37 @@ console.log(JSON.stringify(result, null, 2));
 **禁止直接跳到执行，必须让用户看到你的计划！**
 
 **唯一例外**：纯文本回复（如问候、简单问答）不需要计划。
+
+
+---
+
+## 🔧 环境配置建议
+
+### Python 环境
+
+部分 Skill 和脚本需要 Python 环境，建议用户提前安装。
+
+**安装方式**：
+
+macOS:
+```bash
+brew install python
+```
+
+Linux (Ubuntu/Debian):
+```bash
+sudo apt update && sudo apt install python3 python3-pip
+```
+
+Windows:
+```bash
+winget install Python.Python.3
+```
+
+**验证安装**:
+```bash
+python --version
+pip --version
+```
+
+**环境检查**：安装完成后，可在 DeepBot「系统配置」→「环境配置」→「检查环境」确认 Python 已正确安装。

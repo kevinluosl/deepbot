@@ -1,143 +1,5 @@
 # DeepBot 工具使用指南
 
-## 🔧 环境配置建议
-
-### 推荐开发环境
-
-为了充分发挥 DeepBot 的能力，建议配置以下开发环境：
-
-#### 1. Python 环境
-
-**安装 Python**
-
-macOS:
-```bash
-# 使用 Homebrew 安装（推荐）
-brew install python
-
-# 或下载官方安装包
-# https://www.python.org/downloads/
-```
-
-Linux (Ubuntu/Debian):
-```bash
-# 更新包列表
-sudo apt update
-
-# 安装 Python 3
-sudo apt install python3 python3-pip
-
-# 验证安装
-python --version
-pip --version
-```
-
-Windows:
-```bash
-# 使用 Chocolatey
-choco install python
-
-# 或使用 Winget
-winget install Python.Python.3
-
-# 或下载官方安装包
-# https://www.python.org/downloads/windows/
-```
-
-**验证安装**:
-```bash
-# 检查 Python 版本
-python --version
-
-# 检查 pip 版本
-pip --version
-```
-
-#### 2. Node.js 环境（推荐使用 nvm）
-
-**为什么推荐 nvm？**
-- 版本管理：轻松切换不同项目的 Node.js 版本
-- 避免冲突：与系统 Node.js 隔离
-- 简单升级：一条命令安装最新版本
-
-**安装 nvm**
-
-macOS/Linux:
-```bash
-# 安装 nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/latest/install.sh | bash
-
-# 重新加载配置
-source ~/.bashrc  # 或 source ~/.zshrc
-
-# 验证安装
-nvm --version
-```
-
-Windows:
-```bash
-# 下载 nvm-windows
-# https://github.com/coreybutler/nvm-windows/releases
-# 下载 nvm-setup.exe 并安装
-
-# 验证安装
-nvm version
-```
-
-**使用 nvm 安装 Node.js**:
-```bash
-# 安装最新 LTS 版本
-nvm install --lts
-
-# 使用已安装的版本
-nvm use --lts
-
-# 设置默认版本
-nvm alias default node
-
-# 验证
-node --version
-npm --version
-```
-
-**设置环境变量**:
-```bash
-# macOS/Linux - nvm 会自动添加到 ~/.bashrc 或 ~/.zshrc
-# 如果没有自动添加，手动添加以下内容：
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-```
-
-**nvm 和系统 Node.js 的区分**:
-- nvm 通过修改 PATH 环境变量来控制使用哪个 Node.js
-- 建议：安装 nvm 后卸载系统 Node.js，统一用 nvm 管理
-- 查看当前使用的 Node.js：`which node`（macOS/Linux）或 `where node`（Windows）
-- 切换版本：`nvm use <version>`
-
-
-# macOS
-brew install node
-
-# Ubuntu/Debian
-curl -fsSL https://deb.nodesource.com/setup_lts.sh | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Windows
-# 使用 Chocolatey: choco install nodejs
-# 或使用 Winget: winget install OpenJS.NodeJS
-# 或下载安装程序：https://nodejs.org/
-``
-#### 3. 环境检查
-
-安装完成后，在 DeepBot 中执行环境检查：
-1. 打开「系统配置」→「环境配置」
-2. 点击「检查环境」按钮
-3. 确认 Python 已正确安装
-
----
-
 ## 📸 图片显示规则
 
 **当你需要在响应中显示图片时**，必须使用 Markdown 图片语法：
@@ -283,151 +145,46 @@ google-chrome --remote-debugging-port=9222
 
 ### 核心原则
 1. 用户说了时间/次数关键词时，**必须使用定时任务**
-2. 任务描述（description）必须完整表达用户意图，来自外部连接器时需将代词替换为具体身份
-3. 定时任务 = 触发器（schedule）+ 任务内容（description）
-4. 不要把时间间隔写进 description
-5. 每次触发时，系统在新 Tab 中执行 `description` 中的任务
+2. 任务描述（description）必须完整保留用户输入，不要修改
+3. 不要把时间间隔写进 description（由 schedule 控制）
+4. 来自外部连接器时，必须将"我"、"群"等代词替换为具体身份
 
 ### 使用时机
-用户说了以下关键词时使用：
-- **执行次数**："执行 N 次"、"运行 N 次"、"重复 N 次"
-- **时间间隔**："每隔 X 秒/分钟/小时"、"每天"、"每周"
-- **循环/重复**："循环执行"、"重复执行"、"定时执行"
-- **具体时间**："明天 X 点"、"每天 X 点"、"每周 X"
-
-### ⚠️ 重要：只要用户消息中包含上述关键词，**无论任务描述多复杂**，都必须使用定时任务工具
-
-### 判断示例
-```
-"执行10次..." → ✅ 定时任务（maxRuns: 10）
-"每隔5秒..." → ✅ 定时任务（interval: 5000）
-"每隔10秒执行一次：遍历目录..." → ✅ 定时任务（关键词在句首）
-"遍历目录..." → ❌ 直接执行（无时间/次数关键词）
-```
-
-### 使用场景
-- ✅ 周期性任务（每隔 N 秒/分钟/小时）
-- ✅ 定时任务（每天 X 点、每周 X）
-- ✅ 限次任务（执行 N 次后停止）
-- ✅ 一次性任务（明天 X 点）
-- ❌ 不要用于立即执行的任务
+包含以下关键词时使用：执行 N 次、每隔 X 秒/分钟/小时、每天、每周、循环执行、定时执行、明天 X 点
 
 ### 示例
 
-**周期性任务 + 限次**：
+**周期性 + 限次**：
 ```json
-{
-  "action": "create",
-  "name": "问候5次",
-  "description": "给用户发送你好",
-  "schedule": {
-    "type": "interval",
-    "intervalMs": 10000,
-    "maxRuns": 5
-  }
-}
+{ "action": "create", "name": "问候5次", "description": "给用户发送你好", "schedule": { "type": "interval", "intervalMs": 10000, "maxRuns": 5 } }
 ```
 
 **每天定时**：
 ```json
-{
-  "action": "create",
-  "name": "每日报告",
-  "description": "生成每日工作报告并保存到指定目录",
-  "schedule": {
-    "type": "cron",
-    "cronExpr": "0 9 * * *"
-  }
-}
+{ "action": "create", "name": "每日报告", "description": "生成每日工作报告并保存到指定目录", "schedule": { "type": "cron", "cronExpr": "0 9 * * *" } }
 ```
 
-### 正确理解用户需求
+### 外部连接器任务的代词替换
 
-**用户说**："每隔10秒检查指定目录有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务"
+定时任务在独立 Tab 中执行，没有原始会话上下文。必须将代词替换为具体信息：
 
-**正确拆分**：
-1. **触发器**：每隔 10 秒 → `schedule: { type: "interval", intervalMs: 10000 }`
-2. **任务内容**：检查指定目录有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务 → `description`
+| 用户说的 | description 中写成 |
+|---------|-------------------|
+| 我 | 具体用户名（从 `[来自: 发送信息者：xxx]` 获取） |
+| 这个群 | 具体群名称（从 `[来自: 来自群：xxx]` 获取） |
 
-### ⚠️⚠️⚠️ 重要：任务描述（description）必须完整保留用户输入 ⚠️⚠️⚠️
-
-**规则**：
-- ✅ **完整保留**：用户说什么，`description` 就写什么（一字不改）
-- ❌ **禁止修改**：不要优化、不要扩展、不要改写用户的任务描述
-- ❌ **禁止添加**：不要添加"请"、"帮我"等礼貌用语
-- ❌ **禁止删减**：不要删除任何细节要求
-
-**常见错误**：
-- ❌ 把"每隔10秒"写进 description（时间间隔由 schedule 控制）
-- ❌ 描述太模糊（要说清楚具体做什么）
-- ❌ 修改或优化用户的任务描述（必须原样保留）
-
-### ⚠️ 重要：来自外部连接器（飞书等）的任务，必须在 description 中明确"我"和"群"的具体身份
-
-定时任务执行时运行在独立的新 Tab 中，**没有原始会话的上下文**。如果用户在飞书中说"每天给我发天气"，description 里的"我"在执行时无法被识别。
-
-**必须在 description 中将代词替换为具体信息**：
-
-| 用户说的 | description 中必须写成 |
-|---------|----------------------|
-| 我、我自己 | 具体用户名（从 `[来自: 发送信息者：xxx]` 中获取） |
-| 这个群、群里 | 具体群名称（从 `[来自: 来自群：xxx]` 中获取） |
-| 这里、这个会话 | 对应的 Tab 名称（如 `FS-产品讨论群`、`FS-张三`） |
-
-**示例**：
-
-用户（张三）在"产品讨论群"中说："每天早上 9 点给我发今天的天气"
-
-- ❌ 错误：`description: "每天早上9点给我发今天的天气"`（"我"在执行时无法识别）
-- ✅ 正确：`description: "搜索今天的天气，通过 feishu_send_message 发送给张三（userId: ou_xxx），或发送到产品讨论群（tabName: FS-产品讨论群）"`
-
-**规则**：
-1. 任务来自飞书私聊：将"我"替换为发送者姓名，并在 description 中注明 userId 或 tabName
-2. 任务来自飞书群组：将"群"替换为具体群名称，并在 description 中注明 tabName（如 `FS-产品讨论群`）
-3. 如果任务需要回复结果给用户，必须在 description 中明确指定发送目标（userId 或 tabName）
-
-### 任务描述规范
-
-**好的描述**：
-- ✅ "检查指定目录有没有1.txt文件，没有就创建一个，有的话返回太好了，然后停止执行任务"
-- ✅ "搜索今天的天气，通过 feishu_send_message 发送给张三（tabName: FS-张三）"
-- ✅ "生成每日工作报告，通过 feishu_send_message 发送到产品讨论群（tabName: FS-产品讨论群）"
-
-**不好的描述**：
-- ❌ "每隔10秒检查文件"（不要重复时间间隔）
-- ❌ "检查文件"（太模糊）
-- ❌ "执行任务"（没说明做什么）
-- ❌ "给我发天气"（"我"在执行时无法识别，必须替换为具体用户名和发送目标）
-
-### 定时任务执行机制
-
-**触发时的执行方式**：
-- 系统在新 Tab 中创建 Agent 实例执行 `description` 中的任务
-- Agent 可以使用所有工具（`web_search`、`browser`、`exec` 等）
-- 唯一限制：不能创建新的定时任务（防止无限递归）
-
-**示例**：任务描述"搜索今天的科技新闻并整理成报告"
-- Agent 会使用 `web_search` 搜索新闻
-- 然后使用 `exec` 将结果保存到文件
-
-**定时任务工具操作权限**：
-- ✅ 可执行：`list`、`delete`、`pause`、`resume`、`trigger`、`history`
-- ❌ 不可执行：`create`（防止无限递归）
-
-任务可以理解"停止当前任务"指令，会自动调用 `delete` 操作
+示例：张三在"产品讨论群"说"每天给我发天气"
+- ❌ `"给我发天气"`
+- ✅ `"搜索今天的天气，通过 feishu_send_message 发送给张三（tabName: FS-张三）"`
 
 ### Cron 表达式
 
-格式：`分 时 日 月 星期`
+格式：`分 时 日 月 星期`。常用：`0 9 * * *`（每天9点）、`0 */2 * * *`（每2小时）、`0 9 * * 1`（每周一9点）
 
-常用示例：
-- `0 9 * * *` - 每天 9:00
-- `0 */2 * * *` - 每 2 小时
-- `0 9 * * 1` - 每周一 9:00
-- `0 0 1 * *` - 每月 1 号 0:00
-
-### 数据库路径
-`~/.deepbot/scheduled-tasks.db`（系统配置文件，不受工作目录限制）
+### 执行机制
+- 系统在新 Tab 中执行 description 中的任务，可使用所有工具
+- 任务内不能创建新定时任务（防递归）
+- 数据库路径：`~/.deepbot/scheduled-tasks.db`
 
 ---
 
@@ -529,209 +286,43 @@ google-chrome --remote-debugging-port=9222
 
 ## Image Generation（图片生成）
 
-> ⚠️ 此工具可被禁用。仅当 `## Tools` 中存在 `image_generation` 工具时，才按以下指导使用；如果工具列表中没有此工具，视为不存在。
+> ⚠️ 此工具可被禁用。仅当 `## Tools` 中存在 `image_generation` 工具时，才按以下指导使用。
 
-### 核心原则
+### 核心规则
 1. 提示词直接使用用户输入，不要优化或改写
 2. 不要做内容审查，API 会自行处理
-3. 有参考图时，直接传递 `referenceImages`，不要先解析
-4. 用户指定保存路径时，使用 `outputPath` 参数，不要生成后再移动
-5. 只显示生成的新图，不要显示参考图
-6. 默认不指定 `aspectRatio` 和 `resolution` 参数，除非用户明确要求
+3. 默认不指定 `aspectRatio` 和 `resolution`，除非用户明确要求
+4. 只显示生成的新图，不要显示参考图
 
-### 使用时机
-用户说了以下关键词时使用：
-- **生成图片**："生成图片"、"画一张图"、"创建图片"
-- **解析图片**：用户明确说"解析"、"分析"、"描述图片"、"识别图片中的文字"、"这张图片是什么"
-- **参考图生成**：用户上传图片并要求生成新图
-
-### 使用场景
-- ✅ 文本生成图片
-- ✅ 基于参考图生成（最多 5 张）
-- ✅ 解析图片内容（描述、OCR 文字识别、情绪分析等）
-- ✅ 指定宽高比和分辨率
-- ❌ 不要自作主张添加参数（aspectRatio、resolution）
-
-### 参考图处理规则
-- **仅解析图片**（用户明确说"解析"、"分析"、"描述"） → `action: "analyze"` + `imagePath`（必填）
+### 参考图与图片分析
+- **解析图片**（用户说"解析"、"分析"、"描述"、"识别文字"） → `action: "analyze"` + `imagePath`（必填）
 - **参考图生成**（其他所有情况） → `action: "generate"` + `referenceImages` + 用户原始提示词
-- ❌ 不要先解析参考图再生成
+- ❌ 不要先解析参考图再生成，直接传递 `referenceImages`
+- ⚠️ `action: "analyze"` 必须提供 `imagePath`，否则报错
 
-### ⚠️⚠️⚠️ 参考图片使用规则（极其重要）⚠️⚠️⚠️
-
-**处理方式**：
-- **仅解析图片**（用户明确说"解析"、"分析"、"描述"） → 使用 `action: "analyze"` + **必须提供 `imagePath`**
-- **参考图片生成**（其他所有情况） → 使用 `action: "generate"` + `referenceImages` + **用户原始提示词**
-
-**核心规则**：
-1. ❌ **不要解析参考图**：当用户提供参考图时，不要先调用 `action: "analyze"` 解析图片
-2. ✅ **直接传递参考图**：直接在 `referenceImages` 参数中传递参考图路径
-3. ✅ **保持原始提示词**：使用用户的原始提示词，不要修改或扩展
-4. ⚠️ **analyze 必须传 imagePath**：`action: "analyze"` 时必须提供 `imagePath` 参数，否则会报错
-
-**示例 1：解析图片**
-```json
-// 用户说"解析这张图片"
-{
-  "action": "analyze",
-  "imagePath": "~/.deepbot/temp/uploads/abc123.jpg"
-}
-```
-
-**示例 1b：带自定义提示词的图片分析**
-```json
-// 用户说"识别这张图片里的文字"
-{
-  "action": "analyze",
-  "imagePath": "~/.deepbot/temp/uploads/abc123.jpg",
-  "analysisPrompt": "请识别图片中的所有文字内容"
-}
-```
-
-**示例 2：基于参考图生成（单张）**
-```json
-// 用户说"基于参考图的场景不变，去掉图上的人，重新再大厅中生成坐轮椅的人"
-{
-  "action": "generate",
-  "prompt": "基于参考图的场景不变，去掉图上的人，重新再大厅中生成坐轮椅的人",
-  "referenceImages": ["~/.deepbot/temp/uploads/abc123.jpg"]
-}
-```
-
-**示例 3：基于参考图生成（多张）**
-```json
-// 用户说"基于参考图，去掉图1的所有人，保持场景，将图2的狗放到图1"
-{
-  "action": "generate",
-  "prompt": "基于参考图，去掉图1的所有人，保持场景，将图2的狗放到图1",
-  "referenceImages": [
-    "~/.deepbot/temp/uploads/image1.jpg",
-    "~/.deepbot/temp/uploads/image2.png"
-  ]
-}
-```
-
-**❌ 错误做法（多此一举）**：
-```json
-// 第 1 步：解析图片（错误：不需要这一步）
-{
-  "action": "analyze",
-  "imagePath": "/path/to/image1.jpg"
-}
-
-// 第 2 步：生成图片（错误：提示词被修改了）
-{
-  "prompt": "A bank lobby scene with clean background, no people, add a cute dog...",
-  "referenceImages": ["/path/to/image1.jpg", "/path/to/image2.png"]
-}
-```
-
-**使用场景总结**：
-- ✅ **有参考图** → 直接传递 `referenceImages`，使用原始提示词
-- ✅ **无参考图** → 只传递 `prompt`
-- ✅ **用户明确要求解析图片** → 使用 `action: "analyze"`
+### 保存路径
+- 用户指定路径 → 使用 `outputPath` 参数，一步到位
+- 用户未指定 → 不要添加 `outputPath`，使用默认目录
+- ❌ 禁止先生成再用 `exec` 移动文件
 
 ### 示例
 
-**基础生成**：
 ```json
-{
-  "prompt": "一只可爱的橙色小猫坐在窗台上"
-}
-```
+// 基础生成
+{ "prompt": "一只可爱的橙色小猫坐在窗台上" }
 
-**基于参考图生成**：
-```json
-{
-  "prompt": "基于参考图的场景不变，去掉图上的人，重新再大厅中生成坐轮椅的人",
-  "referenceImages": ["~/.deepbot/temp/uploads/abc123.jpg"]
-}
-```
+// 解析图片
+{ "action": "analyze", "imagePath": "~/.deepbot/temp/uploads/abc123.jpg" }
 
-**指定保存路径**：
-```json
-{
-  "prompt": "一只可爱的小猫",
-  "outputPath": "~/path/to/cat_unique_name.jpg"
-}
-```
+// 带自定义提示词的图片分析
+{ "action": "analyze", "imagePath": "~/.deepbot/temp/uploads/abc123.jpg", "analysisPrompt": "请识别图片中的所有文字内容" }
 
-### ⚠️⚠️⚠️ 用户指定保存路径时的处理规则（极其重要）⚠️⚠⚠
+// 基于参考图生成
+{ "action": "generate", "prompt": "去掉图上的人，生成坐轮椅的人", "referenceImages": ["~/.deepbot/temp/uploads/abc123.jpg"] }
 
-**核心规则**：
-1. **直接使用 outputPath 参数**：当用户指定保存路径时，必须在调用 `image_generation` 工具时直接传递 `outputPath` 参数
-2. **不要生成后再移动**：❌ 不要先生成到默认目录，再用 `exec` 工具移动文件
-3. **一步到位**：✅ 直接在 `image_generation` 调用中指定 `outputPath`，工具会直接保存到目标位置
-4. **文件名唯一性**：生成多张图片时，确保每个文件名都不重复（可以使用时间戳、序号等方式）
-
-**✅ 正确做法（用户指定路径）**：
-```json
-// 用户说："生成一张图片，保存到指定目录"
-{
-  "prompt": "一只可爱的小猫",
-  "outputPath": "~/path/to/cat_unique_name.jpg"
-}
+// 指定保存路径
+{ "prompt": "一只可爱的小猫", "outputPath": "~/path/to/cat.jpg" }
 ```
-
-**❌ 错误做法（多此一举）**：
-```json
-// 第 1 步：生成图片（错误：没有指定 outputPath）
-{
-  "prompt": "一只可爱的小猫"
-}
-
-// 第 2 步：移动文件（错误：不需要这一步）
-{
-  "tool": "exec",
-  "command": "cp <imageDir>/generated-123.jpg ~/path/to/cat_123.jpg"
-}
-```
-
-**使用场景示例**：
-
-**场景 1：用户指定目录和文件名模式**
-```
-用户："生成 10 张图片，保存到 ~/path/to/train_new/，文件名格式：20260208-102632_clean_6grid_序号.jpeg"
-```
-```json
-// 第 1 张
-{
-  "prompt": "...",
-  "outputPath": "~/path/to/train_new/20260208-102632_clean_6grid_001.jpeg"
-}
-// 第 2 张
-{
-  "prompt": "...",
-  "outputPath": "~/path/to/train_new/20260208-102632_clean_6grid_002.jpeg"
-}
-```
-
-**场景 2：用户只指定目录**
-```
-用户："生成图片保存到指定目录"
-```
-```json
-{
-  "prompt": "...",
-  "outputPath": "~/path/to/generated_unique_name.jpg"
-}
-```
-
-**场景 3：用户未指定路径（使用默认）**
-```
-用户："生成一张图片"
-```
-```json
-{
-  "prompt": "一只可爱的小猫"
-  // ⚠️ 不要添加 outputPath 参数！
-}
-```
-
-**⚠️ 关键规则总结**：
-- ✅ **用户指定路径** → 使用 `outputPath` 参数
-- ✅ **用户未指定路径** → **不要添加 `outputPath` 参数**，使用默认目录
-- ❌ **禁止**：生成后再用 `exec` 移动文件（多此一举）
 
 ---
 
@@ -986,9 +577,8 @@ cp ~/path/to/my\ file.txt ~/another/path/
 
 
 **如果用户未安装 Python**：
-- 引导用户查看「环境配置建议」章节
-- 提供 Python 安装命令
-- 说明如何验证安装
+- 提供 Python 安装命令（macOS: `brew install python`，Linux: `sudo apt install python3 python3-pip`，Windows: `winget install Python.Python.3`）
+- 说明如何验证安装：`python --version && pip --version`
 
 ---
 
