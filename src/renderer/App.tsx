@@ -14,6 +14,7 @@ import type { AgentTab } from '../types/agent-tab';
 import { api } from './api';
 import { useTheme, ThemeMode } from './hooks/useTheme';
 import { setPendingUpdate } from './utils/update-store';
+import { onToast } from './utils/toast';
 
 // 主题 Context
 export const ThemeContext = createContext<{
@@ -47,6 +48,16 @@ function App() {
   const [isScheduledTaskManagerOpen, setIsScheduledTaskManagerOpen] = useState(false);
   const [isSystemSettingsOpen, setIsSystemSettingsOpen] = useState(false);
   const [hasModelConfig, setHasModelConfig] = useState(true);
+
+  // 全局 Toast
+  const [globalToast, setGlobalToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  useEffect(() => {
+    const unsub = onToast(({ type, text }) => {
+      setGlobalToast({ type, text });
+      setTimeout(() => setGlobalToast(null), 3000);
+    });
+    return unsub;
+  }, []);
   const [pendingPairingCount, setPendingPairingCount] = useState(0);
 
   // 监听自动更新（App 层注册，确保不丢失）
@@ -418,6 +429,7 @@ function App() {
                     executionSteps: chunk.executionSteps || msg.executionSteps,
                     totalDuration: chunk.totalDuration, // 🔥 添加总执行时间
                     sentAt: chunk.sentAt, // 🔥 添加发送时间
+                    modelId: chunk.modelId, // 🔥 添加模型 ID
                     isStreaming: false 
                   }
                 : msg
@@ -435,6 +447,7 @@ function App() {
                     executionSteps: chunk.executionSteps || msg.executionSteps,
                     totalDuration: chunk.totalDuration, // 🔥 添加总执行时间
                     sentAt: chunk.sentAt, // 🔥 添加发送时间
+                    modelId: chunk.modelId, // 🔥 添加模型 ID
                     isStreaming: false 
                   }
                 : msg
@@ -745,6 +758,13 @@ function App() {
           setIsSystemSettingsOpen(false);
         }}
       />
+
+      {/* 全局 Toast */}
+      {globalToast && (
+        <div className={`global-toast global-toast-${globalToast.type}`}>
+          {globalToast.text}
+        </div>
+      )}
     </ThemeContext.Provider>
   );
 }

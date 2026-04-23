@@ -547,6 +547,7 @@ ${welcomeContent}
             connectorId: tabConfig.connectorId,
             conversationId: tabConfig.conversationId,
             taskId: tabConfig.taskId,
+            modelConfig: tabConfig.modelConfig,
           };
           
           this.tabs.set(tabId, tab);

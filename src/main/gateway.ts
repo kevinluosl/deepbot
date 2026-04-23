@@ -498,7 +498,11 @@ export class Gateway {
       const workspaceDir = settings.workspaceDir;
       console.info(`[Gateway] 使用工作目录: ${workspaceDir}`);
       
-      runtime = new AgentRuntime(workspaceDir, sessionId);
+      // 获取 tab 级别的模型覆盖配置
+      const tabConfig = store.getTabConfig(sessionId);
+      const modelConfigOverride = tabConfig?.modelConfig || undefined;
+      
+      runtime = new AgentRuntime(workspaceDir, sessionId, modelConfigOverride);
       
       this.agentRuntimes.set(sessionId, runtime);
     }

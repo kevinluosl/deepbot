@@ -438,7 +438,7 @@ export class GatewayMessageHandler {
       const finalSteps = runtime.getExecutionSteps();
       const totalDuration = Date.now() - startTime;
       console.log(`[MessageHandler] ⏱️ Agent 总执行时间: ${(totalDuration / 1000).toFixed(2)} 秒`);
-      this.sendStreamChunk(messageId, '', true, false, undefined, finalSteps, sessionId, totalDuration, sentAt);
+      this.sendStreamChunk(messageId, '', true, false, undefined, finalSteps, sessionId, totalDuration, sentAt, runtime.getModelId());
 
       // 检查并执行延迟重置（如工具配置变更）
       const { getGatewayInstance } = await import('./gateway');
@@ -447,7 +447,7 @@ export class GatewayMessageHandler {
       
       // 保存 AI 响应到 session
       if (this.sessionManager && fullResponse.trim() && !isTaskTab) {
-        await this.sessionManager.saveAssistantMessage(sessionId, fullResponse, finalSteps, totalDuration, sentAt);
+        await this.sessionManager.saveAssistantMessage(sessionId, fullResponse, finalSteps, totalDuration, sentAt, runtime.getModelId());
         console.log(`[MessageHandler] 💾 已保存 AI 响应和 ${finalSteps.length} 个执行步骤`);
       } else if (isTaskTab && fullResponse.trim()) {
         console.log('[MessageHandler] 🚫 跳过保存 AI 响应到历史记录（定时任务 Tab）');
@@ -484,7 +484,8 @@ export class GatewayMessageHandler {
     executionSteps?: any[],
     sessionId?: string,
     totalDuration?: number,
-    sentAt?: number
+    sentAt?: number,
+    modelId?: string
   ): void {
     sendToWindow(this.mainWindow, IPC_CHANNELS.MESSAGE_STREAM, {
       messageId,
@@ -496,6 +497,7 @@ export class GatewayMessageHandler {
       sessionId,
       totalDuration,
       sentAt,
+      modelId,
     });
   }
   

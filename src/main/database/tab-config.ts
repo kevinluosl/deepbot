@@ -21,6 +21,7 @@ export interface TabConfigRow {
   task_id: string | null;
   connector_id: string | null;
   conversation_id: string | null;
+  model_config: string | null;  // JSON 格式的模型覆盖配置
 }
 
 /**
@@ -38,6 +39,21 @@ export interface TabConfig {
   taskId?: string;
   connectorId?: string;
   conversationId?: string;
+  modelConfig?: TabModelConfig | null;  // Tab 独立模型配置（覆盖全局）
+}
+
+/**
+ * Tab 独立模型配置（只存覆盖的部分）
+ */
+export interface TabModelConfig {
+  providerId?: string;
+  providerName?: string;
+  baseUrl?: string;
+  modelId?: string;
+  apiKey?: string;
+  apiType?: string;
+  modelId2?: string;
+  contextWindow?: number;
 }
 
 /**
@@ -56,9 +72,17 @@ export function initTabConfigTable(db: Database.Database): void {
       last_active_at INTEGER NOT NULL,
       task_id TEXT,
       connector_id TEXT,
-      conversation_id TEXT
+      conversation_id TEXT,
+      model_config TEXT
     )
   `);
+  
+  // 兼容旧数据库：添加 model_config 列
+  try {
+    db.exec('ALTER TABLE agent_tabs ADD COLUMN model_config TEXT');
+  } catch {
+    // 列已存在，忽略
+  }
   
   console.log('[TabConfig] ✅ agent_tabs 表已初始化');
 }
@@ -71,8 +95,8 @@ export function saveTabConfig(db: Database.Database, config: TabConfig): void {
     INSERT OR REPLACE INTO agent_tabs (
       id, title, type, memory_file, agent_name,
       is_persistent, created_at, last_active_at,
-      task_id, connector_id, conversation_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      task_id, connector_id, conversation_id, model_config
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   stmt.run(
@@ -86,7 +110,8 @@ export function saveTabConfig(db: Database.Database, config: TabConfig): void {
     config.lastActiveAt,
     config.taskId || null,
     config.connectorId || null,
-    config.conversationId || null
+    config.conversationId || null,
+    config.modelConfig ? JSON.stringify(config.modelConfig) : null
   );
   
   console.log(`[TabConfig] 💾 已保存 Tab 配置: ${config.id} (${config.title})`);
@@ -172,6 +197,21 @@ export function updateTabAgentName(
 }
 
 /**
+ * 更新 Tab 的模型配置
+ */
+export function updateTabModelConfig(db: Database.Database, tabId: string, modelConfig: TabModelConfig | null): void {
+  const stmt = db.prepare(`
+    UPDATE agent_tabs 
+    SET model_config = ?
+    WHERE id = ?
+  `);
+  
+  stmt.run(modelConfig ? JSON.stringify(modelConfig) : null, tabId);
+  
+  console.log(`[TabConfig] 🤖 已更新 Tab 模型配置: ${tabId}`);
+}
+
+/**
  * 更新 Tab 的 memory 文件
  */
 export function updateTabMemoryFile(db: Database.Database, tabId: string, memoryFile: string): void {
@@ -216,6 +256,10 @@ export function deleteNonPersistentTabs(db: Database.Database): void {
  * 将数据库行转换为配置对象
  */
 function rowToConfig(row: TabConfigRow): TabConfig {
+  let modelConfig: TabModelConfig | null = null;
+  if (row.model_config) {
+    try { modelConfig = JSON.parse(row.model_config); } catch { /* 忽略 */ }
+  }
   return {
     id: row.id,
     title: row.title,
@@ -228,5 +272,6 @@ function rowToConfig(row: TabConfigRow): TabConfig {
     taskId: row.task_id || undefined,
     connectorId: row.connector_id || undefined,
     conversationId: row.conversation_id || undefined,
+    modelConfig,
   };
 }

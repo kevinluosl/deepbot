@@ -638,3 +638,62 @@ button.settings-close-button:hover:not(:disabled) {
   background: transparent !important;
   box-shadow: none !important;
 }
+
+/* ==================== 订阅及付费 ==================== */
+
+.subscription-title {
+  margin-bottom: 16px;
+}
+
+.subscription-content {
+  padding: 16px;
+  background: var(--settings-input-bg);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--settings-text-dim);
+  line-height: 1.6;
+}
+
+.subscription-option {
+  margin-bottom: 16px;
+}
+
+.subscription-option-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--settings-text);
+  margin-bottom: 6px;
+}
+
+.subscription-option-desc {
+  font-size: 12px;
+  color: var(--settings-text-dim);
+  margin-bottom: 12px;
+}
+
+.subscription-qr-container {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.subscription-qr-image {
+  width: 160px;
+  height: 160px;
+  border-radius: 8px;
+}
+
+.subscription-divider {
+  border: none;
+  border-top: 1px solid var(--settings-border);
+  margin: 16px 0;
+}
+
+.subscription-steps {
+  font-size: 12px;
+  color: var(--settings-text-dim);
+  line-height: 2;
+}
+
+.subscription-highlight {
+  color: var(--settings-accent);
+}

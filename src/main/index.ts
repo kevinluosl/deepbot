@@ -698,6 +698,45 @@ function registerIpcHandlers() {
     }
   });
 
+  // 设置 Tab 模型配置
+  ipcMain.handle(IPC_CHANNELS.SET_TAB_MODEL_CONFIG, async (_event, { tabId, modelConfig }) => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const { updateTabModelConfig } = await import('./database/tab-config');
+      const store = SystemConfigStore.getInstance();
+
+      // 如果用户没有手动设置 contextWindow，自动推断
+      if (modelConfig && modelConfig.modelId && !modelConfig.contextWindow) {
+        const { getContextWindowFromModelId } = await import('./utils/model-info-fetcher');
+        modelConfig.contextWindow = getContextWindowFromModelId(modelConfig.modelId);
+        console.log(`[IPC] Tab 模型上下文窗口自动推断: ${modelConfig.modelId} → ${modelConfig.contextWindow}`);
+      }
+
+      updateTabModelConfig(store.getDb(), tabId, modelConfig);
+      
+      // 销毁该 tab 的 Runtime，下次使用时用新配置重建
+      if (gateway) {
+        await gateway.destroySessionRuntime(tabId);
+      }
+      
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
+  // 获取 Tab 模型配置
+  ipcMain.handle(IPC_CHANNELS.GET_TAB_MODEL_CONFIG, async (_event, { tabId }) => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const tabConfig = store.getTabConfig(tabId);
+      return { success: true, modelConfig: tabConfig?.modelConfig || null };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
   // 上传图片（保存到临时目录）
   ipcMain.handle(IPC_CHANNELS.UPLOAD_IMAGE, async (_event, { name, dataUrl, size }) => {
     try {

@@ -448,6 +448,7 @@ ${tailResponse}
       const result = manageContext({
         messages: currentMessages,
         modelId: this.runtimeConfig.model.id,
+        contextWindow: this.runtimeConfig.model.contextWindow,
         systemPrompt: this.systemPrompt,
         tools: this.tools,
       });

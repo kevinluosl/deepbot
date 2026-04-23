@@ -111,6 +111,10 @@ export const IPC_CHANNELS = {
   CONNECTOR_CREATE_WECHAT: 'connector:create-wechat',   // 创建微信实例
   CONNECTOR_REMOVE_WECHAT: 'connector:remove-wechat',   // 删除微信实例
   
+  // Tab 模型配置
+  SET_TAB_MODEL_CONFIG: 'tab:set-model-config',
+  GET_TAB_MODEL_CONFIG: 'tab:get-model-config',
+  
   // 应用信息
 } as const;
 

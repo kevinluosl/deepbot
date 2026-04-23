@@ -131,6 +131,42 @@ export function createTabsRouter(gatewayAdapter: GatewayAdapter): Router {
   router.post('/:tabId/messages', sendMessage);
   router.get('/:tabId/messages', getMessages);
   router.post('/stop-generation', stopGeneration);
+
+  // Tab 模型配置
+  const setTabModelConfig: RequestHandler = async (req, res) => {
+    try {
+      const { tabId } = req.params;
+      let { modelConfig } = req.body;
+      const { SystemConfigStore } = await import('../../main/database/system-config-store');
+      const { updateTabModelConfig } = await import('../../main/database/tab-config');
+      const store = SystemConfigStore.getInstance();
+
+      if (modelConfig && modelConfig.modelId && !modelConfig.contextWindow) {
+        const { getContextWindowFromModelId } = await import('../../main/utils/model-info-fetcher');
+        modelConfig.contextWindow = getContextWindowFromModelId(modelConfig.modelId);
+      }
+
+      updateTabModelConfig(store.getDb(), tabId as string, modelConfig);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: getErrorMessage(error) });
+    }
+  };
+
+  const getTabModelConfig: RequestHandler = async (req, res) => {
+    try {
+      const { tabId } = req.params;
+      const { SystemConfigStore } = await import('../../main/database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const tabConfig = store.getTabConfig(tabId as string);
+      res.json({ success: true, modelConfig: tabConfig?.modelConfig || null });
+    } catch (error) {
+      res.status(500).json({ error: getErrorMessage(error) });
+    }
+  };
+
+  router.post('/:tabId/model-config', setTabModelConfig);
+  router.get('/:tabId/model-config', getTabModelConfig);
   
   return router;
 }

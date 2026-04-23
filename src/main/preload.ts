@@ -72,6 +72,8 @@ const IPC_CHANNELS = {
   CONNECTOR_PENDING_COUNT_UPDATED: 'connector:pending-count-updated',
   CONNECTOR_CREATE_WECHAT: 'connector:create-wechat',
   CONNECTOR_REMOVE_WECHAT: 'connector:remove-wechat',
+  SET_TAB_MODEL_CONFIG: 'tab:set-model-config',
+  GET_TAB_MODEL_CONFIG: 'tab:get-model-config',
 } as const;
 
 /**
@@ -366,6 +368,14 @@ contextBridge.exposeInMainWorld('deepbot', {
 
   connectorRemoveWechat: (connectorId: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.CONNECTOR_REMOVE_WECHAT, { connectorId });
+  },
+
+  setTabModelConfig: (tabId: string, modelConfig: any) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SET_TAB_MODEL_CONFIG, { tabId, modelConfig });
+  },
+
+  getTabModelConfig: (tabId: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.GET_TAB_MODEL_CONFIG, { tabId });
   },
 
   // 监听待授权用户数量变化

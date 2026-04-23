@@ -38,6 +38,8 @@ export interface SessionMessage {
   // - user 消息：自己的发送时间
   // - assistant 消息：对应的用户消息的发送时间
   sentAt?: number;
+  // 使用的模型 ID - 仅 assistant 消息有
+  modelId?: string;
 }
 
 /**

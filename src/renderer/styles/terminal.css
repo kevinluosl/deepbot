@@ -773,6 +773,28 @@
   margin-left: 4px;
   font-size: 11px;
 }
+
+.terminal-execution-time-actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.terminal-copy-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.5;
+  color: inherit;
+  transition: opacity 0.15s ease;
+}
+
+.terminal-copy-button:hover {
+  opacity: 1;
+}
 /* 空状态 */
 .terminal-empty {
   display: flex;
@@ -1806,4 +1828,85 @@ ul.terminal-list {
 [data-theme="light"] .command-suggestion-item:hover,
 [data-theme="light"] .command-suggestion-item.selected {
   background: rgba(0, 122, 255, 0.08);
+}
+
+/* ========== 全局 Toast ========== */
+.global-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.global-toast-success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.global-toast-error {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+[data-theme="dark"] .global-toast-success {
+  background-color: #052e16;
+  color: #86efac;
+  border: 1px solid #166534;
+}
+
+[data-theme="dark"] .global-toast-error {
+  background-color: #450a0a;
+  color: #fca5a5;
+  border: 1px solid #991b1b;
+}
+
+/* ========== Tab 右键菜单 ========== */
+.tab-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: var(--terminal-header-bg);
+  border: 1px solid var(--terminal-border);
+  border-radius: 6px;
+  padding: 4px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 140px;
+}
+
+.tab-context-menu-item {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--terminal-text);
+  cursor: pointer;
+}
+
+.tab-context-menu-item:hover {
+  background: var(--terminal-accent-bg-hover);
+}
+
+.tab-context-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+
+/* ========== Tab 模型配置弹窗 ========== */
+.tab-model-picker-container {
+  width: 600px;
+  max-width: 90vw;
+  height: auto;
+  max-height: 85vh;
+}
+
+.tab-model-picker-panel {
+  overflow: auto;
+  max-height: calc(85vh - 60px);
 }

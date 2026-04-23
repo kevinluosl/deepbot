@@ -565,7 +565,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(({
 
           {/* 帮助提示 */}
           <div className="terminal-input-hint">
-            {lang === 'zh' ? '上/下键 切换历史输入　输入 / 查看可用指令' : 'Up/Down browse history　Type / for commands'}
+            {lang === 'zh' ? '上/下键 切换历史输入　输入 / 查看可用指令　右键窗口标签可单独配置模型' : 'Up/Down browse history　Type / for commands　Right-click tab to configure model'}
           </div>
         </div>
 

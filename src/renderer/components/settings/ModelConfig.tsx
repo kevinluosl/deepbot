@@ -27,9 +27,11 @@ interface ModelConfig {
 
 interface ModelConfigProps {
   onClose: () => void;
+  tabId?: string;  // 如果提供，则为 Tab 级别模型配置
 }
 
-export function ModelConfig({ onClose }: ModelConfigProps) {
+export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
+  const isTabMode = !!tabId;
   const lang = getLanguage();
   const [config, setConfig] = useState<ModelConfig>({
     providerType: 'deepbot',
@@ -61,21 +63,38 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
   const loadConfig = async () => {
     try {
       const result = await api.getModelConfig();
-      // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
       const actualResult = result.data || result;
       
       if (actualResult.success && actualResult.config) {
-        // 确保 providerType 和 apiType 字段存在（兼容旧数据）
         const loadedConfig = {
           ...actualResult.config,
           providerType: actualResult.config.providerType || 'deepbot',
           apiType: actualResult.config.apiType || 'openai-completions',
         };
-        setConfig(loadedConfig);
         
-        // 标记是否来自环境变量
+        // Tab 模式：用 tab 的覆盖配置合并全局配置
+        if (isTabMode && tabId) {
+          try {
+            const tabResult = await api.getTabModelConfig(tabId);
+            const tabModelConfig = tabResult?.modelConfig;
+            if (tabModelConfig) {
+              if (tabModelConfig.providerId) {
+                loadedConfig.providerType = tabModelConfig.providerId;
+                loadedConfig.providerId = tabModelConfig.providerId;
+              }
+              if (tabModelConfig.providerName) loadedConfig.providerName = tabModelConfig.providerName;
+              if (tabModelConfig.baseUrl) loadedConfig.baseUrl = tabModelConfig.baseUrl;
+              if (tabModelConfig.modelId) loadedConfig.modelId = tabModelConfig.modelId;
+              if (tabModelConfig.apiKey) loadedConfig.apiKey = tabModelConfig.apiKey;
+              if (tabModelConfig.apiType) loadedConfig.apiType = tabModelConfig.apiType;
+              if (tabModelConfig.modelId2) loadedConfig.modelId2 = tabModelConfig.modelId2;
+              if (tabModelConfig.contextWindow) loadedConfig.contextWindow = tabModelConfig.contextWindow;
+            }
+          } catch { /* 忽略 */ }
+        }
+        
+        setConfig(loadedConfig);
         setIsFromEnv(!!actualResult.config.fromEnv);
-        // 来自环境变量也算"已配置"，不弹首次配置提示
         setIsFirstTimeConfig(!loadedConfig.apiKey);
       } else {
         setIsFirstTimeConfig(true);
@@ -126,7 +145,41 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
     setIsSaving(true);
 
     try {
-      const result = await api.saveModelConfig(config);
+      if (isTabMode && tabId) {
+        // Tab 模式：比较是否和全局配置一致
+        const globalResult = await api.getModelConfig();
+        const globalConfig = (globalResult.data || globalResult)?.config;
+
+        const isSameAsGlobal = globalConfig &&
+          config.providerId === globalConfig.providerId &&
+          config.baseUrl === globalConfig.baseUrl &&
+          config.modelId === globalConfig.modelId &&
+          config.apiKey === globalConfig.apiKey &&
+          config.apiType === (globalConfig.apiType || 'openai-completions');
+
+        if (isSameAsGlobal) {
+          // 和全局一致，清除 tab 覆盖配置（继承全局）
+          await api.setTabModelConfig(tabId, null);
+          showToast('success', lang === 'zh' ? '✅ 已恢复为全局模型配置' : '✅ Restored to global model config');
+        } else {
+          // 和全局不同，保存 tab 覆盖配置
+          const tabModelConfig = {
+            providerId: config.providerId,
+            providerName: config.providerName,
+            baseUrl: config.baseUrl,
+            modelId: config.modelId,
+            apiKey: config.apiKey,
+            apiType: config.apiType,
+            modelId2: config.modelId2,
+            contextWindow: config.contextWindow,
+          };
+          await api.setTabModelConfig(tabId, tabModelConfig);
+          showToast('success', lang === 'zh' ? '✅ Tab 模型配置已保存' : '✅ Tab model config saved');
+        }
+        setTimeout(() => onClose(), 500);
+      } else {
+        // 全局模式：保存全局配置
+        const result = await api.saveModelConfig(config);
       // 🔥 registerIpcHandler 会包装返回值为 { success: true, data: ... }
       const actualResult = result.data || result;
       
@@ -140,10 +193,11 @@ export function ModelConfig({ onClose }: ModelConfigProps) {
         if (isFirstTimeConfig) {
           setTimeout(() => {
             onClose();
-          }, 1000); // 延迟 1 秒关闭，让用户看到成功提示
+          }, 1000);
         }
       } else {
         showToast('error', actualResult.error || (lang === 'zh' ? '保存失败' : 'Save failed'));
+      }
       }
     } catch (error) {
       console.error('保存模型配置失败:', error);

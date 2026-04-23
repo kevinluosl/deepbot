@@ -70,15 +70,17 @@ export class SessionManager {
       duration?: number;
     }>,
     totalDuration?: number,
-    sentAt?: number
+    sentAt?: number,
+    modelId?: string
   ): Promise<void> {
     const message: SessionMessage = {
       role: 'assistant',
       content,
       timestamp: Date.now(),
-      executionSteps, // 保存执行步骤
-      totalDuration, // 保存总执行时间
-      sentAt, // 保存对应的用户消息发送时间
+      executionSteps,
+      totalDuration,
+      sentAt,
+      modelId,
     };
     
     await this.sessionStore.appendMessage(tabId, message);
@@ -165,9 +167,10 @@ export class SessionManager {
         role: msg.role,
         content,
         timestamp: msg.timestamp,
-        executionSteps: msg.executionSteps, // 恢复执行步骤
-        totalDuration: msg.totalDuration, // 恢复总执行时间
-        sentAt: msg.sentAt, // 恢复发送时间
+        executionSteps: msg.executionSteps,
+        totalDuration: msg.totalDuration,
+        sentAt: msg.sentAt,
+        modelId: msg.modelId,
       };
     });
   }

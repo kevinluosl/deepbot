@@ -236,30 +236,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // 格式化时间戳 - 已禁用
-  // const formatTimestamp = (timestamp: number): string => {
-  //   const date = new Date(timestamp);
-  //   const now = new Date();
-  //   const isToday = date.toDateString() === now.toDateString();
-  //   
-  //   if (isToday) {
-  //     // 今天：只显示时间
-  //     return date.toLocaleTimeString('zh-CN', { 
-  //       hour: '2-digit', 
-  //       minute: '2-digit',
-  //       second: '2-digit'
-  //     });
-  //   } else {
-  //     // 其他日期：显示日期和时间
-  //     return date.toLocaleString('zh-CN', {
-  //       month: '2-digit',
-  //       day: '2-digit',
-  //       hour: '2-digit',
-  //       minute: '2-digit'
-  //     });
-  //   }
-  // };
-
   // 复制消息内容
   const handleCopy = async () => {
     try {
@@ -452,22 +428,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
           >
             {filterSystemPrompts(message.content)}
           </ReactMarkdown>
-          
-          {/* 时间戳和复制按钮 - 已隐藏 */}
-          {/* {isHovered && (
-            <span className="terminal-message-actions">
-              <span className="terminal-message-timestamp">
-                {formatTimestamp(message.timestamp)}
-              </span>
-              <button
-                className="terminal-message-copy"
-                onClick={handleCopy}
-                title="复制消息内容"
-              >
-                {copySuccess ? '[✓]' : '[copy]'}
-              </button>
-            </span>
-          )} */}
         </span>
       </div>
 
@@ -554,7 +514,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
       
       {/* 🔥 总执行时间 + 操作按钮 - 只在 Agent 消息且有执行时间时显示 */}
       {!isUser && !isSystem && message.totalDuration !== undefined && (
-        <div className="terminal-execution-time" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="terminal-execution-time">
           <span className="terminal-execution-time-label">{lang === 'zh' ? '执行时间' : 'Duration'}:</span>
           <span className="terminal-execution-time-value">
             {formatDuration(message.totalDuration)}
@@ -564,14 +524,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ message
               ({lang === 'zh' ? '发送于' : 'sent at'} {formatTimestamp(message.sentAt)})
             </span>
           )}
+          {message.modelId && (
+            <span className="terminal-execution-time-sent">
+              {message.modelId}
+            </span>
+          )}
           {/* 复制按钮 */}
-          <span style={{ display: 'inline-flex', gap: '4px', marginLeft: '4px' }}>
+          <span className="terminal-execution-time-actions">
             <Tooltip content={copySuccess ? (lang === 'zh' ? '已复制' : 'Copied') : (lang === 'zh' ? '复制回答' : 'Copy reply')}>
               <button
                 onClick={handleCopy}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'inline-flex', alignItems: 'center', opacity: 0.5 }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.5'}
+                className="terminal-copy-button"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>

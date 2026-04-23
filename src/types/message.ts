@@ -67,6 +67,8 @@ export interface Message {
   // - 用户消息：自己的发送时间
   // - Agent 消息：对应的用户消息的发送时间
   sentAt?: number;
+  // 使用的模型 ID
+  modelId?: string;
 }
 
 export interface ChatSession {

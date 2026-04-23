@@ -62,41 +62,47 @@ export class AgentRuntime {
    * @param workspaceDir - 工作区目录路径（必须提供，不应使用默认值）
    * @param sessionId - 会话 ID（可选，默认为 'default'）
    */
-  constructor(workspaceDir: string, sessionId?: string) {
+  constructor(workspaceDir: string, sessionId?: string, modelConfigOverride?: any) {
     this.config = getConfig();
     
-    // 🔥 从数据库获取完整的模型配置（包括 contextWindow）
+    // 如果有 tab 级别的模型覆盖配置，合并到全局配置
+    if (modelConfigOverride) {
+      if (modelConfigOverride.modelId) this.config.modelId = modelConfigOverride.modelId;
+      if (modelConfigOverride.modelId) this.config.modelName = modelConfigOverride.modelId;
+      if (modelConfigOverride.providerId) this.config.providerName = modelConfigOverride.providerId;
+      if (modelConfigOverride.baseUrl) this.config.baseUrl = modelConfigOverride.baseUrl;
+      if (modelConfigOverride.apiKey) this.config.apiKey = modelConfigOverride.apiKey;
+      if (modelConfigOverride.apiType) this.config.apiType = modelConfigOverride.apiType;
+      if (modelConfigOverride.modelId2) this.config.modelId2 = modelConfigOverride.modelId2;
+      console.log(`[AgentRuntime] 🔧 使用 Tab 级别模型覆盖: modelId=${this.config.modelId}`);
+    }
+    
+    // 🔥 获取上下文窗口大小
     let contextWindow: number | undefined;
-    try {
-      const store = SystemConfigStore.getInstance();
-      const modelConfig = store.getModelConfig();
-      if (modelConfig && modelConfig.contextWindow) {
-        contextWindow = modelConfig.contextWindow;
-        console.log('✅ 从数据库获取上下文窗口:', contextWindow);
+    
+    // 优先使用 tab 覆盖的 contextWindow
+    if (modelConfigOverride?.contextWindow) {
+      contextWindow = modelConfigOverride.contextWindow;
+    }
+    
+    // 其次从全局配置获取（仅当模型和全局一致时）
+    if (!contextWindow) {
+      try {
+        const store = SystemConfigStore.getInstance();
+        const modelConfig = store.getModelConfig();
+        if (modelConfig && modelConfig.contextWindow && (!modelConfigOverride?.modelId || modelConfigOverride.modelId === modelConfig.modelId)) {
+          contextWindow = modelConfig.contextWindow;
+        }
+      } catch (error) {
+        console.warn('⚠️ 从数据库获取上下文窗口失败，将使用推断值');
       }
-    } catch (error) {
-      console.warn('⚠️ 从数据库获取上下文窗口失败，将使用推断值');
     }
     
     // 如果数据库中没有，使用模型 ID 推断
     if (!contextWindow) {
       const { getContextWindowFromModelId } = require('../utils/model-info-fetcher');
       contextWindow = getContextWindowFromModelId(this.config.modelId);
-      console.log('✅ 从模型 ID 推断上下文窗口:', contextWindow);
     }
-    
-    // 🔥 添加配置调试信息
-    console.log('🔧 AgentRuntime 配置调试:');
-    console.log('   原始配置:', {
-      apiKey: this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'none',
-      baseUrl: this.config.baseUrl,
-      modelId: this.config.modelId,
-      modelName: this.config.modelName,
-      providerName: this.config.providerName,
-      apiType: this.config.apiType,
-      modelId2: this.config.modelId2,
-      contextWindow,
-    });
     
     // 🔥 根据配置的 apiType 创建正确的模型对象
     let model: Model<'openai-completions' | 'google-generative-ai'>;
@@ -152,15 +158,7 @@ export class AgentRuntime {
       maxConcurrentSubAgents: 8,
     };
     
-    console.log('✅ AgentRuntime 构造函数完成');
-    console.log('   模型:', this.runtimeConfig.model.id);
-    console.log('   API 类型:', this.runtimeConfig.model.api);
-    console.log('   提供商:', this.runtimeConfig.model.provider);
-    console.log('   Base URL:', this.runtimeConfig.baseUrl);
-    console.log('   输入类型:', this.runtimeConfig.model.input.join(', '));
-    console.log('   API Key 状态:', this.runtimeConfig.apiKey ? '已配置' : '未配置');
-    console.log('   工作区:', this.runtimeConfig.workspaceDir);
-    console.log('   会话ID:', this.runtimeConfig.sessionId);
+    console.log(`✅ AgentRuntime 构造函数完成: 模型=${this.runtimeConfig.model.id}, API=${this.runtimeConfig.model.api}, 会话=${this.runtimeConfig.sessionId}`);
     
     // 初始化模块
     this.initializer = new AgentInitializer(
@@ -283,6 +281,7 @@ export class AgentRuntime {
           const result = manageContext({
             messages: this.instanceManager.agent.state.messages,
             modelId: this.runtimeConfig.model.id,
+            contextWindow: this.runtimeConfig.model.contextWindow,
             systemPrompt: this.systemPrompt,
             tools: this.tools,
           });
@@ -845,6 +844,13 @@ export class AgentRuntime {
    */
   getExecutionSteps(): any[] {
     return this.messageHandler.getExecutionSteps();
+  }
+
+  /**
+   * 获取当前使用的模型 ID
+   */
+  getModelId(): string {
+    return this.runtimeConfig.model.id;
   }
 
   /**

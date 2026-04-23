@@ -273,6 +273,16 @@ export const api = {
     return webClient.delete(`/api/connectors/${connectorId}`);
   },
 
+  async setTabModelConfig(tabId: string, modelConfig: any): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.setTabModelConfig(tabId, modelConfig);
+    return webClient.post(`/api/tabs/${tabId}/model-config`, { modelConfig });
+  },
+
+  async getTabModelConfig(tabId: string): Promise<any> {
+    if (isElectron()) return (window as any).deepbot.getTabModelConfig(tabId);
+    return webClient.get(`/api/tabs/${tabId}/model-config`);
+  },
+
   async scheduledTask(request: any): Promise<any> {
     if (isElectron()) return (window as any).deepbot.scheduledTask(request);
     return webClient.post('/api/tasks', request);

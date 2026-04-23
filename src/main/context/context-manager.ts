@@ -101,6 +101,7 @@ export interface ContextManageResult {
 export function manageContext(params: {
   messages: AgentMessage[];
   modelId?: string;
+  contextWindow?: number;      // 直接传入上下文窗口大小（优先使用）
   settings?: Partial<ContextSettings>;
   systemPrompt?: string;      // 系统提示词
   tools?: any[];               // 工具定义
@@ -139,7 +140,7 @@ export function manageContext(params: {
 
   // 如果未启用，直接返回
   if (!settings.enabled) {
-    const contextWindow = getContextWindowTokens(modelId);
+    const contextWindow = params.contextWindow || getContextWindowTokens(modelId);
     const messagesTokens = estimateMessagesTokens(messages);
     const totalTokens = fixedOverheadTokens + messagesTokens;
     
@@ -169,7 +170,7 @@ export function manageContext(params: {
   }
 
   // 计算初始状态（包含固定开销）
-  const contextWindow = getContextWindowTokens(modelId);
+  const contextWindow = params.contextWindow || getContextWindowTokens(modelId);
   const messagesTokens = estimateMessagesTokens(messages);
   const tokensBefore = fixedOverheadTokens + messagesTokens;
   const usageRatioBefore = tokensBefore / contextWindow;

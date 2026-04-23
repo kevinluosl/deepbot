@@ -11,6 +11,7 @@ import { MAX_TABS } from '../../shared/constants/version';
 import { api } from '../api'; // 🔥 使用统一 API 适配器
 import { isElectron, isMacOS } from '../utils/platform'; // 🔥 平台检测
 import { getLanguage } from '../i18n';
+import { ModelConfig } from './settings/ModelConfig';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -63,6 +64,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   // 🔥 分页加载优化：初始只显示最近 20 条消息
   const [displayCount, setDisplayCount] = useState(20);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  // Tab 右键菜单和模型选择
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
+  const [showModelPicker, setShowModelPicker] = useState<string | null>(null); // tabId
   
   // 🔥 获取当前 Tab 类型
   const currentTab = tabs?.find(t => t.id === activeTabId);
@@ -469,6 +474,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
                 key={tab.id}
                 className={`agent-tab ${tab.id === activeTabId ? 'active' : ''}`}
                 onClick={() => onTabClick(tab.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setContextMenu({ x: e.clientX, y: e.clientY, tabId: tab.id });
+                }}
               >
                 <span className="agent-tab-title">{tab.title}</span>
                 {tab.id !== 'default' && (
@@ -499,7 +508,50 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
         </div>
       )}
 
-      {/* 消息列表区域 */}
+      {/* Tab 右键菜单 */}
+      {contextMenu && (
+        <div
+          className="tab-context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={() => setContextMenu(null)}
+        >
+          <div
+            className="tab-context-menu-item"
+            onClick={async () => {
+              const tabId = contextMenu.tabId;
+              setContextMenu(null);
+              setShowModelPicker(tabId);
+            }}
+          >
+            {lang === 'zh' ? '⚙️ 设置模型' : '⚙️ Set Model'}
+          </div>
+        </div>
+      )}
+
+      {/* 点击其他地方关闭右键菜单 */}
+      {contextMenu && (
+        <div className="tab-context-menu-backdrop" onClick={() => setContextMenu(null)} />
+      )}
+
+      {/* 模型选择弹窗 */}
+      {showModelPicker && (
+        <div className="settings-overlay" onClick={() => setShowModelPicker(null)}>
+          <div
+            className="settings-container tab-model-picker-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="settings-header">
+              <h2 className="settings-title">
+                {lang === 'zh' ? 'Tab 模型配置' : 'Tab Model Config'}
+              </h2>
+              <button className="settings-close-button" onClick={() => setShowModelPicker(null)}>×</button>
+            </div>
+            <div className="settings-panel tab-model-picker-panel">
+              <ModelConfig onClose={() => setShowModelPicker(null)} tabId={showModelPicker} />
+            </div>
+          </div>
+        </div>
+      )}      {/* 消息列表区域 */}
       <div ref={messagesContainerRef} className="terminal-content flex-1">
         {isInitializing ? (
           // 初始化提示 - 显示在提示符后面
