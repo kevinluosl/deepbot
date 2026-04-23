@@ -318,18 +318,8 @@ About me:
 - I don't have a name yet — give me one? (Just say "Your name is XXX")${!isDefaultAgentName ? ` Current name: ${agentName}` : ''}
 - Who am I? Your all-in-one AI assistant, ready to help anytime
 - Conversation style? Formal / casual / professional / warm — your call
-- Memory system: Say "Remember XXX" anytime and I'll permanently remember:
-  - Your preferences and habits
-  - Frequently used tools and commands
-  - Project-related info
-  - Anything you find important
-- Role setting: You can assign me a professional role, for example:
-  - Dev: "You are a Python expert", "You specialize in React frontend"
-  - Ops: "You are a DevOps engineer, expert in Docker and K8s"
-  - Design: "You are a UI/UX designer"
-  - Content: "You are a content creator, skilled in writing and video"
-  - Data: "You are a data analyst, expert in Excel and visualization"
-  After setting a role, I'll work in that domain and you can install matching Skills
+- Memory system: Say "Remember XXX" anytime and I'll permanently remember your preferences, habits, project info, etc.
+- Role setting: You can assign me a professional role, e.g. "Python expert", "DevOps engineer", "Data analyst", etc. I'll work in that domain and you can install matching Skills
 
 About you:
 
@@ -350,13 +340,11 @@ What I can do:
 Extensions:
 
 - 🔧 Install Skills: Say "search XXX skill" or "install XXX skill"
-  - e.g.: "search github skill", "install @agentic/github"
 - 🐍 Python tools: I can install and use Python tools for complex tasks
 
 More info:
 
 - 💡 Click [⚙️ Config] in the top right to see the "Quick Start" guide
-- 📚 Quick Start covers: environment setup, tools, Skills, memory system and more
 
 Commands:
 
@@ -365,6 +353,9 @@ Commands:
 - /merge-memory <Tab name> — Merge memory from another Tab
 - /clone <Tab name> — Clone history and memory from another Tab
 - /history — View conversation stats
+- /stop — Stop the current running task
+- /status — View current task status
+- /reload-path — Reload PATH environment variables
 
 As we interact, I'll get to know you better and improve at completing tasks. 😊
 
@@ -382,21 +373,8 @@ Feel free to ask anything or tell me what you need!`;
 - 我还没有名字，你帮我取一个？（说"你叫 XXX"即可）${!isDefaultAgentName ? ` 当前名字：${agentName}` : ''}
 - 我是谁？全能 AI 助手，24 小时待命帮你干活
 - 对话风格？你希望我正式/随意/专业/温暖？
-- 记忆系统：你可以随时说"记住 XXX"，我会永久记住：
-  - 你的偏好和习惯
-  - 常用的工具和命令
-  - 项目相关的信息
-  - 任何你觉得重要的事
-- 角色设定：你可以给我设定专业角色，比如：
-  - 研发领域："你是 Python 开发专家"、"你擅长前端开发，熟悉 React"
-  - 运维领域："你是运维工程师，精通 Docker 和 K8s"
-  - 设计领域："你是 UI/UX 设计师，擅长用户体验优化"
-  - 内容创作："你是内容创作者，擅长写作和视频制作"
-  - 数据分析："你是数据分析师，精通 Excel 和数据可视化"
-  - 项目管理："你是项目经理，擅长团队协作和进度管理"
-  - 教育培训："你是培训讲师，擅长知识传授和课程设计"
-  - 市场营销："你是营销专家，擅长品牌推广和用户增长"
-  设定角色后，我会按照这个专业领域来帮你，还可以安装对应的 Skill 扩展能力
+- 记忆系统：你可以随时说"记住 XXX"，我会永久记住你的偏好、习惯、项目信息等
+- 角色设定：你可以给我设定专业角色，比如"Python 开发专家"、"运维工程师"、"数据分析师"等，设定后我会按照这个专业领域来帮你，还可以安装对应的 Skill 扩展能力
 
 关于你：
 
@@ -417,14 +395,11 @@ Feel free to ask anything or tell me what you need!`;
 扩展能力：
 
 - 🔧 安装 Skill：通过说"搜索 XXX skill"或"安装 XXX skill"来扩展专业能力
-  - 例如："搜索 github skill"、"安装 @agentic/github"
-  - Skill 可以让我具备更多专业领域的能力
 - 🐍 Python 工具：我可以帮你安装和使用 Python 工具来处理更复杂的任务
 
 更多使用说明：
 
 - 💡 点击右上角 [⚙️ Config] 按钮，查看"快速入门"了解详细使用指南
-- 📚 快速入门包含：环境配置、工具使用、Skill 管理、记忆系统等完整教程
 
 常用指令：
 
@@ -433,8 +408,9 @@ Feel free to ask anything or tell me what you need!`;
 - /merge-memory <Tab名称> — 合并其他 Tab 的记忆到当前 Tab
 - /clone <Tab名称> — 克隆其他 Tab 的历史和记忆到当前 Tab
 - /history — 查看对话历史统计
-- /stop — 停止当前正在执行的任务（从外部通讯，比如飞书发送支持）
-- /status — 查看当前任务执行状态和正在输出的内容（从外部通讯，比如飞书发送支持）
+- /stop — 停止当前正在执行的任务
+- /status — 查看当前任务执行状态
+- /reload-path — 刷新环境变量（安装新工具后使用）
 
 在我们的沟通过程中，我会越来越了解你，知道怎么更好的完成任务。😊
 
