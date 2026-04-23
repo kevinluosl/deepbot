@@ -237,6 +237,7 @@ export class WebSocketManager {
         executionSteps: event.executionSteps,
         totalDuration: event.totalDuration,
         sentAt: event.sentAt,
+        modelId: event.modelId,
         isSubAgentResult: event.isSubAgentResult,
         subAgentTask: event.subAgentTask
       });

@@ -74,7 +74,16 @@ export class WechatConnector implements Connector {
     // 每个实例使用独立的存储目录
     const baseDir = config.storageDir || DEFAULT_STORAGE_DIR;
     const num = this.id.replace('wechat-', '');
-    const storageDir = expandUserPath(`${baseDir}-${num}`);
+    
+    // Docker 模式下使用持久化的 DB 目录，避免容器重建后凭证丢失
+    let storageDir: string;
+    if (process.env.DEEPBOT_DOCKER === 'true') {
+      const dbDir = process.env.DB_DIR || '/data/db';
+      storageDir = path.join(dbDir, `wechat-${num}`);
+    } else {
+      storageDir = expandUserPath(`${baseDir}-${num}`);
+    }
+    
     this.storageDir = storageDir;
     ensureDirectoryExists(storageDir);
 

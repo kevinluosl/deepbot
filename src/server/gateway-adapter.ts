@@ -92,7 +92,8 @@ export class GatewayAdapter extends EventEmitter {
             done: true,
             executionSteps: data.executionSteps,
             totalDuration: data.totalDuration,
-            sentAt: data.sentAt
+            sentAt: data.sentAt,
+            modelId: data.modelId
           });
         } else {
           // 流式响应片段 - 转发到 WebSocket

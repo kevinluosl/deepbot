@@ -16,6 +16,7 @@ import type { AgentTab } from '../types/agent-tab';
 import { api } from './api';
 import { ThemeContext } from './App';
 import { useTheme } from './hooks/useTheme';
+import { onToast } from './utils/toast';
 
 export function AppWeb() {
   // 主题管理
@@ -48,6 +49,16 @@ export function AppWeb() {
   const [hasModelConfig, setHasModelConfig] = useState(true);
   const [pendingPairingCount, setPendingPairingCount] = useState(0);
   const [isKicked, setIsKicked] = useState(false);
+
+  // 全局 Toast
+  const [globalToast, setGlobalToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  useEffect(() => {
+    const unsub = onToast(({ type, text }) => {
+      setGlobalToast({ type, text });
+      setTimeout(() => setGlobalToast(null), 3000);
+    });
+    return unsub;
+  }, []);
 
   // 检查登录状态并建立 WebSocket 连接
   useEffect(() => {
@@ -434,6 +445,7 @@ export function AppWeb() {
                     executionSteps: chunk.executionSteps || msg.executionSteps,
                     totalDuration: chunk.totalDuration,
                     sentAt: chunk.sentAt,
+                    modelId: chunk.modelId,
                     isStreaming: false 
                   }
                 : msg
@@ -450,6 +462,7 @@ export function AppWeb() {
                     executionSteps: chunk.executionSteps || msg.executionSteps,
                     totalDuration: chunk.totalDuration,
                     sentAt: chunk.sentAt,
+                    modelId: chunk.modelId,
                     isStreaming: false 
                   }
                 : msg
@@ -787,6 +800,13 @@ export function AppWeb() {
           >
             重新连接
           </button>
+        </div>
+      )}
+
+      {/* 全局 Toast */}
+      {globalToast && (
+        <div className={`global-toast global-toast-${globalToast.type}`}>
+          {globalToast.text}
         </div>
       )}
     </ThemeContext.Provider>
