@@ -480,9 +480,12 @@ button.settings-tab.active {
 }
 
 /* Skill 卡片操作按钮（详情、环境变量、卸载、安装） */
-button.skill-card-action {
+button.skill-card-action,
+button.skill-card-action:hover,
+button.skill-card-action:hover:not(:disabled) {
   background: transparent !important;
   border: none !important;
+  border-color: transparent !important;
   box-shadow: none !important;
   text-transform: none !important;
   letter-spacing: normal !important;
@@ -491,7 +494,6 @@ button.skill-card-action {
 
 button.skill-card-action:hover {
   opacity: 0.8 !important;
-  box-shadow: none !important;
 }
 
 /* 英文模式下按钮取消大写 */

@@ -826,7 +826,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
         {isInstalled ? (
           <button
             onClick={() => onUninstall(skill.name)}
-            className="skill-card-action flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+            className="skill-card-action flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 rounded transition-colors"
           >
             <Trash2 size={14} />
             <span>{t('skill.uninstall')}</span>
