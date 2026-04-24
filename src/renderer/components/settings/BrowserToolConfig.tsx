@@ -47,6 +47,15 @@ export function BrowserToolConfig({ onClose: _onClose }: BrowserToolConfigProps)
           {isDocker
             ? (lang === 'zh' ? 'Docker 模式下使用无头 Chromium 浏览器（Playwright），无需手动启动。' : 'Uses headless Chromium (Playwright) in Docker mode, no manual launch needed.')
             : (lang === 'zh' ? 'DeepBot 使用 CDP（Chrome DevTools Protocol）连接到您手动启动的 Chrome 浏览器。' : 'DeepBot connects to your manually launched Chrome browser via CDP (Chrome DevTools Protocol).')}
+          {!isDocker && (
+            <>
+              {' '}
+              {lang === 'zh' ? '未安装？' : 'Not installed? '}
+              <a href="https://www.google.cn/intl/zh-CN_ALL/chrome/fallback/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--settings-accent)', textDecoration: 'underline' }}>
+                {lang === 'zh' ? '下载 Chrome' : 'Download Chrome'}
+              </a>
+            </>
+          )}
         </p>
       </div>
 
