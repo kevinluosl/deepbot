@@ -592,7 +592,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
               <input
                 type="text"
                 value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
+                onChange={(e) => { if (e.target.value.length <= 10) setRenameValue(e.target.value); }}
                 onKeyDown={async (e) => {
                   if (e.key === 'Enter' && renameValue.trim()) {
                     const result = await api.renameTab(showRenameDialog, renameValue.trim());

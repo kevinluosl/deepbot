@@ -762,6 +762,9 @@ function registerIpcHandlers() {
       // 获取 tab 信息，连接器 tab 自动加前缀
       const allTabs = tabManager.getAllTabs();
       const tab = allTabs.find(t => t.id === tabId);
+      if (title.length > 10) {
+        return { success: false, error: '名称不能超过 10 个字符' };
+      }
       let finalTitle = title;
       if (tab?.type === 'connector') {
         if (tab.connectorId === 'feishu' && !title.startsWith('FS-')) {
