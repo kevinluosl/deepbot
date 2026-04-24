@@ -13,6 +13,9 @@ export function formatGetConfigResult(result: any): string {
   if (result.workspace) {
     message += `📁 工作目录配置：\n`;
     message += `  • 工作目录: ${result.workspace.workspaceDir}\n`;
+    if (result.workspace.workspaceDirs && result.workspace.workspaceDirs.length > 1) {
+      message += `  • 额外工作目录: ${result.workspace.workspaceDirs.slice(1).join(', ')}\n`;
+    }
     message += `  • 脚本目录: ${result.workspace.scriptDir}\n`;
     message += `  • Skill 目录: ${result.workspace.skillDirs.join(', ')}\n`;
     message += `  • 默认 Skill 目录: ${result.workspace.defaultSkillDir}\n`;

@@ -66,6 +66,7 @@ const MemoryToolSchema = Type.Object({
   action: Type.Union([
     Type.Literal('read', { description: '读取记忆内容' }),
     Type.Literal('update', { description: '更新记忆内容（需要 userMessage 参数）' }),
+    Type.Literal('delete', { description: '删除记忆中的指定内容（需要 deleteContent 参数）' }),
     Type.Literal('merge', { description: '合并指定 Tab 的记忆到当前 Tab' }),
   ]),
   
@@ -77,8 +78,12 @@ const MemoryToolSchema = Type.Object({
     description: '执行上下文（用于 update 操作，可选）',
   })),
   
+  deleteContent: Type.Optional(Type.String({
+    description: '要删除的记忆内容描述（用于 delete 操作）。大模型会根据描述从记忆中移除匹配的条目',
+  })),
+  
   updateMainMemory: Type.Optional(Type.Boolean({
-    description: '是否同时更新主记忆（用于 update 操作，默认 false）。设为 true 时会同时更新当前 Tab 记忆和主记忆',
+    description: '是否同时更新主记忆（用于 update/delete 操作，默认 false）。设为 true 时会同时操作当前 Tab 记忆和主记忆',
     default: false,
   })),
   
@@ -495,7 +500,8 @@ export const memoryToolPlugin: ToolPlugin = {
               throw err;
             }
 
-            const { action, userMessage, context, updateMainMemory = false, sourceTabName } = params;
+            const { action: rawAction, userMessage, context, updateMainMemory = false, sourceTabName } = params;
+            const action: string = rawAction;
             
             console.log(`[Memory Tool] 执行操作: ${action}, Tab ID: ${tabId || 'default'}, 更新主记忆: ${updateMainMemory}`);
             
@@ -598,7 +604,7 @@ export const memoryToolPlugin: ToolPlugin = {
                 content: [
                   {
                     type: 'text' as const,
-                    text: `记忆已合并。已将 ${sourceTabName || '主记忆'} 的内容合并到当前 Tab。`,
+                    text: `记忆已合并。已将 ${sourceTabName || '主记忆'} 的内容合并到当前 Tab。\n\n合并后的记忆内容：\n${mergedMemory}`,
                   },
                 ],
                 details: {
@@ -608,10 +614,92 @@ export const memoryToolPlugin: ToolPlugin = {
                   currentTabId: tabId || sessionId,
                   oldLength: currentMemory.length,
                   newLength: mergedMemory.length,
+                  mergedMemory,
                 },
               };
             }
             
+            if (action === 'delete') {
+              // 删除记忆中的指定内容
+              const deleteContent = (params as any).deleteContent as string | undefined;
+              if (!deleteContent) {
+                throw new Error('delete 操作需要提供 deleteContent 参数');
+              }
+
+              // 使用大模型从记忆中删除匹配内容
+              const deleteFromMemory = async (memoryContent: string): Promise<string> => {
+                if (!memoryContent.trim()) return memoryContent;
+
+                const deletePrompt = `你是一个记忆管理助手。请从以下记忆内容中删除与用户描述匹配的条目。
+
+用户要求删除的内容：${deleteContent}
+
+当前记忆内容：
+${memoryContent}
+
+规则：
+1. 只删除与用户描述匹配的条目，保留其他所有内容
+2. 如果某个条目部分匹配，只删除匹配的部分
+3. 保持原有的 Markdown 格式和 Section 结构
+4. 如果删除后某个 Section 为空，保留 Section 标题
+5. 直接输出修改后的完整记忆内容，不要添加任何解释`;
+
+                const response = await callAI([
+                  { role: 'system', content: '你是一个记忆管理助手，负责从记忆文件中精确删除指定内容。' },
+                  { role: 'user', content: deletePrompt },
+                ], { signal });
+                return response.content.trim();
+              };
+
+              if (updateMainMemory) {
+                // 同时从主记忆和 Tab 记忆中删除
+                const mainMemory = await readMemory();
+                if (mainMemory.trim()) {
+                  const updatedMain = await deleteFromMemory(mainMemory);
+                  await writeMemory(updatedMain);
+                  console.log('[Memory Tool] ✅ 主记忆已删除指定内容');
+                }
+
+                if (tabId) {
+                  const tabMemory = await readMemory(tabId);
+                  if (tabMemory.trim()) {
+                    const updatedTab = await deleteFromMemory(tabMemory);
+                    await writeMemory(updatedTab, tabId);
+                    console.log(`[Memory Tool] ✅ Tab ${tabId} 记忆已删除指定内容`);
+                  }
+                }
+
+                const gateway = getGatewayInstance();
+                if (gateway) gateway.invalidateAllSystemPrompts();
+
+                return {
+                  content: [{ type: 'text' as const, text: '已从主记忆和当前 Tab 记忆中删除指定内容。' }],
+                  details: { success: true, deletedFromMain: true, deletedFromTab: !!tabId },
+                };
+              } else {
+                // 只从当前 Tab 记忆中删除
+                const currentMemory = await readMemory(tabId);
+                if (!currentMemory.trim()) {
+                  return {
+                    content: [{ type: 'text' as const, text: '当前记忆为空，无需删除。' }],
+                    details: { success: true, empty: true },
+                  };
+                }
+
+                const updatedMemory = await deleteFromMemory(currentMemory);
+                await writeMemory(updatedMemory, tabId);
+                console.log('[Memory Tool] ✅ 记忆已删除指定内容');
+
+                const gateway = getGatewayInstance();
+                if (gateway) gateway.invalidateSessionSystemPrompt(sessionId);
+
+                return {
+                  content: [{ type: 'text' as const, text: '已从记忆中删除指定内容。' }],
+                  details: { success: true, tabId: tabId || 'default' },
+                };
+              }
+            }
+
             if (action === 'update') {
               // 更新记忆
               if (!userMessage) {
