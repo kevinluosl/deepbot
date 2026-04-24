@@ -537,34 +537,34 @@ button.skill-card-action:hover {
 
 /* 成功按钮 */
 .settings-button.success,
-.settings-panel button[class*="text-green"],
-.fixed button[class*="text-green"] {
+.settings-panel button[class*="text-green"]:not(.skill-card-action),
+.fixed button[class*="text-green"]:not(.skill-card-action) {
   border-color: var(--settings-success) !important;
   color: var(--settings-success) !important;
   background: transparent !important;
 }
 
 .settings-button.success:hover,
-.settings-panel button[class*="text-green"]:hover,
-.fixed button[class*="text-green"]:hover {
+.settings-panel button[class*="text-green"]:not(.skill-card-action):hover,
+.fixed button[class*="text-green"]:not(.skill-card-action):hover {
   background: var(--settings-success) !important;
   color: var(--settings-bg) !important;
 }
 
 /* 警告按钮 */
-.settings-panel button[class*="text-orange"],
-.settings-panel button[class*="text-yellow"],
-.fixed button[class*="text-orange"],
-.fixed button[class*="text-yellow"] {
+.settings-panel button[class*="text-orange"]:not(.skill-card-action),
+.settings-panel button[class*="text-yellow"]:not(.skill-card-action),
+.fixed button[class*="text-orange"]:not(.skill-card-action),
+.fixed button[class*="text-yellow"]:not(.skill-card-action) {
   border-color: var(--settings-warning) !important;
   color: var(--settings-warning) !important;
   background: transparent !important;
 }
 
-.settings-panel button[class*="text-orange"]:hover,
-.settings-panel button[class*="text-yellow"]:hover,
-.fixed button[class*="text-orange"]:hover,
-.fixed button[class*="text-yellow"]:hover {
+.settings-panel button[class*="text-orange"]:not(.skill-card-action):hover,
+.settings-panel button[class*="text-yellow"]:not(.skill-card-action):hover,
+.fixed button[class*="text-orange"]:not(.skill-card-action):hover,
+.fixed button[class*="text-yellow"]:not(.skill-card-action):hover {
   background: var(--settings-warning) !important;
   color: var(--settings-bg) !important;
 }

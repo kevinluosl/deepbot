@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { X } from 'lucide-react';
+import { X, Pencil, FileText, Pause, Play, Trash2, Zap } from 'lucide-react';
 import { t, getLanguage } from '../i18n';
 import '../styles/settings.css';
 
@@ -482,12 +482,6 @@ export function ScheduledTaskManager({ isOpen, onClose }: ScheduledTaskManagerPr
                       ) : (
                         <div className="flex items-center gap-2">
                           <span className="text-gray-900 ml-1">{formatSchedule(task)}</span>
-                          <button
-                            onClick={() => handleStartEditSchedule(task)}
-                            className="text-xs text-blue-600 hover:text-blue-700"
-                          >
-                            {t('task.edit')}
-                          </button>
                         </div>
                       )}
                     </div>
@@ -515,37 +509,49 @@ export function ScheduledTaskManager({ isOpen, onClose }: ScheduledTaskManagerPr
                   {editingTaskId !== task.id && editingScheduleTaskId !== task.id && (
                     <div className="flex items-center gap-2 pt-3 border-t">
                       <button
-                        onClick={() => handleStartEdit(task)}
-                        className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        onClick={() => handleStartEditSchedule(task)}
+                        className="skill-card-action flex items-center gap-1 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary rounded transition-colors"
                       >
-                        {t('task.edit')}
+                        <Pencil size={14} />
+                        <span>{lang === 'zh' ? '调度编辑' : 'Schedule'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleStartEdit(task)}
+                        className="skill-card-action flex items-center gap-1 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary rounded transition-colors"
+                      >
+                        <FileText size={14} />
+                        <span>{lang === 'zh' ? '内容编辑' : 'Content'}</span>
                       </button>
                       
                       <button
                         onClick={() => handleToggleEnabled(task.id, task.enabled)}
-                        className={`px-3 py-1 text-sm rounded transition-colors ${
+                        className={`skill-card-action flex items-center gap-1 px-3 py-1.5 text-xs rounded transition-colors ${
                           task.enabled
-                            ? 'text-orange-600 hover:bg-orange-50'
-                            : 'text-green-600 hover:bg-green-50'
+                            ? 'text-orange-600'
+                            : 'text-green-600'
                         }`}
                       >
-                        {task.enabled ? t('task.disable') : t('task.enable')}
+                        {task.enabled ? <Pause size={14} /> : <Play size={14} />}
+                        <span>{task.enabled ? t('task.disable') : t('task.enable')}</span>
                       </button>
                       
                       {task.enabled && (
                         <button
                           onClick={() => handleTrigger(task.id, task.name)}
-                          className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="skill-card-action flex items-center gap-1 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary rounded transition-colors"
                         >
-                          {lang === 'zh' ? '立即执行' : 'Run Now'}
+                          <Zap size={14} />
+                          <span>{lang === 'zh' ? '立即执行' : 'Run Now'}</span>
                         </button>
                       )}
                       
                       <button
                         onClick={() => handleDelete(task.id, task.name)}
-                        className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors ml-auto"
+                        className="skill-card-action flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 rounded transition-colors ml-auto"
                       >
-                        {t('task.delete')}
+                        <Trash2 size={14} />
+                        <span>{t('task.delete')}</span>
                       </button>
                     </div>
                   )}
