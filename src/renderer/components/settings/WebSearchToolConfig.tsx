@@ -12,7 +12,7 @@ import { ApiKeyHelpModal } from './ApiKeyHelpModal';
 import { getLanguage } from '../../i18n';
 
 interface WebSearchToolConfig {
-  provider: 'deepbot' | 'qwen' | 'gemini';
+  provider: 'deepbot' | 'qwen';
   model: string;
   apiUrl: string;
   apiKey: string;
@@ -51,7 +51,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
     }
   };
 
-  const handleProviderChange = (newProvider: 'deepbot' | 'qwen' | 'gemini') => {
+  const handleProviderChange = (newProvider: 'deepbot' | 'qwen') => {
     const preset = WEB_SEARCH_PROVIDER_PRESETS[newProvider];
     setConfig({
       ...config,
@@ -129,7 +129,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
         </label>
         <select
           value={config.provider}
-          onChange={(e) => handleProviderChange(e.target.value as 'deepbot' | 'qwen' | 'gemini')}
+          onChange={(e) => handleProviderChange(e.target.value as 'deepbot' | 'qwen')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="deepbot">DeepBot（Gemini 3）</option>
@@ -152,7 +152,6 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
         <p className="mt-1 text-xs text-gray-500">
           {config.provider === 'deepbot' && (lang === 'zh' ? '无需魔法，直连 Gemini 3' : 'Direct connection to Gemini 3, no proxy needed')}
           {config.provider === 'qwen' && (lang === 'zh' ? '预设提供商的 API 地址（可修改）' : 'Preset provider API URL (editable)')}
-          {config.provider === 'gemini' && (lang === 'zh' ? '预设提供商的 API 地址（可修改）' : 'Preset provider API URL (editable)')}
         </p>
       </div>
 
@@ -173,7 +172,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
           {config.provider === 'qwen' && (lang === 'zh'
             ? '默认: qwen3.6-plus（可选: qwen-plus, qwen-turbo, qwen-max 等）'
             : 'Default: qwen3.6-plus (options: qwen-plus, qwen-turbo, qwen-max, etc.)')}
-          {(config.provider === 'gemini' || config.provider === 'deepbot') && (lang === 'zh'
+          {config.provider === 'deepbot' && (lang === 'zh'
             ? '默认: gemini-3-flash-preview'
             : 'Default: gemini-3-flash-preview')}
         </p>
@@ -204,9 +203,6 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
           {config.provider === 'qwen' && (lang === 'zh'
             ? 'Qwen API Key（可以与主模型使用相同的 Key）'
             : 'Qwen API Key (can reuse the same key as the main model)')}
-          {config.provider === 'gemini' && (lang === 'zh'
-            ? 'Google Gemini API Key'
-            : 'Google Gemini API Key')}
         </p>
       </div>
 

@@ -64,11 +64,6 @@ export const IMAGE_GENERATION_PROVIDER_PRESETS = {
     baseUrl: 'https://www.im-director.com/api/gemini-v1',
     defaultModelId: 'gemini-3.1-flash-image-preview',
   },
-  gemini: {
-    name: 'Google Gemini',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-    defaultModelId: 'gemini-3.1-flash-image-preview',
-  },
   qwen: {
     name: 'Qwen Image',
     baseUrl: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
@@ -90,11 +85,6 @@ export const WEB_SEARCH_PROVIDER_PRESETS = {
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     defaultModelId: 'qwen3.6-plus',
   },
-  gemini: {
-    name: 'Google Gemini',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-    defaultModelId: 'gemini-3-flash-preview',
-  },
 } as const;
 
 /**
@@ -115,9 +105,9 @@ export const DEFAULT_MODEL_CONFIG = {
  * 默认图片生成工具配置
  */
 export const DEFAULT_IMAGE_GENERATION_CONFIG = {
-  provider: 'gemini' as const,
-  model: IMAGE_GENERATION_PROVIDER_PRESETS.gemini.defaultModelId,
-  apiUrl: IMAGE_GENERATION_PROVIDER_PRESETS.gemini.baseUrl,
+  provider: 'deepbot' as const,
+  model: IMAGE_GENERATION_PROVIDER_PRESETS.deepbot.defaultModelId,
+  apiUrl: IMAGE_GENERATION_PROVIDER_PRESETS.deepbot.baseUrl,
   apiKey: '',
 };
 
@@ -125,8 +115,8 @@ export const DEFAULT_IMAGE_GENERATION_CONFIG = {
  * 默认 Web 搜索工具配置
  */
 export const DEFAULT_WEB_SEARCH_CONFIG = {
-  provider: 'qwen' as const,
-  model: WEB_SEARCH_PROVIDER_PRESETS.qwen.defaultModelId,
-  apiUrl: WEB_SEARCH_PROVIDER_PRESETS.qwen.baseUrl,
+  provider: 'deepbot' as const,
+  model: WEB_SEARCH_PROVIDER_PRESETS.deepbot.defaultModelId,
+  apiUrl: WEB_SEARCH_PROVIDER_PRESETS.deepbot.baseUrl,
   apiKey: '',
 };

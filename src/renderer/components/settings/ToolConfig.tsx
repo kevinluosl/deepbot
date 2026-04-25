@@ -18,7 +18,7 @@ import { getLanguage } from '../../i18n';
 
 // 可供用户禁用的工具列表
 const TOGGLEABLE_TOOLS_ZH: Array<{ name: string; label: string; description: string }> = [
-  { name: 'image_generation', label: '图片生成', description: '内置 Gemini/Qwen 图片生成工具' },
+  { name: 'image_generation', label: '图片生成', description: '内置图片生成工具' },
   { name: 'web_search', label: '网络搜索', description: '内置网络搜索工具' },
   { name: 'browser', label: '浏览器控制', description: '通过 Chrome 远程调试控制浏览器' },
   { name: 'calendar_get_events', label: '日历读取', description: '读取 macOS 日历事件' },
@@ -26,7 +26,7 @@ const TOGGLEABLE_TOOLS_ZH: Array<{ name: string; label: string; description: str
 ];
 
 const TOGGLEABLE_TOOLS_EN: Array<{ name: string; label: string; description: string }> = [
-  { name: 'image_generation', label: 'Image Generation', description: 'Built-in Gemini/Qwen image generation tool' },
+  { name: 'image_generation', label: 'Image Generation', description: 'Built-in image generation tool' },
   { name: 'web_search', label: 'Web Search', description: 'Built-in web search tool' },
   { name: 'browser', label: 'Browser Control', description: 'Control browser via Chrome remote debugging' },
   { name: 'calendar_get_events', label: 'Calendar Read', description: 'Read macOS calendar events' },
@@ -127,7 +127,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   };
 
   // 当提供商改变时，更新默认 API 地址和模型
-  const handleImageProviderChange = (newProvider: 'deepbot' | 'gemini' | 'qwen') => {
+  const handleImageProviderChange = (newProvider: 'deepbot' | 'qwen') => {
     const preset = IMAGE_GENERATION_PROVIDER_PRESETS[newProvider];
 
     setImageGenConfig({
@@ -238,7 +238,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             </label>
             <select
               value={imageGenConfig.provider}
-              onChange={(e) => handleImageProviderChange(e.target.value as 'deepbot' | 'gemini' | 'qwen')}
+              onChange={(e) => handleImageProviderChange(e.target.value as 'deepbot' | 'qwen')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="deepbot">DeepBot（Nano banana 2）</option>
@@ -264,7 +264,6 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             <p className="mt-1 text-xs text-gray-500">
               {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '无需魔法，直连 Nano Banana 2' : 'Direct connection to Nano Banana 2, no proxy needed')}
               {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? 'Qwen Image 图片生成 API 地址' : 'Qwen Image generation API URL')}
-              {imageGenConfig.provider === 'gemini' && (lang === 'zh' ? '预设提供商的 API 地址（可修改）' : 'Preset provider API URL (editable)')}
             </p>
           </div>
 
@@ -286,7 +285,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {(imageGenConfig.provider === 'gemini' || imageGenConfig.provider === 'deepbot') && (lang === 'zh' ? '默认: gemini-3.1-flash-image-preview' : 'Default: gemini-3.1-flash-image-preview')}
+              {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '默认: gemini-3.1-flash-image-preview' : 'Default: gemini-3.1-flash-image-preview')}
               {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? '推荐: qwen-image-2.0-pro（可选: qwen-image-2.0, qwen-image-max, qwen-image-plus）' : 'Recommended: qwen-image-2.0-pro (options: qwen-image-2.0, qwen-image-max, qwen-image-plus)')}
             </p>
           </div>
@@ -310,7 +309,6 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {imageGenConfig.provider === 'gemini' && (lang === 'zh' ? '用于访问 Gemini API 的密钥' : 'Key for accessing Gemini API')}
               {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '点击「如何获取」获得 API Key，或使用自己的 Gemini API Key' : 'Click "How to get" for an API Key, or use your own Gemini API Key')}
               {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? '用于访问 Qwen API 的密钥（DashScope API Key）' : 'Key for accessing Qwen API (DashScope API Key)')}
             </p>

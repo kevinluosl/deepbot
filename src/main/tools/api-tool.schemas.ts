@@ -235,7 +235,7 @@ export const RejectPairingSchema = Type.Object({
  */
 export const SetToolEnabledSchema = Type.Object({
   toolName: Type.Union([
-    Type.Literal('image_generation', { description: '图片生成工具（内置 Gemini/Qwen）' }),
+    Type.Literal('image_generation', { description: '图片生成工具' }),
     Type.Literal('web_search', { description: '网络搜索工具' }),
     Type.Literal('browser', { description: '浏览器控制工具' }),
     Type.Literal('calendar_get_events', { description: '日历读取工具' }),
