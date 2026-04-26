@@ -231,6 +231,9 @@ export async function generateImageWithGptImage2(params: {
 
   if (!response.ok) {
     const text = await response.text();
+    if (response.status === 401 || response.status === 404) {
+      throw new Error('API Key 无效或未配置，请检查图片生成工具配置中的 API Key');
+    }
     throw new Error(`图片生成请求失败: ${response.status} ${text}`);
   }
 
