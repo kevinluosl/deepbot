@@ -312,8 +312,8 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500">
-              {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '点击「如何获取」获得 API Key，或使用自己的 Gemini API Key' : 'Click "How to get" for an API Key, or use your own Gemini API Key')}
-              {imageGenConfig.provider === 'deepbot-gpt' && (lang === 'zh' ? '点击「如何获取」获得 API Key，或使用自己的 AtlasCloud API Key' : 'Click "How to get" for an API Key, or use your own AtlasCloud API Key')}
+              {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '点击「如何获取」获得 API Key' : 'Click "How to get" for an API Key')}
+              {imageGenConfig.provider === 'deepbot-gpt' && (lang === 'zh' ? '点击「如何获取」获得 API Key' : 'Click "How to get" for an API Key')}
               {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? '用于访问 Qwen API 的密钥（DashScope API Key）' : 'Key for accessing Qwen API (DashScope API Key)')}
             </p>
           </div>
