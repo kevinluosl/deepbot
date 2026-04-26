@@ -5,24 +5,27 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { TIMEOUTS } from '../../config/timeouts';
 import { expandPath, getMimeType } from './image-utils';
-import { getErrorMessage } from '../../../shared/utils/error-handler';
 
-// 尺寸映射：aspectRatio → GPT Image 2 支持的 size
-// 支持：1:1（1024x1024）, 2:3（1024x1536）, 3:2（1536x1024）, 16:9（2048x1152）
-const SIZE_MAP: Record<string, string> = {
+// 尺寸映射：resolution + aspectRatio → GPT Image 2 支持的 size
+// 1K 支持所有比例，2K 只支持 16:9 和 9:16
+const SIZE_MAP_1K: Record<string, string> = {
+  '4:3': '1024x768',
+  '3:4': '768x1024',
   '1:1': '1024x1024',
   '2:3': '1024x1536',
   '3:2': '1536x1024',
-  '16:9': '2048x1152',
-  '9:16': '1152x2048',
-  // 不支持的比例降级到最接近的
-  '4:3': '1536x1024',   // → 3:2
-  '3:4': '1024x1536',   // → 2:3
+  '16:9': '1920x1080',
+  '9:16': '1080x1920',
+  // 不支持的比例降级
   '4:5': '1024x1536',   // → 2:3
   '5:4': '1536x1024',   // → 3:2
-  '21:9': '2048x1152',  // → 16:9
+  '21:9': '1920x1080',  // → 16:9
+};
+
+const SIZE_MAP_2K: Record<string, string> = {
+  '16:9': '2560x1440',
+  '9:16': '1440x2560',
 };
 
 /**
@@ -152,16 +155,26 @@ async function downloadImageAsBase64(imageUrl: string, signal?: AbortSignal): Pr
 export async function generateImageWithGptImage2(params: {
   prompt: string;
   aspectRatio?: string;
+  resolution?: string;
   referenceImages?: string[];
   apiKey: string;
   apiUrl: string;
   model: string;
   signal?: AbortSignal;
 }): Promise<{ imageData: string; mimeType: string }> {
-  const { prompt, aspectRatio, referenceImages, apiKey, apiUrl, signal } = params;
+  const { prompt, aspectRatio, resolution, referenceImages, apiKey, apiUrl, signal } = params;
 
-  // 确定尺寸（默认跟随上层传入的 aspectRatio，上层默认是 16:9）
-  const size = SIZE_MAP[aspectRatio || '16:9'] || '1024x1024';
+  // 确定尺寸：根据 resolution 选择对应的 SIZE_MAP
+  const ratio = aspectRatio || '16:9';
+  const res = resolution || '1K';
+  let size: string;
+  
+  if (res === '2K') {
+    // 2K 只支持 16:9 和 9:16，其他比例降级到 1K
+    size = SIZE_MAP_2K[ratio] || SIZE_MAP_1K[ratio] || '1920x1080';
+  } else {
+    size = SIZE_MAP_1K[ratio] || '1920x1080';
+  }
 
   // 判断是文生图还是图生图
   const hasReferenceImages = referenceImages && referenceImages.length > 0;
