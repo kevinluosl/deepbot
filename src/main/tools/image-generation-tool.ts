@@ -17,6 +17,7 @@ import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
 import type { SystemConfigStore } from '../database/system-config-store';
 import { generateImageWithGemini, analyzeImageWithGemini } from './providers/gemini-provider';
 import { generateImageWithQwen } from './providers/qwen-provider';
+import { generateImageWithGptImage2 } from './providers/gpt-image-provider';
 import { expandPath, getMimeType } from './providers/image-utils';
 import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
 
@@ -30,7 +31,7 @@ function getToolConfig(configStore: SystemConfigStore): {
   apiKey: string;
   apiUrl: string;
   model: string;
-  provider: 'gemini' | 'qwen';
+  provider: 'gemini' | 'qwen' | 'gpt-image';
   defaultOutputDir: string;
 } {
   const dbConfig = configStore.getImageGenerationToolConfig();
@@ -52,9 +53,11 @@ function getToolConfig(configStore: SystemConfigStore): {
   }
   
   // 根据保存的提供商或模型名称判断
-  let provider: 'gemini' | 'qwen' = 'gemini';
+  let provider: 'gemini' | 'qwen' | 'gpt-image' = 'gemini';
   if (dbConfig.provider === 'qwen' || (!dbConfig.provider && dbConfig.model.includes('qwen-image'))) {
     provider = 'qwen';
+  } else if (dbConfig.provider === 'deepbot-gpt' || (!dbConfig.provider && dbConfig.model.includes('gpt-image'))) {
+    provider = 'gpt-image';
   }
   // deepbot 提供商走 gemini 逻辑，无需特殊处理
   
@@ -99,7 +102,6 @@ const ImageGenerationSchema = Type.Object({
   resolution: Type.Optional(Type.Union([
     Type.Literal('1K', { description: '约1024px（默认）' }),
     Type.Literal('2K', { description: '约2048px' }),
-    Type.Literal('4K', { description: '约4096px' }),
   ])),
   referenceImages: Type.Optional(Type.Array(Type.String(), {
     description: '参考图片路径列表（可选，最多5张）。用于风格参考或图片编辑。按顺序使用',
@@ -115,17 +117,18 @@ const ImageGenerationSchema = Type.Object({
 async function generateImage(params: {
   prompt: string;
   aspectRatio?: '1:1' | '4:3' | '16:9' | '9:16' | '3:4' | '3:2' | '2:3' | '4:5' | '5:4' | '21:9';
-  resolution?: '1K' | '2K' | '4K';
+  resolution?: '1K' | '2K';
   referenceImages?: string[];
   apiKey: string;
   apiUrl: string;
   model: string;
-  provider: 'gemini' | 'qwen';
+  provider: 'gemini' | 'qwen' | 'gpt-image';
   signal?: AbortSignal;
 }): Promise<{ imageData: string; mimeType: string }> {
-  // 根据提供商选择不同的实现
   if (params.provider === 'qwen') {
     return generateImageWithQwen(params);
+  } else if (params.provider === 'gpt-image') {
+    return generateImageWithGptImage2(params);
   } else {
     return generateImageWithGemini(params);
   }
@@ -139,13 +142,15 @@ async function analyzeImage(params: {
   apiKey: string;
   apiUrl: string;
   model: string;
-  provider: 'gemini' | 'qwen';
+  provider: 'gemini' | 'qwen' | 'gpt-image';
   prompt?: string; // 🔥 可选的自定义提示词
   signal?: AbortSignal;
 }): Promise<string> {
-  // 目前只有 Gemini 支持图片解析，Qwen 暂不支持
   if (params.provider === 'qwen') {
     throw new Error('Qwen 模型暂不支持图片解析功能，请使用 Gemini 模型');
+  }
+  if (params.provider === 'gpt-image') {
+    throw new Error('GPT Image 2 暂不支持图片解析功能，请使用 Gemini 模型');
   }
   
   return analyzeImageWithGemini(params);
@@ -195,7 +200,7 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
           imagePath?: string;
           analysisPrompt?: string; // 🔥 图片分析的自定义提示词
           aspectRatio?: '1:1' | '4:3' | '16:9' | '9:16' | '3:4' | '3:2' | '2:3' | '4:5' | '5:4' | '21:9';
-          resolution?: '1K' | '2K' | '4K';
+          resolution?: '1K' | '2K';
           referenceImages?: string[];
           outputPath?: string;
         };
@@ -330,7 +335,7 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
                 success: true,
                 action: 'generate',
                 provider: toolConfig.provider,
-                message: '图片生成成功，显示图片预览时，必须使用path中的完整路径作为图片路径，禁止只显示图片的名字',
+                message: '图片生成成功，显示图片预览时，必须直接使用 path 字段的值作为图片路径，不要添加任何前缀（如 ~ 或 file://），path 已经是完整的绝对路径',
                 path: displayPath,
                 aspectRatio: params.aspectRatio || '16:9',
                 resolution: params.resolution || '1K',

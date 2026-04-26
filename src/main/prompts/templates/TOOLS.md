@@ -9,9 +9,11 @@
 ```
 
 **支持的路径格式**：
-- 绝对路径：`![截图](/path/to/screenshot.png)`
-- 用户目录：`![截图](~/path/to/screenshot.png)`
+- 绝对路径：`![截图](/path/to/screenshot.png)`（以 `/` 开头的路径直接使用，不要加 `~`）
+- 用户目录：`![截图](~/path/to/screenshot.png)`（仅当路径不以 `/` 开头时使用 `~`）
 - file:// 协议：`![截图](file:///path/to/screenshot.png)`
+
+⚠️ 工具返回的 path 已经是完整绝对路径（以 `/` 开头），直接使用即可，不要添加 `~` 前缀。
 
 **响应示例**：
 ```

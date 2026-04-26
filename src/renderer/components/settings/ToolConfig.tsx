@@ -127,7 +127,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
   };
 
   // 当提供商改变时，更新默认 API 地址和模型
-  const handleImageProviderChange = (newProvider: 'deepbot' | 'qwen') => {
+  const handleImageProviderChange = (newProvider: 'deepbot' | 'deepbot-gpt' | 'qwen') => {
     const preset = IMAGE_GENERATION_PROVIDER_PRESETS[newProvider];
 
     setImageGenConfig({
@@ -238,10 +238,11 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             </label>
             <select
               value={imageGenConfig.provider}
-              onChange={(e) => handleImageProviderChange(e.target.value as 'deepbot' | 'qwen')}
+              onChange={(e) => handleImageProviderChange(e.target.value as 'deepbot' | 'deepbot-gpt' | 'qwen')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="deepbot">DeepBot（Nano banana 2）</option>
+              <option value="deepbot-gpt">DeepBot（GPT Image 2）</option>
               <option value="qwen">Qwen Image</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
@@ -263,6 +264,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             />
             <p className="mt-1 text-xs text-gray-500">
               {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '无需魔法，直连 Nano Banana 2' : 'Direct connection to Nano Banana 2, no proxy needed')}
+              {imageGenConfig.provider === 'deepbot-gpt' && (lang === 'zh' ? '无需魔法，直连 GPT Image 2' : 'Direct connection to GPT Image 2, no proxy needed')}
               {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? 'Qwen Image 图片生成 API 地址' : 'Qwen Image generation API URL')}
             </p>
           </div>
@@ -276,7 +278,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
               type="text"
               value={imageGenConfig.model}
               onChange={(e) => setImageGenConfig({ ...imageGenConfig, model: e.target.value })}
-              disabled={imageGenConfig.provider === 'deepbot'}
+              disabled={imageGenConfig.provider === 'deepbot' || imageGenConfig.provider === 'deepbot-gpt'}
               placeholder={
                 imageGenConfig.provider === 'qwen'
                   ? 'qwen-image-2.0-pro'
@@ -286,6 +288,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             />
             <p className="mt-1 text-xs text-gray-500">
               {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '默认: gemini-3.1-flash-image-preview' : 'Default: gemini-3.1-flash-image-preview')}
+              {imageGenConfig.provider === 'deepbot-gpt' && (lang === 'zh' ? '默认: openai/gpt-image-2' : 'Default: openai/gpt-image-2')}
               {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? '推荐: qwen-image-2.0-pro（可选: qwen-image-2.0, qwen-image-max, qwen-image-plus）' : 'Recommended: qwen-image-2.0-pro (options: qwen-image-2.0, qwen-image-max, qwen-image-plus)')}
             </p>
           </div>
@@ -310,6 +313,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             />
             <p className="mt-1 text-xs text-gray-500">
               {imageGenConfig.provider === 'deepbot' && (lang === 'zh' ? '点击「如何获取」获得 API Key，或使用自己的 Gemini API Key' : 'Click "How to get" for an API Key, or use your own Gemini API Key')}
+              {imageGenConfig.provider === 'deepbot-gpt' && (lang === 'zh' ? '点击「如何获取」获得 API Key，或使用自己的 AtlasCloud API Key' : 'Click "How to get" for an API Key, or use your own AtlasCloud API Key')}
               {imageGenConfig.provider === 'qwen' && (lang === 'zh' ? '用于访问 Qwen API 的密钥（DashScope API Key）' : 'Key for accessing Qwen API (DashScope API Key)')}
             </p>
           </div>

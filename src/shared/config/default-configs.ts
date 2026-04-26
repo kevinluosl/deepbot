@@ -64,6 +64,11 @@ export const IMAGE_GENERATION_PROVIDER_PRESETS = {
     baseUrl: 'https://www.im-director.com/api/gemini-v1',
     defaultModelId: 'gemini-3.1-flash-image-preview',
   },
+  'deepbot-gpt': {
+    name: 'DeepBot（GPT Image 2）',
+    baseUrl: 'https://www.im-director.com/api/gpt-v1',
+    defaultModelId: 'openai/gpt-image-2',
+  },
   qwen: {
     name: 'Qwen Image',
     baseUrl: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',

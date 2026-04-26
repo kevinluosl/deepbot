@@ -21,7 +21,7 @@ const httpsAgent = new https.Agent({
 export async function generateImageWithGemini(params: {
   prompt: string;
   aspectRatio?: '1:1' | '4:3' | '16:9' | '9:16' | '3:4' | '3:2' | '2:3' | '4:5' | '5:4' | '21:9';
-  resolution?: '1K' | '2K' | '4K';
+  resolution?: '1K' | '2K';
   referenceImages?: string[];
   apiKey: string;
   apiUrl: string;
@@ -110,7 +110,7 @@ export async function generateImageWithGemini(params: {
       responseModalities: ['IMAGE', 'TEXT'], // 同时支持图片和文本输出
       imageConfig: {
         aspectRatio: aspectRatio,
-        imageSize: resolution, // 必须是 "1K", "2K", "4K" (大写 K)
+        imageSize: resolution, // 必须是 "1K", "2K" (大写 K)
       },
     },
   };
