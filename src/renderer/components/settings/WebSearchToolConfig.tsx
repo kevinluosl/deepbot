@@ -198,8 +198,8 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
         />
         <p className="mt-1 text-xs text-gray-500">
           {config.provider === 'deepbot' && (lang === 'zh'
-            ? '点击「如何获取」获得 API Key，或使用自己的 Gemini API Key'
-            : 'Click "How to get" for an API Key, or use your own Gemini API Key')}
+            ? '点击「如何获取」获得 API Key，配置图片生成（DeepBot）相同的 API Key'
+            : 'Click "How to get" for an API Key, use the same API Key as Image Generation (DeepBot)')}
           {config.provider === 'qwen' && (lang === 'zh'
             ? 'Qwen API Key（可以与主模型使用相同的 Key）'
             : 'Qwen API Key (can reuse the same key as the main model)')}

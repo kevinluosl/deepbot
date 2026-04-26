@@ -133,6 +133,7 @@ const ImageLoader: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
       <img 
         src={imageData} 
         alt={alt} 
+        data-filepath={filePath}
         className="terminal-image terminal-image-clickable"
         loading="lazy"
         onClick={handleImageClick}

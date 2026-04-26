@@ -226,7 +226,6 @@ function createWindow() {
         label: '另存为...',
         click: async () => {
           try {
-            // 显示保存对话框
             const result = await dialog.showSaveDialog(mainWindow!, {
               defaultPath: params.suggestedFilename || 'image.png',
               filters: [
@@ -236,24 +235,66 @@ function createWindow() {
             });
             
             if (!result.canceled && result.filePath) {
-              // 下载图片
-              mainWindow!.webContents.downloadURL(params.srcURL);
+              // 优先从 DOM 获取原始文件路径（data-filepath 属性）
+              let localFilePath = await mainWindow!.webContents.executeJavaScript(
+                `(() => { const el = document.elementFromPoint(${params.x}, ${params.y}); return el?.tagName === 'IMG' ? (el.dataset.filepath || '') : ''; })()`
+              );
               
-              // 监听下载完成事件
-              const downloadListener = (_e: any, item: any) => {
-                // 设置保存路径
-                item.setSavePath(result.filePath);
-                
-                item.once('done', (_event: any, state: string) => {
-                  if (state === 'completed') {
-                    console.log('[Main] 图片保存成功:', result.filePath);
-                  } else {
-                    console.error('[Main] 图片保存失败:', state);
-                  }
+              if (localFilePath) {
+                // 有本地文件路径，直接复制
+                const fs = await import('fs');
+                if (fs.existsSync(localFilePath)) {
+                  fs.copyFileSync(localFilePath, result.filePath);
+                  console.log('[Main] 图片保存成功:', result.filePath);
+                } else {
+                  console.error('[Main] 源文件不存在:', localFilePath);
+                }
+                return;
+              }
+              
+              // 没有本地路径，尝试从 srcURL 或 DOM src 获取
+              let srcURL = params.srcURL;
+              if (!srcURL) {
+                srcURL = await mainWindow!.webContents.executeJavaScript(
+                  `(() => { const el = document.elementFromPoint(${params.x}, ${params.y}); return el?.tagName === 'IMG' ? el.src : ''; })()`
+                );
+              }
+              
+              if (srcURL && srcURL.startsWith('data:')) {
+                // data URL：解码 base64 直接写文件
+                const fs = await import('fs');
+                const matches = srcURL.match(/^data:[^;]+;base64,(.+)$/);
+                if (matches) {
+                  const buffer = Buffer.from(matches[1], 'base64');
+                  fs.writeFileSync(result.filePath, buffer);
+                  console.log('[Main] 图片保存成功:', result.filePath);
+                } else {
+                  console.error('[Main] 无法解析 data URL');
+                }
+              } else if (srcURL && (srcURL.startsWith('http://') || srcURL.startsWith('https://'))) {
+                mainWindow!.webContents.downloadURL(srcURL);
+                mainWindow!.webContents.session.once('will-download', (_e: any, item: any) => {
+                  item.setSavePath(result.filePath);
+                  item.once('done', (_event: any, state: string) => {
+                    if (state === 'completed') {
+                      console.log('[Main] 图片保存成功:', result.filePath);
+                    } else {
+                      console.error('[Main] 图片保存失败:', state);
+                    }
+                  });
                 });
-              };
-              
-              mainWindow!.webContents.session.once('will-download', downloadListener);
+              } else if (srcURL && srcURL.startsWith('file://')) {
+                const fs = await import('fs');
+                const localPath = decodeURIComponent(srcURL.replace(/^file:\/\//, ''));
+                if (fs.existsSync(localPath)) {
+                  fs.copyFileSync(localPath, result.filePath);
+                  console.log('[Main] 图片保存成功:', result.filePath);
+                } else {
+                  console.error('[Main] 源文件不存在:', localPath);
+                }
+              } else {
+                console.error('[Main] 无法保存图片，srcURL 为空或格式未知');
+              }
             }
           } catch (error) {
             console.error('[Main] 保存图片失败:', error);
