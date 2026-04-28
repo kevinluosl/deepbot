@@ -7,26 +7,18 @@
 import { readFileSync } from 'node:fs';
 import { expandPath, getMimeType } from './image-utils';
 
-// 尺寸映射：resolution + aspectRatio → GPT Image 2 支持的 size
-// 1K 支持所有比例，2K 只支持 16:9 和 9:16
-const SIZE_MAP_1K: Record<string, string> = {
+// GPT Image 2 支持的尺寸映射
+const SIZE_MAP: Record<string, string> = {
   '4:3': '1024x768',
   '3:4': '768x1024',
   '1:1': '1024x1024',
   '2:3': '1024x1536',
   '3:2': '1536x1024',
-  '16:9': '1920x1080',
-  '9:16': '1080x1920',
-  // 不支持的比例降级
-  '4:5': '1024x1536',   // → 2:3
-  '5:4': '1536x1024',   // → 3:2
-  '21:9': '1920x1080',  // → 16:9
-};
-
-const SIZE_MAP_2K: Record<string, string> = {
   '16:9': '2560x1440',
   '9:16': '1440x2560',
 };
+
+const SUPPORTED_RATIOS = Object.keys(SIZE_MAP).join(', ');
 
 /**
  * 上传参考图片，返回下载 URL
@@ -155,25 +147,19 @@ async function downloadImageAsBase64(imageUrl: string, signal?: AbortSignal): Pr
 export async function generateImageWithGptImage2(params: {
   prompt: string;
   aspectRatio?: string;
-  resolution?: string;
   referenceImages?: string[];
   apiKey: string;
   apiUrl: string;
   model: string;
   signal?: AbortSignal;
 }): Promise<{ imageData: string; mimeType: string }> {
-  const { prompt, aspectRatio, resolution, referenceImages, apiKey, apiUrl, signal } = params;
+  const { prompt, aspectRatio, referenceImages, apiKey, apiUrl, signal } = params;
 
-  // 确定尺寸：根据 resolution 选择对应的 SIZE_MAP
-  const ratio = aspectRatio || '16:9';
-  const res = resolution || '1K';
-  let size: string;
-  
-  if (res === '2K') {
-    // 2K 只支持 16:9 和 9:16，其他比例降级到 1K
-    size = SIZE_MAP_2K[ratio] || SIZE_MAP_1K[ratio] || '1920x1080';
-  } else {
-    size = SIZE_MAP_1K[ratio] || '1920x1080';
+  // 确定尺寸
+  const ratio = aspectRatio || '4:3';
+  const size = SIZE_MAP[ratio];
+  if (!size) {
+    throw new Error(`GPT Image 2 不支持 ${ratio} 比例，支持的比例：${SUPPORTED_RATIOS}`);
   }
 
   // 判断是文生图还是图生图
