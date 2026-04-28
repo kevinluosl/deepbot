@@ -759,7 +759,7 @@ function registerIpcHandlers() {
   ipcMain.handle(IPC_CHANNELS.SET_TAB_MODEL_CONFIG, async (_event, { tabId, modelConfig }) => {
     try {
       const { SystemConfigStore } = await import('./database/system-config-store');
-      const { updateTabModelConfig } = await import('./database/tab-config');
+      const { updateTabModelConfig, getTabConfig, saveTabConfig } = await import('./database/tab-config');
       const store = SystemConfigStore.getInstance();
 
       // 如果用户没有手动设置 contextWindow，自动推断
@@ -769,7 +769,28 @@ function registerIpcHandlers() {
         console.log(`[IPC] Tab 模型上下文窗口自动推断: ${modelConfig.modelId} → ${modelConfig.contextWindow}`);
       }
 
-      updateTabModelConfig(store.getDb(), tabId, modelConfig);
+      // 确保 tab 在数据库中有记录（默认 tab 可能只在内存中）
+      const existing = getTabConfig(store.getDb(), tabId);
+      if (!existing && gateway) {
+        const tab = gateway.getTabManager().getAllTabs().find((t: any) => t.id === tabId);
+        if (tab) {
+          saveTabConfig(store.getDb(), {
+            id: tabId,
+            title: tab.title,
+            type: tab.type === 'connector' ? 'connector' : tab.type === 'scheduled_task' ? 'task' : 'manual',
+            memoryFile: tab.memoryFile || null,
+            agentName: tab.agentName || null,
+            isPersistent: true,
+            createdAt: tab.createdAt,
+            lastActiveAt: tab.lastActiveAt,
+            connectorId: tab.connectorId,
+            conversationId: tab.conversationId,
+            modelConfig,
+          });
+        }
+      } else {
+        updateTabModelConfig(store.getDb(), tabId, modelConfig);
+      }
       
       // 销毁该 tab 的 Runtime，下次使用时用新配置重建
       if (gateway) {

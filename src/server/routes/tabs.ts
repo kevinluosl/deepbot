@@ -138,7 +138,7 @@ export function createTabsRouter(gatewayAdapter: GatewayAdapter): Router {
       const { tabId } = req.params;
       let { modelConfig } = req.body;
       const { SystemConfigStore } = await import('../../main/database/system-config-store');
-      const { updateTabModelConfig } = await import('../../main/database/tab-config');
+      const { updateTabModelConfig, getTabConfig, saveTabConfig } = await import('../../main/database/tab-config');
       const store = SystemConfigStore.getInstance();
 
       if (modelConfig && modelConfig.modelId && !modelConfig.contextWindow) {
@@ -146,7 +146,30 @@ export function createTabsRouter(gatewayAdapter: GatewayAdapter): Router {
         modelConfig.contextWindow = getContextWindowFromModelId(modelConfig.modelId);
       }
 
-      updateTabModelConfig(store.getDb(), tabId as string, modelConfig);
+      // 确保 tab 在数据库中有记录
+      const existing = getTabConfig(store.getDb(), tabId as string);
+      if (!existing) {
+        const { getGatewayInstance } = await import('../../main/gateway');
+        const gw = getGatewayInstance();
+        const tab = gw?.getTabManager().getAllTabs().find((t: any) => t.id === tabId);
+        if (tab) {
+          saveTabConfig(store.getDb(), {
+            id: tabId as string,
+            title: tab.title,
+            type: tab.type === 'connector' ? 'connector' : tab.type === 'scheduled_task' ? 'task' : 'manual',
+            memoryFile: tab.memoryFile || null,
+            agentName: tab.agentName || null,
+            isPersistent: true,
+            createdAt: tab.createdAt,
+            lastActiveAt: tab.lastActiveAt,
+            connectorId: tab.connectorId,
+            conversationId: tab.conversationId,
+            modelConfig,
+          });
+        }
+      } else {
+        updateTabModelConfig(store.getDb(), tabId as string, modelConfig);
+      }
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: getErrorMessage(error) });

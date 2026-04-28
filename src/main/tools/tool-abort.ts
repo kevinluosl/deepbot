@@ -150,30 +150,37 @@ export class OperationTracker {
   private operations = new Map<string, number>();
   private failures = new Map<string, number>();
   private consecutiveFailures = 0;
-  private readonly maxRepeats = 2; // 最多允许重复 2 次（总共执行 3 次）
+  private lastOperationKey: string | null = null; // 上一次操作的 key
+  private consecutiveCount = 0; // 连续相同操作的次数
+  private readonly maxConsecutiveRepeats = 2; // 最多允许连续重复 2 次（总共执行 3 次）
   private readonly maxConsecutiveFailures = 5; // 最多连续失败 5 次
   
   /**
-   * 追踪操作并检查是否重复
-   * 
-   * @param tool - 工具名称
-   * @param params - 工具参数
-   * @returns 是否允许执行（false = 重复太多次，阻止执行）
+   * 追踪操作并检查是否连续重复
+   * 只有连续执行相同操作才算重复，中间执行了其他操作则重置计数
    */
   track(tool: string, params: any): boolean {
-    // 生成操作的唯一键
     const key = this.generateKey(tool, params);
-    const count = this.operations.get(key) || 0;
     
-    // 检查是否超过最大重复次数
-    if (count >= this.maxRepeats) {
-      console.warn(`⚠️ 检测到重复操作 (${count + 1} 次): ${tool}`);
-      console.warn(`   参数:`, params);
-      return false; // 阻止执行
+    if (key === this.lastOperationKey) {
+      // 和上一次操作相同，增加连续计数
+      this.consecutiveCount++;
+      
+      if (this.consecutiveCount > this.maxConsecutiveRepeats) {
+        console.warn(`⚠️ 检测到连续重复操作 (${this.consecutiveCount + 1} 次): ${tool}`);
+        console.warn(`   参数:`, params);
+        return false; // 阻止执行
+      }
+    } else {
+      // 和上一次操作不同，重置连续计数
+      this.lastOperationKey = key;
+      this.consecutiveCount = 0;
     }
     
-    // 记录操作
+    // 记录总操作次数（用于统计）
+    const count = this.operations.get(key) || 0;
     this.operations.set(key, count + 1);
+    
     return true; // 允许执行
   }
   
@@ -244,6 +251,8 @@ export class OperationTracker {
     this.operations.clear();
     this.failures.clear();
     this.consecutiveFailures = 0;
+    this.lastOperationKey = null;
+    this.consecutiveCount = 0;
   }
   
   /**
