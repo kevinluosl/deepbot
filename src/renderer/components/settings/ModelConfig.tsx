@@ -351,7 +351,7 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
                 listStyle: 'none', margin: 0, padding: '4px 0',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}>
-                {['deepseek-v3.2', 'deepseek-v4-flash', 'minimax-m2.5', 'minimax-m2.7', 'glm-4.7', 'kimi-k2.5', 'step-3.5-flash', 'qwen3.6-plus', 'qwen3.5-flash-02-23', 'qwen3-coder-next'].map(id => (
+                {['deepseek-v3.2', 'deepseek-v4-flash', 'minimax-m2.5', 'minimax-m2.7', 'glm-4.7', 'kimi-k2.5', 'step-3.5-flash', 'qwen3.6-plus', 'qwen3.6-flash', 'qwen3-coder-next'].map(id => (
                   <li key={id}
                     onMouseDown={() => setConfig({ ...config, modelId: id, modelName: id, contextWindow: undefined })}
                     style={{

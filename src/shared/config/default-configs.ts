@@ -12,8 +12,8 @@ export const PROVIDER_PRESETS = {
   deepbot: {
     name: 'DeepBot',
     baseUrl: 'https://www.im-director.com/api/llm-v1',
-    defaultModelId: 'qwen3.5-flash-02-23',
-    defaultModelId2: 'qwen3.5-flash-02-23',  // 快速模型
+    defaultModelId: 'qwen3.6-flash',
+    defaultModelId2: 'minimax-m2.5',  // 快速模型
     apiType: 'openai-completions',
   },
   qwen: {
