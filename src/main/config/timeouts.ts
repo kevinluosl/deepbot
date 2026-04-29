@@ -23,6 +23,7 @@ export const TIMEOUTS = {
   BROWSER_CLIENT_CONTENT_TIMEOUT: 10 * 1000,   // 10 秒（客户端内容获取）
   BROWSER_CLIENT_CONSOLE_TIMEOUT: 20 * 1000,   // 20 秒（客户端控制台）
   BROWSER_CLIENT_TAB_TIMEOUT: 5 * 1000,        // 5 秒（客户端标签操作）
+  BROWSER_TOOL_EXECUTE_TIMEOUT: 60 * 1000,      // 60 秒（单次浏览器工具执行上限）
   
   // HTTP 请求相关
   HTTP_REQUEST_TIMEOUT: 5 * 1000,              // 5 秒

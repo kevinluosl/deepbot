@@ -22,6 +22,7 @@ import { isDockerMode } from '../../shared/utils/docker-utils';
 import { TOOL_NAMES } from './tool-names';
 import { SystemConfigStore } from '../database/system-config-store';
 import { ensureDirectoryExists } from '../../shared/utils/fs-utils';
+import { TIMEOUTS } from '../config/timeouts';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -215,6 +216,8 @@ export const browserToolPlugin: ToolPlugin = {
         parameters: BrowserToolSchema,
         
         execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
+          // 🔥 3分钟超时保护：防止浏览器操作卡住导致 Agent 永远不停止
+          const executeCore = async () => {
           try {
             // Docker 模式：强制使用 headless Chromium（Playwright），CDP 端口 9222
             // 非 Docker 模式：连接用户系统 Chrome，CDP 端口 9222
@@ -980,6 +983,24 @@ export const browserToolPlugin: ToolPlugin = {
                 success: false,
                 error: getErrorMessage(error),
               },
+              isError: true,
+            };
+          }
+          }; // executeCore 结束
+
+          // 超时竞争：executeCore vs 3分钟超时
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('浏览器操作超时（60秒），已强制停止')), TIMEOUTS.BROWSER_TOOL_EXECUTE_TIMEOUT);
+          });
+
+          try {
+            return await Promise.race([executeCore(), timeoutPromise]);
+          } catch (error) {
+            const msg = getErrorMessage(error);
+            console.error(`[Browser Tool] ❌ 执行超时或异常: ${msg}`);
+            return {
+              content: [{ type: 'text', text: `❌ ${msg}` }],
+              details: { success: false, error: msg },
               isError: true,
             };
           }

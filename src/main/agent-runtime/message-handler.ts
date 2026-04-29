@@ -29,6 +29,9 @@ export class MessageHandler {
   
   // 当前正在流式输出的内容
   private currentStreamingContent = '';
+  
+  // 进度监控定时器（需要在停止生成时清除）
+  private progressTimer: NodeJS.Timeout | null = null;
 
   constructor(agent: Agent | null) {
     this.agent = agent;
@@ -394,10 +397,14 @@ export class MessageHandler {
         // Agent 内部会自动处理工具调用循环，直到完成
         
         // 添加进度监控定时器
-        let progressTimer: NodeJS.Timeout | null = null;
         let elapsedSeconds = 0;
         
-        progressTimer = setInterval(() => {
+        // 清除可能残留的旧定时器
+        if (this.progressTimer) {
+          clearInterval(this.progressTimer);
+        }
+        
+        this.progressTimer = setInterval(() => {
           elapsedSeconds += 5;
           console.log(`⏳ Agent 正在处理... 已耗时 ${elapsedSeconds} 秒`);
           
@@ -409,9 +416,9 @@ export class MessageHandler {
         
         void this.agent.prompt(content).then(() => {
           // 清除进度定时器
-          if (progressTimer) {
-            clearInterval(progressTimer);
-            progressTimer = null;
+          if (this.progressTimer) {
+            clearInterval(this.progressTimer);
+            this.progressTimer = null;
           }
           
           const duration = Date.now() - startTime;
@@ -449,9 +456,9 @@ export class MessageHandler {
           resolvePrompt?.();
         }).catch((error) => {
           // 清除进度定时器
-          if (progressTimer) {
-            clearInterval(progressTimer);
-            progressTimer = null;
+          if (this.progressTimer) {
+            clearInterval(this.progressTimer);
+            this.progressTimer = null;
           }
           
           console.error(`❌ agent.prompt() 失败:`, error);
@@ -593,6 +600,12 @@ export class MessageHandler {
   stopGeneration(): void {
     if (this.isGenerating) {
       console.log('⏹️ 停止生成...');
+      
+      // 0. 清除进度监控定时器
+      if (this.progressTimer) {
+        clearInterval(this.progressTimer);
+        this.progressTimer = null;
+      }
       
       // 1. 触发 AbortController，取消所有工具的执行
       if (this.abortController) {
