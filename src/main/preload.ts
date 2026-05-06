@@ -76,6 +76,7 @@ const IPC_CHANNELS = {
   CONNECTOR_REMOVE_WECOM: 'connector:remove-wecom',
   CONNECTOR_DIRECT_REPLY: 'connector:direct-reply',
   CONNECTOR_GET_KF_LIST: 'connector:get-kf-list',
+  CONNECTOR_GET_KF_URL: 'connector:get-kf-url',
   CONNECTOR_SAVE_KF_WELCOME: 'connector:save-kf-welcome',
   CONNECTOR_GET_KF_WELCOME: 'connector:get-kf-welcome',
   CONNECTOR_SAVE_WORK_PROMPT: 'connector:save-work-prompt',
@@ -407,6 +408,11 @@ contextBridge.exposeInMainWorld('deepbot', {
   // 获取智能客服账号列表
   connectorGetKfList: () => {
     return ipcRenderer.invoke(IPC_CHANNELS.CONNECTOR_GET_KF_LIST);
+  },
+
+  // 获取客服账号链接
+  connectorGetKfUrl: (openKfId: string, scene?: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.CONNECTOR_GET_KF_URL, { openKfId, scene });
   },
 
   // 保存客服欢迎语配置

@@ -502,6 +502,25 @@ export function registerConnectorHandlers(): void {
     }
   );
 
+  // 获取客服账号链接
+  registerIpcHandler<{ openKfId: string; scene?: string }, { success: boolean; url?: string; error?: string }>(
+    IPC_CHANNELS.CONNECTOR_GET_KF_URL,
+    async (_event, request): Promise<{ success: boolean; url?: string; error?: string }> => {
+      try {
+        if (!gateway) throw new Error('Gateway 未初始化');
+        const connectorManager = gateway.getConnectorManager();
+        const connector = connectorManager.getConnector('smart-kf') as any;
+        if (!connector) throw new Error('智能客服连接器未注册');
+        if (!connector.getKfUrl) throw new Error('连接器不支持获取客服链接');
+        const result = await connector.getKfUrl(request.openKfId, request.scene);
+        return result;
+      } catch (error) {
+        console.error('[IPC] 获取客服链接失败:', error);
+        return { success: false, error: getErrorMessage(error) };
+      }
+    }
+  );
+
   // 保存客服欢迎语配置
   registerIpcHandler<{ openKfId: string; welcome: string }, { success: boolean; error?: string }>(
     IPC_CHANNELS.CONNECTOR_SAVE_KF_WELCOME,

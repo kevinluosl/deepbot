@@ -8,7 +8,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { showToast } from '../../utils/toast';
 import { getLanguage } from '../../i18n';
-import { Check, Shield, Trash2, Copy, Link, Play, Square, X, FileText } from 'lucide-react';
+import { Check, Shield, Trash2, Copy, Link, Play, Square, X, FileText, RefreshCw } from 'lucide-react';
 
 interface ConnectorConfigProps {
   onClose: () => void;
@@ -802,7 +802,7 @@ export function ConnectorConfig({ onClose, onNavigate }: ConnectorConfigProps) {
               className="skill-card-action flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors"
               disabled={kfListLoading || !connectors.find(c => c.id === 'smart-kf')?.enabled}
             >
-              <span style={{ display: 'inline-block', animation: kfListLoading ? 'spin 1s linear infinite' : 'none' }}>🔄</span>
+              <RefreshCw size={12} style={{ animation: kfListLoading ? 'spin 1s linear infinite' : 'none' }} />
               <span>{lang === 'zh' ? '刷新客服列表' : 'Refresh KF List'}</span>
             </button>
           </div>
@@ -831,10 +831,7 @@ export function ConnectorConfig({ onClose, onNavigate }: ConnectorConfigProps) {
                   {kf.avatar && (
                     <img src={kf.avatar} alt={kf.name} className="w-8 h-8 rounded-full" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   )}
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{kf.name}</div>
-                    <div className="text-xs text-gray-400 font-mono">{kf.open_kfid}</div>
-                  </div>
+                  <div className="text-sm font-medium text-gray-900">{kf.name}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -846,7 +843,7 @@ export function ConnectorConfig({ onClose, onNavigate }: ConnectorConfigProps) {
                     className="skill-card-action flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors"
                   >
                     <FileText size={12} />
-                    <span>{lang === 'zh' ? '工作提示词' : 'Work Prompt'}</span>
+                    <span>{lang === 'zh' ? '工作提示词' : 'Prompt'}</span>
                   </button>
                   <button
                     onClick={async () => {
@@ -864,7 +861,27 @@ export function ConnectorConfig({ onClose, onNavigate }: ConnectorConfigProps) {
                     className="skill-card-action flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors"
                   >
                     <FileText size={12} />
-                    <span>{lang === 'zh' ? '设置欢迎语' : 'Welcome Msg'}</span>
+                    <span>{lang === 'zh' ? '欢迎语' : 'Welcome'}</span>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const result = await api.connectorGetKfUrl(kf.open_kfid);
+                        const actualResult = result?.data || result;
+                        if (actualResult?.success && actualResult.url) {
+                          await navigator.clipboard.writeText(actualResult.url);
+                          showToast('success', lang === 'zh' ? '链接已复制到剪贴板' : 'URL copied to clipboard');
+                        } else {
+                          showToast('error', actualResult?.error || (lang === 'zh' ? '获取链接失败' : 'Failed to get URL'));
+                        }
+                      } catch {
+                        showToast('error', lang === 'zh' ? '获取链接失败' : 'Failed to get URL');
+                      }
+                    }}
+                    className="skill-card-action flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors"
+                  >
+                    <Link size={12} />
+                    <span>{lang === 'zh' ? '获取链接' : 'Get URL'}</span>
                   </button>
                 </div>
               </div>

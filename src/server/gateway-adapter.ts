@@ -569,6 +569,14 @@ export class GatewayAdapter extends EventEmitter {
     return await connector.getKfList();
   }
 
+  async connectorGetKfUrl(openKfId: string, scene?: string): Promise<any> {
+    const connectorManager = this.gateway.getConnectorManager();
+    const connector = connectorManager.getConnector('smart-kf') as any;
+    if (!connector) return { success: false, error: '智能客服连接器未注册' };
+    if (!connector.getKfUrl) return { success: false, error: '连接器不支持获取客服链接' };
+    return await connector.getKfUrl(openKfId, scene);
+  }
+
   async connectorSaveKfWelcome(openKfId: string, welcome: string): Promise<any> {
     const { SystemConfigStore } = await import('../main/database/system-config-store');
     const store = SystemConfigStore.getInstance();

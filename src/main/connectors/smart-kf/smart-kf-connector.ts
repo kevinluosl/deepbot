@@ -496,6 +496,47 @@ export class SmartKfConnector implements Connector {
   }
 
   /**
+   * 获取客服账号链接
+   */
+  async getKfUrl(openKfId: string, scene?: string): Promise<{ success: boolean; url?: string; error?: string }> {
+    if (!this.ws || this.ws.readyState !== 1) {
+      return { success: false, error: 'WebSocket 未连接' };
+    }
+
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        this.ws?.removeListener('message', handler);
+        resolve({ success: false, error: '获取客服链接超时' });
+      }, 10000);
+
+      const handler = (data: any) => {
+        try {
+          const msg = JSON.parse(data.toString());
+          if (msg.request_id && msg.request_id !== requestId) return;
+          if (msg.type === 'kf_url') {
+            clearTimeout(timeout);
+            this.ws?.removeListener('message', handler);
+            resolve({ success: true, url: msg.url || '' });
+          } else if (msg.type === 'error') {
+            clearTimeout(timeout);
+            this.ws?.removeListener('message', handler);
+            resolve({ success: false, error: msg.error || '服务端返回错误' });
+          }
+        } catch {
+          // 非相关消息，忽略
+        }
+      };
+
+      this.ws.on('message', handler);
+      const payload: any = { type: 'get_kf_url', open_kfid: openKfId, request_id: requestId };
+      if (scene) payload.scene = scene;
+      this.ws.send(JSON.stringify(payload));
+    });
+  }
+
+  /**
    * 获取客服账号列表
    */
   async getKfList(): Promise<{ success: boolean; accountList?: Array<{ open_kfid: string; name: string; avatar: string }>; error?: string }> {

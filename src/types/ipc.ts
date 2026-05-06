@@ -114,6 +114,7 @@ export const IPC_CHANNELS = {
   CONNECTOR_REMOVE_WECOM: 'connector:remove-wecom',     // 删除企业微信实例
   CONNECTOR_DIRECT_REPLY: 'connector:direct-reply',     // 人工直接回复连接器消息
   CONNECTOR_GET_KF_LIST: 'connector:get-kf-list',       // 获取智能客服账号列表
+  CONNECTOR_GET_KF_URL: 'connector:get-kf-url',         // 获取客服账号链接
   CONNECTOR_SAVE_KF_WELCOME: 'connector:save-kf-welcome', // 保存客服欢迎语配置
   CONNECTOR_GET_KF_WELCOME: 'connector:get-kf-welcome',   // 获取客服欢迎语配置
   CONNECTOR_SAVE_WORK_PROMPT: 'connector:save-work-prompt', // 保存连接器工作提示词（同步到所有 Tab）
