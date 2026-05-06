@@ -533,10 +533,19 @@ export class WecomConnector implements Connector {
       // 如果有 aeskey，需要解密
       if (aeskey) {
         const key = Buffer.from(aeskey, 'base64');
-        const iv = key.slice(0, 16);
-        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-        decipher.setAutoPadding(true);
-        buffer = Buffer.concat([decipher.update(buffer), decipher.final()]);
+        const actualKey = key.length >= 32 ? key.slice(0, 32) : Buffer.concat([key, Buffer.alloc(32 - key.length)]);
+        const iv = actualKey.slice(0, 16);
+        // 关闭 auto padding，手动处理（兼容企微非标准 padding）
+        const decipher = crypto.createDecipheriv('aes-256-cbc', actualKey, iv);
+        decipher.setAutoPadding(false);
+        const decrypted = Buffer.concat([decipher.update(buffer), decipher.final()]);
+        // 手动去除 PKCS7 padding
+        const padLen = decrypted[decrypted.length - 1];
+        if (padLen > 0 && padLen <= 16) {
+          buffer = decrypted.slice(0, decrypted.length - padLen);
+        } else {
+          buffer = decrypted;
+        }
       }
 
       // 保存文件
