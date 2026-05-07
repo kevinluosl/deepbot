@@ -966,7 +966,19 @@ export function ConnectorConfig({ onClose, onNavigate }: ConnectorConfigProps) {
                         const result = await api.connectorGetKfUrl(kf.open_kfid);
                         const actualResult = result?.data || result;
                         if (actualResult?.success && actualResult.url) {
-                          await navigator.clipboard.writeText(actualResult.url);
+                          try {
+                            await navigator.clipboard.writeText(actualResult.url);
+                          } catch {
+                            // 非安全上下文（非 HTTPS/localhost）fallback
+                            const textarea = document.createElement('textarea');
+                            textarea.value = actualResult.url;
+                            textarea.style.position = 'fixed';
+                            textarea.style.opacity = '0';
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textarea);
+                          }
                           showToast('success', lang === 'zh' ? '链接已复制到剪贴板' : 'URL copied to clipboard');
                         } else {
                           showToast('error', actualResult?.error || (lang === 'zh' ? '获取链接失败' : 'Failed to get URL'));

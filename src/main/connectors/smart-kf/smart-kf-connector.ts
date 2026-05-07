@@ -501,8 +501,11 @@ export class SmartKfConnector implements Connector {
     const requestId = payload.request_id || `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     if (!payload.request_id) payload.request_id = requestId;
 
+    console.log(`[SmartKfConnector] 📤 sendRequestAndWait: type=${payload.type}, requestId=${requestId}, pendingCount=${this.pendingRequests.size}`);
+
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
+        console.log(`[SmartKfConnector] ⏰ 请求超时: type=${payload.type}, requestId=${requestId}`);
         this.pendingRequests.delete(requestId);
         resolve({ _timeout: true });
       }, timeoutMs);
@@ -517,6 +520,7 @@ export class SmartKfConnector implements Connector {
    */
   private resolvePendingRequest(message: any): boolean {
     const requestId = message.request_id;
+    console.log(`[SmartKfConnector] 📥 resolvePendingRequest: type=${message.type}, requestId=${requestId || 'none'}, pendingCount=${this.pendingRequests.size}, pendingKeys=[${Array.from(this.pendingRequests.keys()).join(',')}]`);
     if (!requestId) {
       // 没有 request_id 的消息，尝试匹配第一个 pending request（兼容旧服务端）
       if (this.pendingRequests.size === 1) {
@@ -583,8 +587,7 @@ export class SmartKfConnector implements Connector {
     }
 
     try {
-      const payload: any = { type: 'add_kf_account', name };
-      if (mediaId) payload.media_id = mediaId;
+      const payload: any = { type: 'add_kf_account', name, media_id: mediaId || '' };
       const msg = await this.sendRequestAndWait(payload, ['kf_account_added', 'error'], 15000);
       if (msg._timeout) return { success: false, error: '添加客服账号超时' };
       if (msg.type === 'error') return { success: false, error: msg.error || '添加失败' };

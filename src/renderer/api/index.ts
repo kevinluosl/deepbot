@@ -298,7 +298,9 @@ export const api = {
   // 获取客服账号链接
   async connectorGetKfUrl(openKfId: string, scene?: string): Promise<any> {
     if (isElectron()) return (window as any).deepbot.connectorGetKfUrl(openKfId, scene);
-    const params = scene ? `?openKfId=${encodeURIComponent(openKfId)}&scene=${encodeURIComponent(scene)}` : `?openKfId=${encodeURIComponent(openKfId)}`;
+    const params = scene
+      ? `?openKfId=${encodeURIComponent(openKfId)}&scene=${encodeURIComponent(scene)}`
+      : `?openKfId=${encodeURIComponent(openKfId)}`;
     return webClient.get(`/api/connectors/smart-kf/kf-url${params}`);
   },
 
