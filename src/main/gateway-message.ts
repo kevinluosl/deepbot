@@ -148,6 +148,14 @@ export class GatewayMessageHandler {
         await this.handleAIConnectionError(error, runtime, content, sessionId);
       } else {
         this.sendError(errorMessage, sessionId);
+        
+        // 通知连接器（如果是连接器 Tab）
+        if (this.sendResponseToConnectorFn) {
+          try {
+            await this.sendResponseToConnectorFn(sessionId, `❌ 处理失败：${errorMessage}`);
+          } catch { /* 忽略 */ }
+        }
+        
         await this.processMessageQueue(sessionId);
       }
     } finally {
@@ -278,6 +286,14 @@ export class GatewayMessageHandler {
       const userMessage = `AI 连接超时，已尝试自动恢复但失败。\n\n可能的原因：\n1. 网络连接不稳定\n2. AI 服务响应缓慢\n3. API 配置错误\n\n建议操作：\n1. 检查网络连接\n2. 重新保存模型配置\n3. 如问题持续，请重启应用\n\n错误详情: ${getErrorMessage(retryError)}`;
       
       this.sendError(userMessage, sessionId);
+      
+      // 通知连接器（如果是连接器 Tab）
+      if (this.sendResponseToConnectorFn) {
+        try {
+          await this.sendResponseToConnectorFn(sessionId, `❌ ${userMessage}`);
+        } catch { /* 忽略 */ }
+      }
+      
       await this.processMessageQueue(sessionId);
     }
   }

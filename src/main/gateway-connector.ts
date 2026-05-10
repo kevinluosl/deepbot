@@ -616,6 +616,25 @@ export class GatewayConnectorHandler {
       }
     } catch (error) {
       logger.error('❌ 处理消息失败:', error);
+      
+      // 清除进度提醒定时器
+      this.clearProgressTimers(tabId);
+      
+      // 向连接器用户发送错误提示
+      try {
+        const errorMsg = getErrorMessage(error);
+        const isZh = true; // 连接器消息默认中文
+        const errorResponse = isZh 
+          ? `❌ 处理失败：${errorMsg}\n\n请稍后重试，或联系管理员检查系统配置。`
+          : `❌ Processing failed: ${errorMsg}\n\nPlease try again later or contact admin.`;
+        await this.connectorManager?.sendOutgoingMessage(
+          tab.connectorId as any,
+          tab.conversationId || '',
+          errorResponse
+        );
+      } catch {
+        // 忽略发送错误消息失败
+      }
     } finally {
       // 从队列中移除已处理的消息
       tab.pendingMessages.shift();
