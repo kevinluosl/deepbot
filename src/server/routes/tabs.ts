@@ -353,6 +353,37 @@ export function createTabsRouter(gatewayAdapter: GatewayAdapter): Router {
   router.get('/:tabId/workspace-dirs', getTabWorkspaceDirs);
   router.post('/:tabId/workspace-dirs', setTabWorkspaceDirs);
 
+  // Tab 生图工具配置
+  const getTabImageToolConfig: RequestHandler = async (req, res) => {
+    try {
+      const { tabId } = req.params;
+      const { SystemConfigStore } = await import('../../main/database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const row = store.getDb().prepare('SELECT image_tool_config FROM agent_tabs WHERE id = ?').get(tabId) as any;
+      const config = row?.image_tool_config ? JSON.parse(row.image_tool_config) : null;
+      res.json({ success: true, config });
+    } catch (error) {
+      res.status(500).json({ success: false, error: getErrorMessage(error) });
+    }
+  };
+
+  const setTabImageToolConfig: RequestHandler = async (req, res) => {
+    try {
+      const { tabId } = req.params;
+      const { config } = req.body;
+      const { SystemConfigStore } = await import('../../main/database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const configJson = config ? JSON.stringify(config) : null;
+      store.getDb().prepare('UPDATE agent_tabs SET image_tool_config = ? WHERE id = ?').run(configJson, tabId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false, error: getErrorMessage(error) });
+    }
+  };
+
+  router.get('/:tabId/image-tool-config', getTabImageToolConfig);
+  router.post('/:tabId/image-tool-config', setTabImageToolConfig);
+
   // 回复模式
   const getTabReplyMode: RequestHandler = async (req, res) => {
     try {

@@ -89,6 +89,9 @@ export interface ToolCreateOptions {
   /** 系统配置存储 */
   configStore?: any;
   
+  /** Tab 级别生图工具配置（覆盖全局） */
+  tabImageToolConfig?: { provider?: string; model?: string; apiUrl?: string; apiKey?: string } | null;
+  
   /** 其他依赖 */
   dependencies?: Record<string, any>;
 }

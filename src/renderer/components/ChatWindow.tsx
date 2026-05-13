@@ -10,9 +10,11 @@ import type { AgentTab } from '../../types/agent-tab';
 import { MAX_TABS } from '../../shared/constants/version';
 import { api } from '../api'; // 🔥 使用统一 API 适配器
 import { isElectron, isMacOS } from '../utils/platform'; // 🔥 平台检测
+import { showToast } from '../utils/toast';
 import { getLanguage } from '../i18n';
 import { ModelConfig } from './settings/ModelConfig';
-import { X, Pencil, Settings, FileText, Shield, FolderOpen } from 'lucide-react';
+import { IMAGE_GENERATION_PROVIDER_PRESETS } from '../../shared/config/default-configs';
+import { X, Pencil, Settings, FileText, Shield, FolderOpen, Image as ImageIcon } from 'lucide-react';
 
 // 从 Tab 标题中提取智能客服名称：SK-{客服名}-{用户} → 客服名
 const getSmartKfName = (title: string): string => {
@@ -89,6 +91,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   const [workspaceMainDir, setWorkspaceMainDir] = useState('');
   const [workspaceExtraDirs, setWorkspaceExtraDirs] = useState<string[]>([]);
   const workspaceDirsGroupRef = useRef<string[] | null>(null);
+  const [showImageToolDialog, setShowImageToolDialog] = useState<string | null>(null); // tabId
+  const [imageToolConfig, setImageToolConfig] = useState<{ provider?: string; model: string; apiUrl: string; apiKey: string } | null>(null);
+  const imageToolGroupRef = useRef<string[] | null>(null);
   
   // 智能客服分组相关
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null); // 当前展开的分组名
@@ -895,6 +900,55 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
             <FolderOpen size={14} style={{ marginRight: '6px' }} />
             {lang === 'zh' ? '工作目录' : 'Workspace'}
           </div>
+          {/* 生图工具配置 */}
+          <div
+            className="tab-context-menu-item"
+            onClick={async () => {
+              const tabId = contextMenu.tabId;
+              let groupTabIds = contextMenu.groupTabIds;
+              setContextMenu(null);
+              
+              // 分组 Tab 处理
+              if (!groupTabIds) {
+                const tab = tabs?.find(t => t.id === tabId);
+                if (tab?.connectorId === 'smart-kf') {
+                  const kfName = getSmartKfName(tab.title || '');
+                  if (kfName && wecomGroups[kfName]) {
+                    groupTabIds = wecomGroups[kfName].map(t => t.id);
+                  }
+                } else if (tab?.connectorId?.startsWith('wecom') && wecomGroups[tab.connectorId]) {
+                  groupTabIds = wecomGroups[tab.connectorId].map(t => t.id);
+                } else if (tab?.connectorId === 'feishu' && wecomGroups['feishu']) {
+                  groupTabIds = wecomGroups['feishu'].map(t => t.id);
+                }
+              }
+              
+              // 加载当前 tab 的图片工具配置
+              try {
+                const result = await api.getTabImageToolConfig(tabId);
+                const actualResult = (result as any).data || result;
+                if (actualResult.success && actualResult.config) {
+                  setImageToolConfig(actualResult.config);
+                } else {
+                  // tab 没有自定义配置，用全局配置预填
+                  try {
+                    const globalConfig = await api.getImageGenerationToolConfig();
+                    const gc = (globalConfig as any)?.data || globalConfig;
+                    setImageToolConfig(gc ? { provider: gc.provider || 'deepbot', model: gc.model || '', apiUrl: gc.apiUrl || '', apiKey: gc.apiKey || '' } : null);
+                  } catch {
+                    setImageToolConfig(null);
+                  }
+                }
+              } catch {
+                setImageToolConfig(null);
+              }
+              setShowImageToolDialog(tabId);
+              imageToolGroupRef.current = groupTabIds || null;
+            }}
+          >
+            <ImageIcon size={14} style={{ marginRight: '6px' }} />
+            {lang === 'zh' ? '生图工具' : 'Image Tool'}
+          </div>
           {/* Skill 白名单（仅智能客服分组显示） */}
           {contextMenu.isGroup && tabs?.find(t => t.id === contextMenu.tabId)?.connectorId === 'smart-kf' && (
             <div
@@ -1375,6 +1429,138 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
                       }
                     }
                     setShowWorkspaceDirsDialog(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                >
+                  {lang === 'zh' ? '保存配置' : 'Save Configuration'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 生图工具配置弹窗 */}
+      {showImageToolDialog && (
+        <div className="settings-overlay" onClick={() => setShowImageToolDialog(null)}>
+          <div
+            className="settings-container tab-model-picker-container"
+            style={{ width: '550px', maxHeight: '70vh', height: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="settings-header">
+              <h2 className="settings-title">{lang === 'zh' ? '生图工具配置' : 'Image Tool Config'}</h2>
+              <button className="settings-close-button" onClick={() => setShowImageToolDialog(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="settings-panel" style={{ padding: '16px 24px' }}>
+              {/* 提供商选择 */}
+              <div className="space-y-2 mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  {lang === 'zh' ? '提供商' : 'Provider'}
+                </label>
+                <select
+                  value={imageToolConfig?.provider || 'deepbot'}
+                  onChange={(e) => {
+                    const provider = e.target.value as keyof typeof IMAGE_GENERATION_PROVIDER_PRESETS;
+                    const preset = IMAGE_GENERATION_PROVIDER_PRESETS[provider];
+                    if (preset) {
+                      setImageToolConfig({
+                        provider,
+                        model: preset.defaultModelId,
+                        apiUrl: preset.baseUrl,
+                        apiKey: imageToolConfig?.apiKey || '',
+                      });
+                    } else {
+                      setImageToolConfig({ ...imageToolConfig || { model: '', apiUrl: '', apiKey: '' }, provider });
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="deepbot">DeepBot（Gemini）</option>
+                  <option value="deepbot-gpt">DeepBot（GPT Image）</option>
+                  <option value="qwen">Qwen Image</option>
+                </select>
+              </div>
+
+              {/* 模型 */}
+              <div className="space-y-2 mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  {lang === 'zh' ? '模型' : 'Model'}
+                </label>
+                <input
+                  type="text"
+                  value={imageToolConfig?.model || ''}
+                  onChange={(e) => setImageToolConfig({ ...imageToolConfig || { model: '', apiUrl: '', apiKey: '' }, model: e.target.value })}
+                  placeholder="gemini-2.0-flash-preview-image-generation"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* API URL */}
+              <div className="space-y-2 mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  {lang === 'zh' ? 'API 地址' : 'API URL'}
+                </label>
+                <input
+                  type="text"
+                  value={imageToolConfig?.apiUrl || ''}
+                  onChange={(e) => setImageToolConfig({ ...imageToolConfig || { model: '', apiUrl: '', apiKey: '' }, apiUrl: e.target.value })}
+                  placeholder="https://im-director.com/tool/gemini"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* API Key */}
+              <div className="space-y-2 mb-4">
+                <label className="block text-sm font-medium text-gray-700">API Key</label>
+                <input
+                  type="password"
+                  value={imageToolConfig?.apiKey || ''}
+                  onChange={(e) => setImageToolConfig({ ...imageToolConfig || { model: '', apiUrl: '', apiKey: '' }, apiKey: e.target.value })}
+                  placeholder={lang === 'zh' ? '留空则使用全局配置的 Key' : 'Leave empty to use global key'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* 底部按钮 */}
+              <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+                <button
+                  onClick={async () => {
+                    const tabId = showImageToolDialog!;
+                    await api.saveTabImageToolConfig(tabId, null);
+                    if (imageToolGroupRef.current) {
+                      for (const otherTabId of imageToolGroupRef.current) {
+                        if (otherTabId !== tabId) {
+                          await api.saveTabImageToolConfig(otherTabId, null);
+                        }
+                      }
+                    }
+                    setShowImageToolDialog(null);
+                    showToast('success', lang === 'zh' ? '✅ 已还原为全局配置' : '✅ Restored to global config');
+                  }}
+                  className="skill-icon-button"
+                  style={{ padding: '8px 16px', borderRadius: '6px' }}
+                >
+                  {lang === 'zh' ? '还原默认' : 'Reset'}
+                </button>
+                <button
+                  onClick={async () => {
+                    const tabId = showImageToolDialog!;
+                    const configToSave = imageToolConfig && (imageToolConfig.model || imageToolConfig.apiUrl || imageToolConfig.apiKey)
+                      ? imageToolConfig
+                      : null;
+                    await api.saveTabImageToolConfig(tabId, configToSave);
+                    if (imageToolGroupRef.current) {
+                      for (const otherTabId of imageToolGroupRef.current) {
+                        if (otherTabId !== tabId) {
+                          await api.saveTabImageToolConfig(otherTabId, configToSave);
+                        }
+                      }
+                    }
+                    setShowImageToolDialog(null);
+                    showToast('success', lang === 'zh' ? '✅ 生图工具配置已保存' : '✅ Image tool config saved');
                   }}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                 >

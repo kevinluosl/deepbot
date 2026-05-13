@@ -144,6 +144,10 @@ export const IPC_CHANNELS = {
   GET_TAB_WORKSPACE_DIRS: 'tab:get-workspace-dirs',
   SET_TAB_WORKSPACE_DIRS: 'tab:set-workspace-dirs',
   
+  // Tab 生图工具配置
+  GET_TAB_IMAGE_TOOL_CONFIG: 'tab:get-image-tool-config',
+  SAVE_TAB_IMAGE_TOOL_CONFIG: 'tab:save-image-tool-config',
+  
   // 应用信息
 } as const;
 

@@ -392,6 +392,17 @@ export const api = {
     return webClient.post(`/api/tabs/${tabId}/workspace-dirs`, { dirs });
   },
 
+  // Tab 生图工具配置
+  async getTabImageToolConfig(tabId: string): Promise<{ success: boolean; config: any }> {
+    if (isElectron()) return (window as any).deepbot.getTabImageToolConfig(tabId);
+    return webClient.get(`/api/tabs/${tabId}/image-tool-config`);
+  },
+
+  async saveTabImageToolConfig(tabId: string, config: any): Promise<{ success: boolean }> {
+    if (isElectron()) return (window as any).deepbot.saveTabImageToolConfig(tabId, config);
+    return webClient.post(`/api/tabs/${tabId}/image-tool-config`, { config });
+  },
+
   async getTabReplyMode(tabId: string): Promise<any> {
     if (isElectron()) return (window as any).deepbot.getTabReplyMode(tabId);
     return webClient.get(`/api/tabs/${tabId}/reply-mode`);

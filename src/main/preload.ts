@@ -99,6 +99,8 @@ const IPC_CHANNELS = {
   SET_TAB_SKILL_WHITELIST: 'tab:set-skill-whitelist',
   GET_TAB_WORKSPACE_DIRS: 'tab:get-workspace-dirs',
   SET_TAB_WORKSPACE_DIRS: 'tab:set-workspace-dirs',
+  GET_TAB_IMAGE_TOOL_CONFIG: 'tab:get-image-tool-config',
+  SAVE_TAB_IMAGE_TOOL_CONFIG: 'tab:save-image-tool-config',
 } as const;
 
 /**
@@ -506,6 +508,15 @@ contextBridge.exposeInMainWorld('deepbot', {
 
   setTabWorkspaceDirs: (tabId: string, dirs: string[] | null) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SET_TAB_WORKSPACE_DIRS, { tabId, dirs });
+  },
+
+  // Tab 生图工具配置
+  getTabImageToolConfig: (tabId: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.GET_TAB_IMAGE_TOOL_CONFIG, { tabId });
+  },
+
+  saveTabImageToolConfig: (tabId: string, config: any) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SAVE_TAB_IMAGE_TOOL_CONFIG, { tabId, config });
   },
 
   getTabReplyMode: (tabId: string) => {

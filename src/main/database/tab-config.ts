@@ -139,6 +139,13 @@ export function initTabConfigTable(db: Database.Database): void {
   } catch {
     // 静默处理
   }
+
+  // 兼容旧数据库：添加 image_tool_config 列（Tab 级别生图工具配置）
+  try {
+    db.exec('ALTER TABLE agent_tabs ADD COLUMN image_tool_config TEXT');
+  } catch {
+    // 列已存在，忽略
+  }
   
   console.log('[TabConfig] ✅ agent_tabs 表已初始化');
 }

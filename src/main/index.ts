@@ -1063,6 +1063,32 @@ function registerIpcHandlers() {
     }
   });
 
+  // 获取 Tab 生图工具配置
+  ipcMain.handle(IPC_CHANNELS.GET_TAB_IMAGE_TOOL_CONFIG, async (_event, { tabId }) => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const row = store.getDb().prepare('SELECT image_tool_config FROM agent_tabs WHERE id = ?').get(tabId) as any;
+      const config = row?.image_tool_config ? JSON.parse(row.image_tool_config) : null;
+      return { success: true, config };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
+  // 保存 Tab 生图工具配置
+  ipcMain.handle(IPC_CHANNELS.SAVE_TAB_IMAGE_TOOL_CONFIG, async (_event, { tabId, config }) => {
+    try {
+      const { SystemConfigStore } = await import('./database/system-config-store');
+      const store = SystemConfigStore.getInstance();
+      const configJson = config ? JSON.stringify(config) : null;
+      store.getDb().prepare('UPDATE agent_tabs SET image_tool_config = ? WHERE id = ?').run(configJson, tabId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) };
+    }
+  });
+
   // 设置 Tab 回复模式
   ipcMain.handle(IPC_CHANNELS.SET_TAB_REPLY_MODE, async (_event, { tabId, replyMode }) => {
     try {

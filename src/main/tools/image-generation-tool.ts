@@ -26,8 +26,9 @@ const DEFAULT_OUTPUT_DIR = join(homedir(), '.deepbot', 'generated-images');
 
 /**
  * 获取工具配置（完全从数据库读取，不使用默认值）
+ * 支持 Tab 级别配置覆盖全局配置
  */
-function getToolConfig(configStore: SystemConfigStore): {
+function getToolConfig(configStore: SystemConfigStore, tabImageToolConfig?: { provider?: string; model?: string; apiUrl?: string; apiKey?: string } | null): {
   apiKey: string;
   apiUrl: string;
   model: string;
@@ -36,35 +37,41 @@ function getToolConfig(configStore: SystemConfigStore): {
 } {
   const dbConfig = configStore.getImageGenerationToolConfig();
   
-  if (!dbConfig) {
+  if (!dbConfig && !tabImageToolConfig) {
     throw new Error('图片生成工具未配置。请在系统设置 > 工具配置中配置 API Key 和地址');
   }
   
-  if (!dbConfig.apiKey || !dbConfig.apiKey.trim()) {
+  // Tab 级别配置覆盖全局配置
+  const effectiveApiKey = (tabImageToolConfig?.apiKey || dbConfig?.apiKey || '').trim();
+  const effectiveApiUrl = (tabImageToolConfig?.apiUrl || dbConfig?.apiUrl || '').trim();
+  const effectiveModel = (tabImageToolConfig?.model || dbConfig?.model || '').trim();
+  const effectiveProvider = tabImageToolConfig?.provider || dbConfig?.provider;
+  
+  if (!effectiveApiKey) {
     throw new Error('API Key 未配置。请在系统设置 > 工具配置中配置 API Key');
   }
   
-  if (!dbConfig.apiUrl || !dbConfig.apiUrl.trim()) {
+  if (!effectiveApiUrl) {
     throw new Error('API 地址未配置。请在系统设置 > 工具配置中配置 API 地址');
   }
   
-  if (!dbConfig.model || !dbConfig.model.trim()) {
+  if (!effectiveModel) {
     throw new Error('模型未配置。请在系统设置 > 工具配置中选择模型');
   }
   
   // 根据保存的提供商或模型名称判断
   let provider: 'gemini' | 'qwen' | 'gpt-image' = 'gemini';
-  if (dbConfig.provider === 'qwen' || (!dbConfig.provider && dbConfig.model.includes('qwen-image'))) {
+  if (effectiveProvider === 'qwen' || (!effectiveProvider && effectiveModel.includes('qwen-image'))) {
     provider = 'qwen';
-  } else if (dbConfig.provider === 'deepbot-gpt' || (!dbConfig.provider && dbConfig.model.includes('gpt-image'))) {
+  } else if (effectiveProvider === 'deepbot-gpt' || (!effectiveProvider && effectiveModel.includes('gpt-image'))) {
     provider = 'gpt-image';
   }
   // deepbot 提供商走 gemini 逻辑，无需特殊处理
   
   return {
-    apiKey: dbConfig.apiKey,
-    apiUrl: dbConfig.apiUrl,
-    model: dbConfig.model,
+    apiKey: effectiveApiKey,
+    apiUrl: effectiveApiUrl,
+    model: effectiveModel,
     provider,
     defaultOutputDir: DEFAULT_OUTPUT_DIR,
   };
@@ -186,7 +193,7 @@ function saveImage(imageData: string, mimeType: string, outputDir: string, outpu
 /**
  * 创建图片生成工具
  */
-export function createImageGenerationTool(configStore: SystemConfigStore): AgentTool {
+export function createImageGenerationTool(configStore: SystemConfigStore, tabImageToolConfig?: { provider?: string; model?: string; apiUrl?: string; apiKey?: string } | null): AgentTool {
   return {
     name: TOOL_NAMES.IMAGE_GENERATION,
     label: 'Image Generation',
@@ -215,7 +222,7 @@ export function createImageGenerationTool(configStore: SystemConfigStore): Agent
         }
 
         // 获取工具配置
-        const toolConfig = getToolConfig(configStore);
+        const toolConfig = getToolConfig(configStore, tabImageToolConfig);
 
         console.log(`[Image Generation] 使用提供商: ${toolConfig.provider}`);
         console.log(`[Image Generation] 模型: ${toolConfig.model}`);
@@ -387,6 +394,6 @@ export const imageGenerationToolPlugin: ToolPlugin = {
   },
   create: (options: ToolCreateOptions) => {
     if (!options.configStore) throw new Error('imageGenerationToolPlugin 需要 configStore');
-    return createImageGenerationTool(options.configStore);
+    return createImageGenerationTool(options.configStore, options.tabImageToolConfig);
   },
 };
