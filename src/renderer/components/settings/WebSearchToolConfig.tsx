@@ -1,20 +1,13 @@
 /**
- * Web Search 工具配置页面
+ * Web Search 工具配置页面（Tavily Search API）
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  WEB_SEARCH_PROVIDER_PRESETS 
-} from '../../../shared/config/default-configs';
 import { api } from '../../api';
 import { showToast } from '../../utils/toast';
-import { ApiKeyHelpModal } from './ApiKeyHelpModal';
 import { getLanguage } from '../../i18n';
 
 interface WebSearchToolConfig {
-  provider: 'deepbot' | 'qwen';
-  model: string;
-  apiUrl: string;
   apiKey: string;
 }
 
@@ -24,14 +17,8 @@ interface WebSearchToolConfigProps {
 
 export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   const lang = getLanguage();
-  const [config, setConfig] = useState<WebSearchToolConfig>({
-    provider: 'deepbot',
-    model: WEB_SEARCH_PROVIDER_PRESETS.deepbot.defaultModelId,
-    apiUrl: WEB_SEARCH_PROVIDER_PRESETS.deepbot.baseUrl,
-    apiKey: '',
-  });
+  const [config, setConfig] = useState<WebSearchToolConfig>({ apiKey: '' });
   const [isSaving, setIsSaving] = useState(false);
-  const [showApiKeyHelp, setShowApiKeyHelp] = useState(false);
   const hasLoadedRef = React.useRef(false);
 
   useEffect(() => {
@@ -44,27 +31,18 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
     try {
       const result = await api.getWebSearchToolConfig();
       if (result.success && result.config) {
-        setConfig(result.config);
+        setConfig({ apiKey: result.config.apiKey || '' });
       }
     } catch (error) {
       console.error('加载 Web Search 工具配置失败:', error);
     }
   };
 
-  const handleProviderChange = (newProvider: 'deepbot' | 'qwen') => {
-    const preset = WEB_SEARCH_PROVIDER_PRESETS[newProvider];
-    setConfig({
-      ...config,
-      provider: newProvider,
-      apiUrl: preset.baseUrl,
-      model: preset.defaultModelId,
-    });
-  };
-
   const handleSave = async () => {
-    if (!config.apiUrl) { showToast('error', lang === 'zh' ? '请输入 API 地址' : 'Please enter API URL'); return; }
-    if (!config.model) { showToast('error', lang === 'zh' ? '请输入模型 ID' : 'Please enter Model ID'); return; }
-    if (!config.apiKey) { showToast('error', lang === 'zh' ? '请输入 API Key' : 'Please enter API Key'); return; }
+    if (!config.apiKey || !config.apiKey.trim()) {
+      showToast('error', lang === 'zh' ? '请输入 Tavily API Key' : 'Please enter Tavily API Key');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -84,125 +62,81 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
 
   return (
     <div className="space-y-6">
+      {/* 标题和说明 */}
       <div>
         <h4 className="text-base font-medium text-gray-900 mb-2">
           {lang === 'zh' ? 'Web Search 工具配置' : 'Web Search Tool Config'}
         </h4>
         <p className="text-sm text-gray-600 mb-4">
           {lang === 'zh'
-            ? '配置网络搜索能力，获取最新的网络信息、新闻、天气等实时数据。如需调用其他提供商，可通过安装 Skill 扩展。'
-            : 'Configure web search to get real-time data such as news, weather, etc. Install a Skill to use other providers.'}
+            ? '使用 Tavily Search API 获取实时网络信息、新闻、天气等数据。'
+            : 'Use Tavily Search API to get real-time web information, news, weather, and more.'}
         </p>
+
+        {/* 注册说明 */}
         <div style={{
-          padding: '10px 12px',
+          padding: '12px 14px',
           background: 'rgba(59, 130, 246, 0.05)',
           border: '1px solid rgba(59, 130, 246, 0.2)',
           borderRadius: '6px',
           fontSize: '12px',
           color: 'var(--settings-text-dim)',
-          lineHeight: '1.8',
+          lineHeight: '2',
           marginBottom: '16px',
         }}>
-          <div style={{ fontWeight: 600, color: 'var(--settings-accent)', marginBottom: '4px' }}>
-            {lang === 'zh' ? '💡 推荐：Tavily Search Skill（免费）' : '💡 Recommended: Tavily Search Skill (Free)'}
+          <div style={{ fontWeight: 600, color: 'var(--settings-accent)', marginBottom: '6px' }}>
+            {lang === 'zh' ? '💡 如何获取免费 API Key' : '💡 How to get a free API Key'}
           </div>
           {lang === 'zh' ? (
             <>
-              1. 告诉 DeepBot：<code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.1)', borderRadius: '3px' }}>帮我安装 Tavily Search Skill</code><br/>
-              2. 安装完成后，告诉 DeepBot：<code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.1)', borderRadius: '3px' }}>帮我配置 Tavily Search Skill</code><br/>
-              3. 根据提示注册并配置免费的 Tavily API Key 即可
+              1. 访问{' '}
+              <a
+                href="https://tavily.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--settings-accent)', textDecoration: 'underline' }}
+              >
+                https://tavily.com
+              </a>
+              {' '}注册免费账号<br />
+              2. 登录后在控制台复制 API Key<br />
+              3. 免费套餐每月 1000 次搜索，无需信用卡
             </>
           ) : (
             <>
-              1. Tell DeepBot: <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.1)', borderRadius: '3px' }}>Install Tavily Search Skill</code><br/>
-              2. After installation, tell DeepBot: <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.1)', borderRadius: '3px' }}>Configure Tavily Search Skill</code><br/>
-              3. Follow the prompts to register and set up a free Tavily API Key
+              1. Visit{' '}
+              <a
+                href="https://tavily.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--settings-accent)', textDecoration: 'underline' }}
+              >
+                https://tavily.com
+              </a>
+              {' '}and sign up for free<br />
+              2. Copy your API Key from the dashboard<br />
+              3. Free plan: 1,000 searches/month, no credit card required
             </>
           )}
         </div>
       </div>
 
-      {/* 提供商选择 */}
+      {/* API Key 输入 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          {lang === 'zh' ? '提供商' : 'Provider'}
+          Tavily API Key <span className="text-red-500">*</span>
         </label>
-        <select
-          value={config.provider}
-          onChange={(e) => handleProviderChange(e.target.value as 'deepbot' | 'qwen')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="deepbot">DeepBot（Gemini 3）</option>
-          <option value="qwen">Qwen</option>
-        </select>
-      </div>
-
-      {/* API 地址 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {lang === 'zh' ? 'API 地址' : 'API URL'} <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={config.apiUrl}
-          onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
-          placeholder="https://api.example.com/v1"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <p className="mt-1 text-xs text-gray-500">
-          {config.provider === 'deepbot' && (lang === 'zh' ? '无需魔法，直连 Gemini 3' : 'Direct connection to Gemini 3, no proxy needed')}
-          {config.provider === 'qwen' && (lang === 'zh' ? '预设提供商的 API 地址（可修改）' : 'Preset provider API URL (editable)')}
-        </p>
-      </div>
-
-      {/* 模型 ID */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {lang === 'zh' ? '模型 ID' : 'Model ID'} <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={config.model}
-          onChange={(e) => setConfig({ ...config, model: e.target.value })}
-          disabled={config.provider === 'deepbot'}
-          placeholder={config.provider === 'qwen' ? 'qwen3.6-plus' : 'gemini-3-flash-preview'}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-        />
-        <p className="mt-1 text-xs text-gray-500">
-          {config.provider === 'qwen' && (lang === 'zh'
-            ? '默认: qwen3.6-plus（可选: qwen-plus, qwen-turbo, qwen-max 等）'
-            : 'Default: qwen3.6-plus (options: qwen-plus, qwen-turbo, qwen-max, etc.)')}
-          {config.provider === 'deepbot' && (lang === 'zh'
-            ? '默认: gemini-3-flash-preview'
-            : 'Default: gemini-3-flash-preview')}
-        </p>
-      </div>
-
-      {/* API Key */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <label className="text-sm font-medium text-gray-700">API Key <span className="text-red-500">*</span></label>
-          <span
-            onClick={() => setShowApiKeyHelp(true)}
-            style={{ fontSize: '11px', color: 'var(--settings-accent)', cursor: 'pointer' }}
-          >
-            {lang === 'zh' ? '如何获取？' : 'How to get?'}
-          </span>
-        </div>
         <input
           type="password"
           value={config.apiKey}
-          onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-          placeholder="sk-..."
+          onChange={(e) => setConfig({ apiKey: e.target.value })}
+          placeholder="tvly-..."
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          {config.provider === 'deepbot' && (lang === 'zh'
-            ? '点击「如何获取」获得 API Key，配置图片生成（DeepBot）相同的 API Key'
-            : 'Click "How to get" for an API Key, use the same API Key as Image Generation (DeepBot)')}
-          {config.provider === 'qwen' && (lang === 'zh'
-            ? 'Qwen API Key（可以与主模型使用相同的 Key）'
-            : 'Qwen API Key (can reuse the same key as the main model)')}
+          {lang === 'zh'
+            ? '在 tavily.com 控制台获取，格式通常为 tvly- 开头'
+            : 'Get from tavily.com dashboard, usually starts with tvly-'}
         </p>
       </div>
 
@@ -218,9 +152,6 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
             : (lang === 'zh' ? '保存配置' : 'Save Config')}
         </button>
       </div>
-
-      {/* 如何获取 API Key 模态框 */}
-      {showApiKeyHelp && <ApiKeyHelpModal onClose={() => setShowApiKeyHelp(false)} />}
     </div>
   );
 }

@@ -68,7 +68,7 @@ export function deleteImageGenerationToolConfig(db: Database.Database): void {
 // ========== Web Search 工具配置 ==========
 
 /**
- * 获取 Web Search 工具配置
+ * 获取 Web Search 工具配置（Tavily Search API）
  */
 export function getWebSearchToolConfig(db: Database.Database): WebSearchToolConfig | null {
   try {
@@ -80,9 +80,6 @@ export function getWebSearchToolConfig(db: Database.Database): WebSearchToolConf
     if (!row) return null;
 
     return {
-      provider: row.provider || 'qwen',
-      model: row.model,
-      apiUrl: row.api_url,
       apiKey: row.api_key,
     };
   } catch (error) {
@@ -92,27 +89,18 @@ export function getWebSearchToolConfig(db: Database.Database): WebSearchToolConf
 }
 
 /**
- * 保存 Web Search 工具配置
+ * 保存 Web Search 工具配置（Tavily Search API）
  */
 export function saveWebSearchToolConfig(db: Database.Database, config: WebSearchToolConfig): void {
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO tool_config_web_search 
-    (id, provider, model, api_url, api_key)
-    VALUES (1, ?, ?, ?, ?)
+    (id, api_key)
+    VALUES (1, ?)
   `);
 
-  stmt.run(
-    config.provider,
-    config.model,
-    config.apiUrl,
-    config.apiKey
-  );
+  stmt.run(config.apiKey);
 
-  console.info('[SystemConfigStore] ✅ Web Search 工具配置已保存:', {
-    provider: config.provider,
-    model: config.model,
-    apiUrl: config.apiUrl,
-  });
+  console.info('[SystemConfigStore] ✅ Web Search 工具配置已保存（Tavily）');
 }
 
 /**

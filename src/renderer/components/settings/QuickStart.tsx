@@ -214,7 +214,8 @@ export function QuickStart({ onNavigate }: QuickStartProps) {
               {lang === 'zh' ? (
                 <>
                   • 前往<a href="#" onClick={(e) => { e.preventDefault(); onNavigate?.('tools'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>「工具配置」</a>，配置图片生成和网络搜索工具的 API 密钥<br/>
-                  • 支持 Qwen 或 DeepBot 供应商（DeepBot 供应商可免"魔法"使用 Gemini Nano Banana 2 生图和 Gemini 网络搜索，可填写自己的 Gemini API Key 或通过上方二维码获取）<br/>
+                  • <strong>图片生成</strong>：支持 DeepBot（Gemini）或 Qwen 供应商<br/>
+                  • <strong>网络搜索</strong>：使用 Tavily Search API，前往 <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--settings-accent)' }}>tavily.com</a> 免费注册获取 API Key（每月 1000 次免费）<br/>
                   <span style={{ fontSize: '12px', color: 'var(--settings-text-dim)', marginTop: '4px', display: 'inline-block' }}>
                     💡 如不使用内置工具，可在<a href="#" onClick={(e) => { e.preventDefault(); onNavigate?.('tools'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>「工具配置」</a>中关闭，自行安装 Skill 来实现相关功能，详见下方<a href="#recommended" onClick={(e) => { e.preventDefault(); scrollToSection('recommended'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>「推荐工具和 Skill」</a>
                   </span>
@@ -222,7 +223,8 @@ export function QuickStart({ onNavigate }: QuickStartProps) {
               ) : (
                 <>
                   • Go to <a href="#" onClick={(e) => { e.preventDefault(); onNavigate?.('tools'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>Tool Settings</a> to configure API keys for image generation and web search<br/>
-                  • Supports Qwen or DeepBot providers (DeepBot provider offers Gemini Nano Banana 2 image generation and Gemini web search without VPN; use your own Gemini API Key or get one via the QR code above)<br/>
+                  • <strong>Image Generation</strong>: Supports DeepBot (Gemini) or Qwen providers<br/>
+                  • <strong>Web Search</strong>: Uses Tavily Search API — sign up free at <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--settings-accent)' }}>tavily.com</a> (1,000 free searches/month)<br/>
                   <span style={{ fontSize: '12px', color: 'var(--settings-text-dim)', marginTop: '4px', display: 'inline-block' }}>
                     💡 If you don't need built-in tools, disable them in <a href="#" onClick={(e) => { e.preventDefault(); onNavigate?.('tools'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>Tool Settings</a> and install Skills instead. See <a href="#recommended" onClick={(e) => { e.preventDefault(); scrollToSection('recommended'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>Recommended Tools & Skills</a> below
                   </span>
@@ -1200,78 +1202,6 @@ export function QuickStart({ onNavigate }: QuickStartProps) {
                 >
                   github.com/steipete/mcporter
                 </a>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ marginRight: '8px', fontSize: '16px' }}>🔍</span>
-              <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>{lang === 'zh' ? 'Tavily Search - AI 搜索引擎 Skill' : 'Tavily Search - AI Search Engine Skill'}</span>
-            </div>
-            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
-              {lang === 'zh'
-                ? '专为 AI Agent 设计的搜索引擎，提供高质量、结构化的搜索结果，让 DeepBot 获得强大的实时信息检索能力'
-                : 'A search engine designed for AI Agents, delivering high-quality structured results for powerful real-time information retrieval'}
-            </div>
-            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
-              <strong style={{ color: 'var(--settings-text)' }}>{lang === 'zh' ? '核心优势：' : 'Key Advantages:'}</strong>
-              <div style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
-                <div>• {lang === 'zh' ? '专为 AI 优化的搜索结果' : 'Search results optimized for AI'}</div>
-                <div>• {lang === 'zh' ? '返回结构化数据，减少幻觉' : 'Structured data, fewer hallucinations'}</div>
-                <div>• {lang === 'zh' ? '支持深度搜索和快速搜索' : 'Deep search and quick search modes'}</div>
-                <div>• {lang === 'zh' ? '免费额度足够日常使用' : 'Free tier sufficient for daily use'}</div>
-              </div>
-            </div>
-            <div style={{ marginLeft: '28px', marginTop: '8px' }}>
-              <strong style={{ color: 'var(--settings-text)' }}>{lang === 'zh' ? '安装方式：' : 'Installation:'}</strong>
-              <div style={{ 
-                marginTop: '4px',
-                padding: '8px',
-                background: 'rgba(0,0,0,0.1)',
-                borderRadius: '4px',
-                fontSize: '12px',
-                lineHeight: '1.8'
-              }}>
-                {lang === 'zh' ? (
-                  <>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong>第一步：</strong>打开聊天界面的 <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>[skill]</code> 按钮，搜索「Tavily Search」，点击安装
-                    </div>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong>第二步：</strong>前往 <a 
-                        href="https://app.tavily.com/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ color: 'var(--settings-accent)', textDecoration: 'none' }}
-                      >
-                        app.tavily.com
-                      </a> 注册账号，获取免费 API Key
-                    </div>
-                    <div>
-                      <strong>第三步：</strong>💬 告诉 DeepBot："按照 Tavily Search skill 的说明配置好 API Key，我的 API Key 是 [粘贴你的 API Key]"
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong>Step 1:</strong> Click the <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>[skill]</code> button in chat, search for "Tavily Search", and install
-                    </div>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong>Step 2:</strong> Go to <a 
-                        href="https://app.tavily.com/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ color: 'var(--settings-accent)', textDecoration: 'none' }}
-                      >
-                        app.tavily.com
-                      </a> to sign up and get a free API Key
-                    </div>
-                    <div>
-                      <strong>Step 3:</strong> 💬 Tell DeepBot: "Configure the Tavily Search skill API Key, my API Key is [paste your API Key]"
-                    </div>
-                  </>
-                )}
               </div>
             </div>
           </div>

@@ -178,14 +178,11 @@ export class SystemConfigStore {
       // 字段已存在，忽略
     }
 
-    // 工具配置表 - Web Search 工具
+    // 工具配置表 - Web Search 工具（Tavily Search API）
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS tool_config_web_search (
         id INTEGER PRIMARY KEY CHECK (id = 1),
-        provider TEXT NOT NULL DEFAULT 'qwen',
-        model TEXT NOT NULL,
-        api_url TEXT NOT NULL,
-        api_key TEXT NOT NULL
+        api_key TEXT NOT NULL DEFAULT ''
       )
     `);
 
@@ -268,20 +265,32 @@ export class SystemConfigStore {
    * 运行数据库迁移
    */
   private runMigrations(): void {
-    // 迁移：添加 provider 字段到 tool_config_web_search 表
+    // 迁移：tool_config_web_search 表从旧结构（provider/model/api_url/api_key）迁移到新结构（仅 api_key）
     try {
       const tableInfo = this.db.prepare("PRAGMA table_info(tool_config_web_search)").all() as any[];
       const hasProviderColumn = tableInfo.some((col: any) => col.name === 'provider');
-      
-      if (!hasProviderColumn) {
-        console.log('[SystemConfigStore] 🔄 迁移数据库：添加 provider 字段到 tool_config_web_search 表');
-        this.db.exec(`
-          ALTER TABLE tool_config_web_search ADD COLUMN provider TEXT NOT NULL DEFAULT 'qwen'
-        `);
-        console.log('[SystemConfigStore] ✅ 数据库迁移完成');
+
+      if (hasProviderColumn) {
+        // 旧表存在，用事务迁移：保留 api_key，重建表
+        console.log('[SystemConfigStore] 🔄 迁移 tool_config_web_search 表到新结构（Tavily）');
+        this.db.transaction(() => {
+          this.db.exec(`
+            CREATE TABLE IF NOT EXISTS tool_config_web_search_new (
+              id INTEGER PRIMARY KEY CHECK (id = 1),
+              api_key TEXT NOT NULL DEFAULT ''
+            )
+          `);
+          this.db.exec(`
+            INSERT OR IGNORE INTO tool_config_web_search_new (id, api_key)
+            SELECT id, api_key FROM tool_config_web_search
+          `);
+          this.db.exec(`DROP TABLE tool_config_web_search`);
+          this.db.exec(`ALTER TABLE tool_config_web_search_new RENAME TO tool_config_web_search`);
+        })();
+        console.log('[SystemConfigStore] ✅ tool_config_web_search 迁移完成');
       }
     } catch (error) {
-      console.warn('[SystemConfigStore] ⚠️ 数据库迁移检查失败（表可能不存在）:', error);
+      console.warn('[SystemConfigStore] ⚠️ tool_config_web_search 迁移检查失败:', error);
     }
 
     // 迁移：添加 provider_type, context_window, last_fetched, api_type 字段到 model_config 表

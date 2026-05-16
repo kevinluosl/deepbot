@@ -255,17 +255,8 @@ export function formatSetImageGenerationConfigResult(params: any): string {
  * 格式化设置 Web 搜索工具配置的结果消息
  */
 export function formatSetWebSearchConfigResult(params: any): string {
-  let message = `✅ Web 搜索工具配置已更新\n\n`;
+  let message = `✅ Web 搜索工具配置已更新（Tavily Search API）\n\n`;
   
-  if (params.provider) {
-    message += `  • 提供商: ${params.provider}\n`;
-  }
-  if (params.model) {
-    message += `  • 模型: ${params.model}\n`;
-  }
-  if (params.apiUrl) {
-    message += `  • API 地址: ${params.apiUrl}\n`;
-  }
   if (params.apiKey) {
     message += `  • API Key: 已更新\n`;
   }

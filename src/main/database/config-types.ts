@@ -57,11 +57,8 @@ export interface ImageGenerationToolConfig {
 }
 
 /**
- * 工具配置 - Web Search 工具
+ * 工具配置 - Web Search 工具（使用 Tavily Search API）
  */
 export interface WebSearchToolConfig {
-  provider: string;        // 提供商 ID ('qwen' | 'gemini')
-  model: string;           // 模型名称
-  apiUrl: string;          // API 地址
-  apiKey: string;          // API Key
+  apiKey: string;          // Tavily API Key
 }

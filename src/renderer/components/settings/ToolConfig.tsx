@@ -38,7 +38,7 @@ interface ToolConfigProps {
 }
 
 interface ImageGenerationConfig {
-  provider: 'deepbot' | 'gemini' | 'qwen';
+  provider: 'deepbot' | 'deepbot-gpt' | 'gemini' | 'qwen';
   model: string;
   apiUrl: string;
   apiKey: string;
@@ -78,7 +78,7 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
       ]);
       if (imageConfig) {
         // 兼容旧配置格式，添加默认 provider 字段
-        let provider: 'deepbot' | 'gemini' | 'qwen' = 'gemini';
+        let provider: 'deepbot' | 'deepbot-gpt' | 'gemini' | 'qwen' = 'gemini';
         if ((imageConfig as any).provider) {
           provider = (imageConfig as any).provider;
         } else if (imageConfig.model && imageConfig.model.includes('qwen-image')) {

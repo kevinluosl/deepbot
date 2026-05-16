@@ -292,32 +292,26 @@ export async function handleSetToolEnabled(
 }
 
 /**
- * 设置 Web 搜索工具配置
+ * 设置 Web 搜索工具配置（Tavily Search API）
  */
 export async function handleSetWebSearchConfig(
   params: Partial<{
-    provider: 'qwen' | 'gemini';
-    model: string;
-    apiUrl: string;
     apiKey: string;
   }>,
   signal?: AbortSignal
 ): Promise<ToolResult> {
   try {
-    logger.info('设置 Web 搜索工具配置:', params);
+    logger.info('设置 Web 搜索工具配置:', { hasApiKey: !!params.apiKey });
     
     checkAbortSignal(signal, '设置配置');
     
     const store = await getSystemConfigStore();
     
-    // 获取当前配置（如果没有则使用默认值）
+    // 获取当前配置
     const currentConfig = store.getWebSearchToolConfig();
     
-    // 合并配置（优先级：用户输入 > 当前配置 > 默认配置）
+    // 合并配置
     const newConfig = {
-      provider: params.provider !== undefined ? params.provider : currentConfig?.provider || DEFAULT_WEB_SEARCH_CONFIG.provider,
-      model: params.model !== undefined ? params.model : currentConfig?.model || DEFAULT_WEB_SEARCH_CONFIG.model,
-      apiUrl: params.apiUrl !== undefined ? params.apiUrl : currentConfig?.apiUrl || DEFAULT_WEB_SEARCH_CONFIG.apiUrl,
       apiKey: params.apiKey !== undefined ? params.apiKey : currentConfig?.apiKey || DEFAULT_WEB_SEARCH_CONFIG.apiKey,
     };
     

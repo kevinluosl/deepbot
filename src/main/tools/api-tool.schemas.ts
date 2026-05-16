@@ -113,24 +113,11 @@ export const SetImageGenerationConfigSchema = Type.Object({
 });
 
 /**
- * 设置 Web 搜索工具配置 Schema
+ * 设置 Web 搜索工具配置 Schema（Tavily Search API）
  */
 export const SetWebSearchConfigSchema = Type.Object({
-  provider: Type.Optional(Type.Union([
-    Type.Literal('qwen', { description: '通义千问' }),
-    Type.Literal('gemini', { description: 'Google Gemini' }),
-  ])),
-  
-  model: Type.Optional(Type.String({
-    description: '模型名称',
-  })),
-  
-  apiUrl: Type.Optional(Type.String({
-    description: 'API 地址',
-  })),
-  
   apiKey: Type.Optional(Type.String({
-    description: 'API Key',
+    description: 'Tavily API Key（在 https://tavily.com 免费注册获取）',
   })),
 });
 

@@ -289,22 +289,37 @@ google-chrome --remote-debugging-port=9222
 > ⚠️ 此工具可被禁用。仅当 `## Tools` 中存在 `web_search` 工具时，才按以下指导使用；如果工具列表中没有此工具，视为不存在。
 
 ### 核心原则
-1. 用于获取最新的网络信息
+1. 使用 Tavily Search API 获取实时网络信息
 2. 查询词要清晰具体
-3. 返回结果包含综合答案和参考来源
+3. 返回结果包含综合摘要和参考来源链接
 
 ### 使用场景
 - ✅ 获取最新信息（新闻、天气、股票、汇率）
-- ✅ 查找最新技术文档
+- ✅ 查找最新技术文档和资讯
 - ❌ 不要用于已知的静态信息
 - ❌ 不要用于需要深度浏览的任务（使用 `browser`）
+
+### 参数说明
+- `query`（必填）：搜索查询词
+- `maxResults`（可选）：返回结果数量，1-20，默认 10
+- `searchDepth`（可选）：`basic`（默认）或 `advanced`（更深入，耗时更长）
+- `topic`（可选）：`general`（默认）或 `news`（新闻专项）
+- `timeRange`（可选）：`day`、`week`、`month`、`year`
+- `includeDomains`（可选）：只搜索指定域名，如 `["docs.python.org"]`
+- `excludeDomains`（可选）：排除指定域名
 
 ### 示例
 
 ```json
 { "query": "北京今天天气" }
 { "query": "美元兑人民币汇率" }
+{ "query": "Python asyncio 最新文档", "includeDomains": ["docs.python.org"] }
+{ "query": "AI 行业最新动态", "topic": "news", "timeRange": "week" }
 ```
+
+### 配置说明
+需要在「系统设置 → 工具配置 → Web Search」中填写 Tavily API Key。
+免费注册地址：https://tavily.com（每月 1000 次免费搜索）
 
 ---
 

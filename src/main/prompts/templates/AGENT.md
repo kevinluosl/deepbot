@@ -122,7 +122,7 @@
 
 ### 🌐 网络信息获取工具选择
 
-- **搜索网络信息** → 使用 `web_search`；如果 `web_search` 不可用（被禁用），查找 `## Skills` 中具有搜索能力的 Skill 替代；如果都没有，告知用户没有可用的搜索工具
+- **搜索网络信息** → 使用 `web_search`（Tavily Search API，需配置 API Key）；如果 `web_search` 不可用（被禁用或未配置），查找 `## Skills` 中具有搜索能力的 Skill 替代；如果都没有，告知用户没有可用的搜索工具，并提示前往「工具配置 → Web Search」填写 Tavily API Key（免费注册：https://tavily.com）
 - **获取具体网页内容** → 使用 `web_fetch`（提取文章、文档、博客等页面正文）
 - **浏览器操作** → 仅在用户明确要求时使用 `browser`（如"打开"、"访问"、"截图"、"点击"、"登录"等），不要主动选择
 

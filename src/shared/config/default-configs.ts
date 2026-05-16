@@ -53,8 +53,6 @@ export const PROVIDER_PRESETS = {
   },
 } as const;
 
-
-
 /**
  * 图片生成提供商预设配置
  */
@@ -77,20 +75,11 @@ export const IMAGE_GENERATION_PROVIDER_PRESETS = {
 } as const;
 
 /**
- * Web 搜索提供商预设配置
+ * 默认 Web 搜索工具配置（Tavily Search API）
  */
-export const WEB_SEARCH_PROVIDER_PRESETS = {
-  deepbot: {
-    name: 'DeepBot',
-    baseUrl: 'https://im-director.com/tool/gemini',
-    defaultModelId: 'gemini-3-flash-preview',
-  },
-  qwen: {
-    name: 'Qwen',
-    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    defaultModelId: 'qwen3.6-plus',
-  },
-} as const;
+export const DEFAULT_WEB_SEARCH_CONFIG = {
+  apiKey: '',
+};
 
 /**
  * 默认模型配置
@@ -113,15 +102,5 @@ export const DEFAULT_IMAGE_GENERATION_CONFIG = {
   provider: 'deepbot' as const,
   model: IMAGE_GENERATION_PROVIDER_PRESETS.deepbot.defaultModelId,
   apiUrl: IMAGE_GENERATION_PROVIDER_PRESETS.deepbot.baseUrl,
-  apiKey: '',
-};
-
-/**
- * 默认 Web 搜索工具配置
- */
-export const DEFAULT_WEB_SEARCH_CONFIG = {
-  provider: 'deepbot' as const,
-  model: WEB_SEARCH_PROVIDER_PRESETS.deepbot.defaultModelId,
-  apiUrl: WEB_SEARCH_PROVIDER_PRESETS.deepbot.baseUrl,
   apiKey: '',
 };
