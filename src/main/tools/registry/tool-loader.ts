@@ -25,6 +25,7 @@ import { environmentCheckToolPlugin } from '../environment-check-tool';
 import { imageGenerationToolPlugin } from '../image-generation-tool';
 import { webSearchToolPlugin } from '../web-search-tool';
 import { mediaAnalysisToolPlugin } from '../media-analysis-tool';
+import { docAnalysisToolPlugin } from '../doc-analysis-tool';
 import { webFetchToolPlugin } from '../web-fetch-tool';
 import { memoryToolPlugin } from '../memory-tool';
 import { chatToolPlugin } from '../chat-tool';
@@ -171,6 +172,11 @@ export class ToolLoader {
       // 多媒体分析工具
       if (configStore && isEnabled(TOOL_NAMES.MEDIA_ANALYSIS)) {
         tools.push(...await resolvePluginTools(mediaAnalysisToolPlugin.create(pluginOpts)));
+      }
+
+      // 文档分析工具
+      if (isEnabled(TOOL_NAMES.DOC_ANALYSIS)) {
+        tools.push(...await resolvePluginTools(docAnalysisToolPlugin.create(pluginOpts)));
       }
       
       // Web 内容获取工具

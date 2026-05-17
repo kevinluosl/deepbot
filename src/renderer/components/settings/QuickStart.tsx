@@ -217,6 +217,7 @@ export function QuickStart({ onNavigate }: QuickStartProps) {
                   • <strong>图片生成</strong>：支持 DeepBot（Gemini）或 Qwen 供应商<br/>
                   • <strong>网络搜索</strong>：使用 Tavily Search API，前往 <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--settings-accent)' }}>tavily.com</a> 免费注册获取 API Key（每月 1000 次免费）<br/>
                   • <strong>图片/视频分析</strong>：DeepBot 供应商专属，配置好主模型即可直接使用，无需额外配置<br/>
+                  • <strong>文档分析</strong>：读取 PDF/Word/Excel/PPT 等文档，需安装 <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.1)', borderRadius: '3px' }}>pip install markitdown</code><br/>
                   <span style={{ fontSize: '12px', color: 'var(--settings-text-dim)', marginTop: '4px', display: 'inline-block' }}>
                     💡 如不使用内置工具，可在<a href="#" onClick={(e) => { e.preventDefault(); onNavigate?.('tools'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>「工具配置」</a>中关闭，自行安装 Skill 来实现相关功能，详见下方<a href="#recommended" onClick={(e) => { e.preventDefault(); scrollToSection('recommended'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>「推荐工具和 Skill」</a>
                   </span>
@@ -227,6 +228,7 @@ export function QuickStart({ onNavigate }: QuickStartProps) {
                   • <strong>Image Generation</strong>: Supports DeepBot (Gemini) or Qwen providers<br/>
                   • <strong>Web Search</strong>: Uses Tavily Search API — sign up free at <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--settings-accent)' }}>tavily.com</a> (1,000 free searches/month)<br/>
                   • <strong>Image/Video Analysis</strong>: DeepBot provider exclusive — works out of the box once the main model is configured<br/>
+                  • <strong>Document Analysis</strong>: Read PDF/Word/Excel/PPT documents — requires <code style={{ padding: '1px 4px', background: 'rgba(0,0,0,0.1)', borderRadius: '3px' }}>pip install markitdown</code><br/>
                   <span style={{ fontSize: '12px', color: 'var(--settings-text-dim)', marginTop: '4px', display: 'inline-block' }}>
                     💡 If you don't need built-in tools, disable them in <a href="#" onClick={(e) => { e.preventDefault(); onNavigate?.('tools'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>Tool Settings</a> and install Skills instead. See <a href="#recommended" onClick={(e) => { e.preventDefault(); scrollToSection('recommended'); }} style={{ color: 'var(--settings-accent)', cursor: 'pointer' }}>Recommended Tools & Skills</a> below
                   </span>
@@ -1030,52 +1032,6 @@ export function QuickStart({ onNavigate }: QuickStartProps) {
           color: 'var(--settings-text-dim)',
           lineHeight: '1.6'
         }}>
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ marginRight: '8px', fontSize: '16px' }}>📄</span>
-              <span style={{ fontWeight: '600', color: 'var(--settings-text)' }}>{lang === 'zh' ? 'MarkItDown - 文档转换神器' : 'MarkItDown - Document Converter'}</span>
-            </div>
-            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
-              {lang === 'zh' ? '将各种文档格式转换为 Markdown，方便 DeepBot 读取和分析' : 'Convert various document formats to Markdown for easy reading and analysis by DeepBot'}
-            </div>
-            <div style={{ marginLeft: '28px', marginBottom: '8px' }}>
-              <strong style={{ color: 'var(--settings-text)' }}>{lang === 'zh' ? '支持格式：' : 'Supported Formats:'}</strong>
-              <div style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
-                <div>• PDF, PowerPoint, Word, Excel</div>
-                <div>• {lang === 'zh' ? '图片（EXIF + OCR）' : 'Images (EXIF + OCR)'}</div>
-                <div>• {lang === 'zh' ? '音频（转录）' : 'Audio (Transcription)'}</div>
-                <div>• HTML, CSV, JSON, XML</div>
-                <div>• ZIP</div>
-                <div>• YouTube URL, EPUB</div>
-              </div>
-            </div>
-            <div style={{ marginLeft: '28px', marginTop: '8px' }}>
-              <strong style={{ color: 'var(--settings-text)' }}>{lang === 'zh' ? '安装方式：' : 'Installation:'}</strong>
-              <div style={{ 
-                marginTop: '4px',
-                padding: '8px',
-                background: 'rgba(0,0,0,0.1)',
-                borderRadius: '4px',
-                fontFamily: 'monospace',
-                fontSize: '12px'
-              }}>
-                {lang === 'zh'
-                  ? '💬 告诉 DeepBot："读取 github.com/microsoft/markitdown 说明，帮我安装 markitdown"'
-                  : '💬 Tell DeepBot: "Read the docs at github.com/microsoft/markitdown and install markitdown"'}
-              </div>
-              <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                {lang === 'zh' ? '或访问：' : 'Or visit: '}<a 
-                  href="https://github.com/microsoft/markitdown" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--settings-accent)', textDecoration: 'none' }}
-                >
-                  github.com/microsoft/markitdown
-                </a>
-              </div>
-            </div>
-          </div>
-
           <div style={{ marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
               <span style={{ marginRight: '8px', fontSize: '16px' }}>🌐</span>

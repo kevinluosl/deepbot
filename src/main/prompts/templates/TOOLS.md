@@ -319,6 +319,41 @@ google-chrome --remote-debugging-port=9222
 
 ---
 
+## Doc Analysis（文档分析）
+
+> ⚠️ 此工具可被禁用。仅当 `## Tools` 中存在 `doc_analysis` 工具时，才按以下指导使用；如果工具列表中没有此工具，视为不存在。
+
+### 核心原则
+1. 使用 markitdown 将文档转换为 Markdown 格式进行读取
+2. 支持 PDF、Word、Excel、PowerPoint、HTML、CSV、JSON、XML、图片（OCR）等格式
+3. 需要用户安装 markitdown（`pip install markitdown`）
+
+### 使用场景
+- ✅ 读取 PDF、Word、Excel、PPT 等办公文档内容
+- ✅ 提取文档中的文字、表格、结构化数据
+- ✅ 分析文档内容并回答问题
+- ❌ 不要用于纯文本文件（直接使用 `file_read`）
+- ❌ 不要用于图片/视频内容理解（使用 `media_analysis`）
+
+### 示例
+
+```json
+// 读取 PDF 文档
+{ "filePath": "~/Documents/report.pdf" }
+
+// 读取 Word 文档
+{ "filePath": "~/Desktop/proposal.docx" }
+
+// 读取 Excel 表格
+{ "filePath": "~/Downloads/data.xlsx" }
+```
+
+### 注意事项
+- 如果报错"未安装 markitdown"，需要先执行 `pip install markitdown`
+- 文档内容过长时会自动截断（最多 50000 字符）
+
+---
+
 ## Web Search（网络搜索）
 
 > ⚠️ 此工具可被禁用。仅当 `## Tools` 中存在 `web_search` 工具时，才按以下指导使用；如果工具列表中没有此工具，视为不存在。

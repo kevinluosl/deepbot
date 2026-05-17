@@ -24,7 +24,7 @@ DeepBot is a system-level AI assistant focused on enterprise productivity. It in
 ### ✨ Core Features
 
 - 🎯 **Parallel Task Processing** — Run multiple tasks simultaneously without interference
-- 🔧 **14 Built-in Tools** — File operations, command execution, browser control, image generation, AI chat, cross-session messaging, web fetching, Feishu document operations, and more
+- 🔧 **20+ Built-in Tools** — File operations, command execution, browser control, image generation, AI chat, cross-session messaging, web fetching, Feishu document operations, and more
 - 🧠 **Memory System** — Long-term memory for user preferences and important context
 - ⏰ **Scheduled Tasks** — Automate recurring work with cron-based scheduling
 - 🎨 **Skill Extensions** — Compose tools into reusable Skills for complex workflows
@@ -227,7 +227,7 @@ DeepBot uses a modular architecture with support for multi-Agent communication a
 - **Session**: An isolated conversation unit with its own Agent Runtime, memory, and context.
 - **Agent Runtime**: Built on `@mariozechner/pi-agent-core`, handles intelligent decision-making and tool orchestration.
 - **System Prompt Assembly Layer**: Dynamically assembles system prompts from base prompts, tool instructions, memory files, and Skills.
-- **Tools**: 14 built-in tools including a cross-Tab messaging tool for inter-Agent communication.
+- **Tools**: 20+ built-in tools including a cross-Tab messaging tool for inter-Agent communication.
 - **Security Check**: All file and command operations are validated against a path whitelist.
 - **Multi-Agent Collaboration**: Agents in different Tabs can message each other to collaborate on complex tasks.
 
@@ -296,7 +296,7 @@ Covers the full Feishu Open Platform setup, permission configuration, and securi
 
 ---
 
-## 🔧 14 Built-in Tools
+## 🔧 20+ Built-in Tools
 
 | Tool | Function | Typical Use Cases |
 |------|----------|-------------------|
@@ -693,7 +693,7 @@ Place the Skill directory under `~/.agents/skills/` and restart DeepBot — it w
 
 ### Skill Capabilities
 
-- 📖 Skills can call all 14 built-in tools
+- 📖 Skills can call all 20+ built-in tools
 - 📝 Supports async operations and error handling
 - 🔧 Compose multiple tools for complex multi-step workflows
 

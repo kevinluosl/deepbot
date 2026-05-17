@@ -12,6 +12,7 @@ import {
 import { WebSearchToolConfig } from './WebSearchToolConfig';
 import { BrowserToolConfig } from './BrowserToolConfig';
 import { MediaAnalysisToolConfig } from './MediaAnalysisToolConfig';
+import { DocAnalysisToolConfig } from './DocAnalysisToolConfig';
 import { api } from '../../api';
 import { showToast } from '../../utils/toast';
 import { ApiKeyHelpModal } from './ApiKeyHelpModal';
@@ -22,6 +23,7 @@ const TOGGLEABLE_TOOLS_ZH: Array<{ name: string; label: string; description: str
   { name: 'image_generation', label: '图片生成', description: '内置图片生成工具' },
   { name: 'web_search', label: '网络搜索', description: '内置网络搜索工具' },
   { name: 'media_analysis', label: '图片/视频分析', description: '图片/视频内容分析（仅 DeepBot 供应商）' },
+  { name: 'doc_analysis', label: '文档分析', description: '使用 markitdown 读取 PDF/Word/Excel/PPT 等文档' },
   { name: 'browser', label: '浏览器控制', description: '通过 Chrome 远程调试控制浏览器' },
   { name: 'calendar_get_events', label: '日历读取', description: '读取 macOS 日历事件' },
   { name: 'calendar_create_event', label: '日历创建', description: '在 macOS 日历中创建事件' },
@@ -31,6 +33,7 @@ const TOGGLEABLE_TOOLS_EN: Array<{ name: string; label: string; description: str
   { name: 'image_generation', label: 'Image Generation', description: 'Built-in image generation tool' },
   { name: 'web_search', label: 'Web Search', description: 'Built-in web search tool' },
   { name: 'media_analysis', label: 'Image/Video Analysis', description: 'Image/video content analysis (DeepBot provider only)' },
+  { name: 'doc_analysis', label: 'Document Analysis', description: 'Read PDF/Word/Excel/PPT documents using markitdown' },
   { name: 'browser', label: 'Browser Control', description: 'Control browser via Chrome remote debugging' },
   { name: 'calendar_get_events', label: 'Calendar Read', description: 'Read macOS calendar events' },
   { name: 'calendar_create_event', label: 'Calendar Create', description: 'Create events in macOS calendar' },
@@ -49,7 +52,7 @@ interface ImageGenerationConfig {
 
 export function ToolConfig({ onClose }: ToolConfigProps) {
   const lang = getLanguage();
-  const [activeTab, setActiveTab] = useState<'image' | 'websearch' | 'media' | 'email' | 'browser' | 'manage'>('image');
+  const [activeTab, setActiveTab] = useState<'image' | 'websearch' | 'media' | 'doc' | 'browser' | 'manage'>('image');
   const [showApiKeyHelp, setShowApiKeyHelp] = useState(false);
   const [imageGenConfig, setImageGenConfig] = useState<ImageGenerationConfig>({
     provider: DEFAULT_IMAGE_GENERATION_CONFIG.provider,
@@ -208,16 +211,16 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
             {lang === 'zh' ? '图片/视频分析' : 'Image/Video Analysis'}
           </button>
           <button
+            onClick={() => setActiveTab('doc')}
+            className={`settings-tab ${activeTab === 'doc' ? 'active' : ''}`}
+          >
+            {lang === 'zh' ? '文档分析' : 'Doc Analysis'}
+          </button>
+          <button
             onClick={() => setActiveTab('browser')}
             className={`settings-tab ${activeTab === 'browser' ? 'active' : ''}`}
           >
             {lang === 'zh' ? '浏览器' : 'Browser'}
-          </button>
-          <button
-            onClick={() => setActiveTab('email')}
-            className={`settings-tab ${activeTab === 'email' ? 'active' : ''}`}
-          >
-            {lang === 'zh' ? '邮件发送' : 'Email'}
           </button>
           <button
             onClick={() => setActiveTab('manage')}
@@ -350,168 +353,14 @@ export function ToolConfig({ onClose }: ToolConfigProps) {
         <MediaAnalysisToolConfig onClose={onClose} />
       )}
 
+      {/* 文档分析工具配置 */}
+      {activeTab === 'doc' && (
+        <DocAnalysisToolConfig onClose={onClose} />
+      )}
+
       {/* 浏览器工具配置 */}
       {activeTab === 'browser' && (
         <BrowserToolConfig onClose={onClose} />
-      )}
-
-      {/* 邮件工具配置 */}
-      {activeTab === 'email' && (
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-base font-medium text-gray-900 mb-2">{lang === 'zh' ? '邮件收发工具' : 'Email Tool'}</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              {lang === 'zh'
-                ? <>推荐使用 <strong>imap-smtp-email-chinese</strong> Skill，支持 IMAP 收件、SMTP 发件，兼容 Gmail、Outlook、163、QQ 等主流邮箱。</>
-                : <>Recommended: <strong>imap-smtp-email-chinese</strong> Skill. Supports IMAP receive and SMTP send, compatible with Gmail, Outlook, 163, QQ and more.</>}
-            </p>
-          </div>
-
-          {/* 安装 */}
-          <div className="settings-alert settings-alert-info">
-            <h5 className="text-sm font-semibold text-blue-900 mb-2">{lang === 'zh' ? '📦 安装' : '📦 Install'}</h5>
-            <p className="text-sm text-blue-800 mb-2">
-              {lang === 'zh'
-                ? <>打开聊天界面的 <code className="bg-blue-100 px-1 rounded">[skill]</code> 按钮，搜索「imap-smtp-email-chinese」，点击安装。</>
-                : <>Open the <code className="bg-blue-100 px-1 rounded">[skill]</code> button in the chat interface, search for "imap-smtp-email-chinese", and click Install.</>}
-            </p>
-          </div>
-
-          {/* 配置 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-2">{lang === 'zh' ? '⚙️ 配置' : '⚙️ Configuration'}</h5>
-            <p className="text-sm text-gray-700 mb-3">
-              {lang === 'zh' ? '三种方式任选其一：' : 'Choose one of three methods:'}
-            </p>
-            <div className="space-y-2 mb-3">
-              <div className="text-sm text-gray-700">
-                {lang === 'zh'
-                  ? <><strong>方式一：</strong>直接告诉 DeepBot 配置信息，它会自动写入 .env 文件</>
-                  : <><strong>Method 1:</strong> Tell DeepBot the config info directly, it will write to the .env file automatically</>}
-              </div>
-              <div className="bg-white border border-gray-200 rounded p-2 text-xs font-mono text-gray-800">
-                {lang === 'zh'
-                  ? '帮我配置 imap-smtp-email-chinese skill，邮箱是 your@163.com，授权码是 xxxx，使用 163 邮箱'
-                  : 'Configure imap-smtp-email-chinese skill, email is your@163.com, auth code is xxxx, using 163 mail'}
-              </div>
-              <div className="text-sm text-gray-700 mt-2">
-                {lang === 'zh'
-                  ? <><strong>方式二：</strong>在 Skill 管理器中点击「环境变量」按钮编辑，配置会保存到 Skill 目录下的 <code className="bg-gray-200 px-1 rounded">.env</code> 文件</>
-                  : <><strong>Method 2:</strong> Click the "Environment Variables" button in Skill Manager to edit. Config is saved to the <code className="bg-gray-200 px-1 rounded">.env</code> file in the Skill directory</>}
-              </div>
-            </div>
-            <p className="text-sm text-gray-700 mb-2">
-              {lang === 'zh' ? '.env 文件格式参考：' : '.env file format reference:'}
-            </p>
-            <pre className="bg-gray-800 text-gray-100 px-3 py-2 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap">
-{lang === 'zh'
-  ? `# IMAP 收件配置
-IMAP_HOST=imap.163.com
-IMAP_PORT=993
-IMAP_USER=your@163.com
-IMAP_PASS=your_auth_code
-IMAP_TLS=true
-
-# SMTP 发件配置
-SMTP_HOST=smtp.163.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=your@163.com
-SMTP_PASS=your_auth_code
-SMTP_FROM=your@163.com`
-  : `# IMAP receive config
-IMAP_HOST=imap.163.com
-IMAP_PORT=993
-IMAP_USER=your@163.com
-IMAP_PASS=your_auth_code
-IMAP_TLS=true
-
-# SMTP send config
-SMTP_HOST=smtp.163.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=your@163.com
-SMTP_PASS=your_auth_code
-SMTP_FROM=your@163.com`}
-            </pre>
-          </div>
-
-          {/* 常见邮箱服务器 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-3">{lang === 'zh' ? '📮 常见邮箱服务器' : '📮 Common Email Servers'}</h5>
-            <div className="overflow-x-auto">
-              <table className="text-xs w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? '邮箱' : 'Email'}</th>
-                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? 'IMAP 服务器' : 'IMAP Server'}</th>
-                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? 'SMTP 服务器' : 'SMTP Server'}</th>
-                    <th className="text-left p-2 border border-gray-300">{lang === 'zh' ? 'SMTP 端口' : 'SMTP Port'}</th>
-                  </tr>
-                </thead>
-                <tbody className="text-gray-700">
-                  {[
-                    ['163.com', 'imap.163.com', 'smtp.163.com', '465'],
-                    ['126.com', 'imap.126.com', 'smtp.126.com', '465'],
-                    ['QQ Mail', 'imap.qq.com', 'smtp.qq.com', '587'],
-                    [lang === 'zh' ? '腾讯企业邮' : 'Tencent Biz Mail', 'imap.exmail.qq.com', 'smtp.exmail.qq.com', '465'],
-                    ['Gmail', 'imap.gmail.com', 'smtp.gmail.com', '587'],
-                    ['Outlook', 'outlook.office365.com', 'smtp.office365.com', '587'],
-                  ].map(([name, imap, smtp, port]) => (
-                    <tr key={name} className="border-b border-gray-200">
-                      <td className="p-2 border border-gray-300 font-medium">{name}</td>
-                      <td className="p-2 border border-gray-300 font-mono">{imap}</td>
-                      <td className="p-2 border border-gray-300 font-mono">{smtp}</td>
-                      <td className="p-2 border border-gray-300">{port}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 使用示例 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h5 className="text-sm font-semibold text-gray-900 mb-2">{lang === 'zh' ? '💬 使用示例' : '💬 Usage Examples'}</h5>
-            <div className="space-y-2 text-sm text-gray-700">
-              {lang === 'zh' ? (
-                <>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件给 xxx@163.com，主题"会议纪要"，内容是今天的会议记录</div>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">检查收件箱最新 10 封未读邮件</div>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">搜索来自 boss@company.com 的邮件</div>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">发送邮件并附上 /path/to/report.pdf</div>
-                </>
-              ) : (
-                <>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Send an email to xxx@163.com, subject "Meeting Notes", content is today's meeting summary</div>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Check the latest 10 unread emails in inbox</div>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Search for emails from boss@company.com</div>
-                  <div className="bg-white border border-gray-200 rounded p-2 font-mono text-xs">Send an email with attachment /path/to/report.pdf</div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* 安全提示 */}
-          <div className="settings-alert settings-alert-warning">
-            <h5 className="text-sm font-semibold text-yellow-900 mb-2">{lang === 'zh' ? '🔒 安全提示' : '🔒 Security Tips'}</h5>
-            <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-              {lang === 'zh' ? (
-                <>
-                  <li>163/QQ 邮箱需使用<strong>授权码</strong>，不是登录密码</li>
-                  <li>Gmail 需开启两步验证并使用<strong>应用专用密码</strong></li>
-                  <li>配置保存在 Skill 目录的 .env 文件中，请妥善保管</li>
-                </>
-              ) : (
-                <>
-                  <li>163/QQ Mail requires an <strong>authorization code</strong>, not your login password</li>
-                  <li>Gmail requires 2-step verification and an <strong>app-specific password</strong></li>
-                  <li>Config is saved in the .env file in the Skill directory — keep it safe</li>
-                </>
-              )}
-            </ul>
-          </div>
-        </div>
       )}
 
       {/* 工具管理 */}

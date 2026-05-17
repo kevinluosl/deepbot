@@ -30,6 +30,9 @@ export const TOOL_NAMES = {
   // 多媒体分析工具
   MEDIA_ANALYSIS: 'media_analysis',
 
+  // 文档分析工具
+  DOC_ANALYSIS: 'doc_analysis',
+
   // Web 搜索
   WEB_SEARCH: 'web_search',
   
