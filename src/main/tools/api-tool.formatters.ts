@@ -69,7 +69,7 @@ export function formatGetConfigResult(result: any): string {
       message += `  • 模型: ${result.mediaAnalysis.model}\n`;
       message += `  • 说明: 复用主模型 API Key（仅 DeepBot 供应商可用）\n\n`;
     } else {
-      message += `  • 使用默认模型: qwen3-vl-30b-a3b-instruct\n\n`;
+      message += `  • 使用默认模型: qwen3.5-35b-a3b\n\n`;
     }
   }
   

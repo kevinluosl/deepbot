@@ -191,7 +191,7 @@ export class SystemConfigStore {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS tool_config_media_analysis (
         id INTEGER PRIMARY KEY CHECK (id = 1),
-        model TEXT NOT NULL DEFAULT 'qwen3-vl-30b-a3b-instruct'
+        model TEXT NOT NULL DEFAULT 'qwen3.5-35b-a3b'
       )
     `);
 

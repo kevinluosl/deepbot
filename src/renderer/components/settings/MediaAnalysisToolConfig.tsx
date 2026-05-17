@@ -10,9 +10,9 @@ import { getLanguage } from '../../i18n';
 
 // 预设模型列表
 const MODEL_OPTIONS = [
+  { id: 'qwen3.5-35b-a3b', desc: '图片 + 视频' },
   { id: 'qwen3-vl-30b-a3b-instruct', desc: '仅图片' },
   { id: 'qwen3-vl-8b-instruct', desc: '仅图片' },
-  { id: 'qwen3.5-35b-a3b', desc: '图片 + 视频' },
 ];
 
 interface MediaAnalysisToolConfigProps {
@@ -21,7 +21,7 @@ interface MediaAnalysisToolConfigProps {
 
 export function MediaAnalysisToolConfig({ onClose }: MediaAnalysisToolConfigProps) {
   const lang = getLanguage();
-  const [model, setModel] = useState('qwen3-vl-30b-a3b-instruct');
+  const [model, setModel] = useState('qwen3.5-35b-a3b');
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const hasLoadedRef = React.useRef(false);
@@ -118,7 +118,7 @@ export function MediaAnalysisToolConfig({ onClose }: MediaAnalysisToolConfigProp
             onChange={(e) => setModel(e.target.value)}
             onFocus={() => setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-            placeholder="qwen3-vl-30b-a3b-instruct"
+            placeholder="qwen3.5-35b-a3b"
             className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <span

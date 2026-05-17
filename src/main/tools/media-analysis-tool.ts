@@ -45,7 +45,7 @@ function getToolConfig(configStore: SystemConfigStore): { apiKey: string; apiUrl
 
   // 读取工具配置（仅模型选择）
   const toolConfig = configStore.getMediaAnalysisToolConfig();
-  const model = toolConfig?.model || 'qwen3-vl-30b-a3b-instruct';
+  const model = toolConfig?.model || 'qwen3.5-35b-a3b';
 
   return {
     apiKey: modelConfig.apiKey.trim(),

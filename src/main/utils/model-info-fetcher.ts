@@ -90,6 +90,11 @@ export function getContextWindowFromModelId(modelId: string): number {
     return 262000;
   }
 
+  // 海艺 HY 系列
+  if (lowerModelId.includes('hy3')) {
+    return 500000;
+  }
+
   // 默认值（未知模型）
   return 160000;
 }
