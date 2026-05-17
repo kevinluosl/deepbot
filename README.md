@@ -24,7 +24,7 @@ DeepBot is a system-level AI assistant focused on enterprise productivity. It in
 ### ✨ Core Features
 
 - 🎯 **Parallel Task Processing** — Run multiple tasks simultaneously without interference
-- 🔧 **20+ Built-in Tools** — File operations, command execution, browser control, image generation, AI chat, cross-session messaging, web fetching, Feishu document operations, and more
+- 🔧 **20+ Built-in Tools** — File operations, command execution, browser control, image generation, image/video analysis, document analysis, AI chat, cross-session messaging, web fetching, Feishu/WeChat/WeCom messaging, Feishu document operations, and more
 - 🧠 **Memory System** — Long-term memory for user preferences and important context
 - ⏰ **Scheduled Tasks** — Automate recurring work with cron-based scheduling
 - 🎨 **Skill Extensions** — Compose tools into reusable Skills for complex workflows
@@ -285,13 +285,41 @@ Interact with DeepBot through a Feishu bot, supporting both direct messages and 
 
 📖 [Feishu Bot Configuration Guide](docs/飞书机器人配置指南.md) (Chinese)
 
-Covers the full Feishu Open Platform setup, permission configuration, and security policy details.
+#### WeChat
+
+Interact with DeepBot via WeChat, supporting private and group chats.
+
+**Features**:
+- ✅ QR code login
+- ✅ Private and group messages
+- ✅ Send text, images, files
+- ✅ Independent session management
+
+#### WeCom (WeChat Work)
+
+Interact with DeepBot via WeCom applications.
+
+**Features**:
+- ✅ Application message push
+- ✅ Send text, images, files
+- ✅ Independent session management
+- ✅ Multi-instance support
+
+#### Smart KF (Customer Service)
+
+External customer service powered by WeCom KF API.
+
+**Features**:
+- ✅ Customer message receiving and replying
+- ✅ Send text, images, files
+- ✅ Independent session management
+- ✅ Security sandbox (restricted tool access)
+- ✅ Skill whitelist mechanism
 
 ### Coming Soon
 
 - 🔜 Discord
 - 🔜 Slack
-- 🔜 WeCom (WeChat Work)
 - 🔜 DingTalk
 
 ---
@@ -306,14 +334,21 @@ Covers the full Feishu Open Platform setup, permission configuration, and securi
 | **Calendar Tool** | Calendar management | Check dates, calculate time, schedule reminders |
 | **Environment Check** | System inspection | Detect system info, verify dependencies, diagnose issues |
 | **Image Generation** | AI image generation | Create images, design assets, visual content |
-| **Web Search** | Web search | Real-time queries, research, data collection |
+| **Media Analysis** | Image/video analysis | Image description, video understanding, OCR (DeepBot provider only) |
+| **Doc Analysis** | Document analysis | Read PDF/Word/Excel/PPT content (requires markitdown) |
+| **Web Search** | Web search (Tavily) | Real-time queries, research, data collection |
 | **Web Fetch** | Fetch web content | Extract articles, download page data |
 | **Memory Tool** | Memory management | Store preferences, retrieve historical context |
 | **Skill Manager** | Skill management | Install, uninstall, and list skill packages |
 | **Scheduled Task** | Task scheduling | Create and manage cron-based tasks |
 | **Chat Tool** | AI conversation | Internal AI calls, backend processing, isolated from main Agent context |
-| **Cross Tab Call** 🆕 | Cross-Tab messaging | Inter-Agent communication for multi-Agent collaboration |
+| **Cross Tab Call** | Cross-Tab messaging | Inter-Agent communication for multi-Agent collaboration |
+| **Feishu Send** | Feishu messaging | Send text, images, files to Feishu users |
 | **Feishu Doc Tool** | Feishu document ops | Create, read, append, update, delete blocks, add comments |
+| **WeChat Send** | WeChat messaging | Send text, images, files to WeChat users |
+| **WeCom Send** | WeCom messaging | Send text, images, files to WeCom users |
+| **Smart KF Send** | Smart KF messaging | Send text, images, files to customer service users |
+| **System Command** | System commands | Clear session and other system-level operations |
 
 ### Creating Custom Tools
 
