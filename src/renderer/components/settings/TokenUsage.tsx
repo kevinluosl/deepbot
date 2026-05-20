@@ -183,8 +183,8 @@ export function TokenUsage() {
         {t('settings.tokenUsage')}
       </h3>
 
-      {/* 图片生成配额 */}
-      {imageQuota && (
+      {/* 图片生成配额 - 隐藏 */}
+      {false && imageQuota && (
         <div style={{
           marginBottom: '20px',
           padding: '12px 14px',
@@ -229,7 +229,7 @@ export function TokenUsage() {
           </div>
         </div>
       )}
-      {imageQuota === null && (
+      {false && imageQuota === null && (
         <div style={{
           marginBottom: '20px',
           padding: '10px 14px',

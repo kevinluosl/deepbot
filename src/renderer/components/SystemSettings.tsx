@@ -126,12 +126,6 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
           <div className="settings-sidebar">
             <nav className="settings-nav">
               <button
-                onClick={() => setActiveTab('quickstart')}
-                className={`settings-nav-item ${activeTab === 'quickstart' ? 'active' : ''}`}
-              >
-                {t('settings.quickstart')}
-              </button>
-              <button
                 onClick={() => setActiveTab('model')}
                 className={`settings-nav-item ${activeTab === 'model' ? 'active' : ''}`}
               >
@@ -185,12 +179,6 @@ export function SystemSettings({ isOpen, onClose, activeTabId }: SystemSettingsP
                 className={`settings-nav-item ${activeTab === 'token-usage' ? 'active' : ''}`}
               >
                 {t('settings.tokenUsage')}
-              </button>
-              <button
-                onClick={() => setActiveTab('subscription')}
-                className={`settings-nav-item ${activeTab === 'subscription' ? 'active' : ''}`}
-              >
-                {t('settings.subscription')}
               </button>
             </nav>
             

@@ -411,12 +411,14 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
       <div>
         <div className="flex items-center gap-2 mb-2">
           <label className="text-sm font-medium text-gray-700">API Key <span className="text-red-500">*</span></label>
-          <span
-            onClick={() => setShowApiKeyHelp(true)}
-            style={{ fontSize: '11px', color: 'var(--settings-accent)', cursor: 'pointer' }}
-          >
-            {lang === 'zh' ? '如何获取？' : 'How to get?'}
-          </span>
+          {false && (
+            <span
+              onClick={() => setShowApiKeyHelp(true)}
+              style={{ fontSize: '11px', color: 'var(--settings-accent)', cursor: 'pointer' }}
+            >
+              {lang === 'zh' ? '如何获取？' : 'How to get?'}
+            </span>
+          )}
         </div>
         <input
           type="password"

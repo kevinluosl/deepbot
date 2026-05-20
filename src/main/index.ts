@@ -133,7 +133,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    title: 'DeepBot Terminal', // 🔥 设置窗口标题
+    title: 'DeepBot Terminal - 吴大叔', // 🔥 设置窗口标题
     icon: windowIconPath, // 🔥 设置窗口图标
     backgroundColor: '#0a0e1a', // 🔥 设置背景色（深蓝黑色）
     ...(process.platform === 'darwin' ? {
