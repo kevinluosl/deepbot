@@ -795,6 +795,13 @@ export const api = {
     return webClient.get(`/api/token-usage?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
   },
 
+  // ==================== 图片用量统计 ====================
+
+  async getImageUsage(startDate: string, endDate: string): Promise<{ success: boolean; records: any[]; error?: string }> {
+    if (isElectron()) return (window as any).deepbot.getImageUsage(startDate, endDate);
+    return webClient.get(`/api/image-usage?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
+  },
+
   async getImageQuotaStatus(): Promise<{ success: boolean; quota: any | null }> {
     if (isElectron()) return (window as any).deepbot.getImageQuotaStatus();
     return webClient.get('/api/config/image-quota-status');

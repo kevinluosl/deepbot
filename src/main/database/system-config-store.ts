@@ -251,6 +251,16 @@ export class SystemConfigStore {
       )
     `);
 
+    // 图片用量统计表（每日快照，按提供商累加）
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS image_usage_daily (
+        date TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (date, provider)
+      )
+    `);
+
     // Agent Tab 配置表
     const { initTabConfigTable } = require('./tab-config');
     initTabConfigTable(this.db);

@@ -1645,6 +1645,20 @@ function registerIpcHandlers() {
     }
   });
 
+  // 图片用量统计
+  ipcMain.handle(IPC_CHANNELS.GET_IMAGE_USAGE, async (_event, { startDate, endDate }) => {
+    try {
+      const { getImageUsage } = await import('./database/image-usage');
+      const configStore = SystemConfigStore.getInstance();
+      const db = configStore.getDb();
+      const records = getImageUsage(db, startDate, endDate);
+      return { success: true, records };
+    } catch (error) {
+      console.error('[IPC] 获取图片用量失败:', getErrorMessage(error));
+      return { success: false, error: getErrorMessage(error), records: [] };
+    }
+  });
+
   // 获取图片生成配额状态
   ipcMain.handle(IPC_CHANNELS.GET_IMAGE_QUOTA_STATUS, async () => {
     try {

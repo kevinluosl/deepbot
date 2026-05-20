@@ -527,6 +527,35 @@ button.skill-icon-button.connector-stop-button:hover:not(:disabled) {
   border-color: var(--settings-error) !important;
 }
 
+/* 标签页切换按钮（无动画，大小一致） */
+button.skill-icon-button.tab-toggle-button {
+  padding: 6px 12px !important;
+  gap: 4px !important;
+  font-size: 12px !important;
+  transition: none !important;
+  color: var(--settings-text-dim) !important;
+  border-color: var(--settings-border) !important;
+}
+
+button.skill-icon-button.tab-toggle-button:hover:not(:disabled) {
+  color: var(--settings-accent) !important;
+  border-color: var(--settings-accent) !important;
+  background: transparent !important;
+  transition: none !important;
+}
+
+button.skill-icon-button.tab-toggle-button.tab-toggle-active {
+  color: var(--settings-accent) !important;
+  border-color: var(--settings-accent) !important;
+  background: transparent !important;
+  transition: none !important;
+}
+
+button.skill-icon-button.tab-toggle-button.tab-toggle-active:hover:not(:disabled) {
+  background: transparent !important;
+  transition: none !important;
+}
+
 /* Skill 卡片操作按钮（详情、环境变量、卸载、安装） */
 button.skill-card-action,
 label.skill-card-action,

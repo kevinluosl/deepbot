@@ -134,6 +134,7 @@ export const IPC_CHANNELS = {
   
   // Token 用量统计
   GET_TOKEN_USAGE: 'token-usage:get',
+  GET_IMAGE_USAGE: 'image-usage:get',
   GET_IMAGE_QUOTA_STATUS: 'image-quota:get-status',
   
   // Tab 模型配置

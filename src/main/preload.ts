@@ -90,6 +90,7 @@ const IPC_CHANNELS = {
   GET_TAB_REPLY_MODE: 'tab:get-reply-mode',
   SET_TAB_REPLY_MODE: 'tab:set-reply-mode',
   GET_TOKEN_USAGE: 'token-usage:get',
+  GET_IMAGE_USAGE: 'image-usage:get',
   GET_IMAGE_QUOTA_STATUS: 'image-quota:get-status',
   GET_MODEL_PROVIDER_ROUTING: 'model-config:get-provider-routing',
   SAVE_MODEL_PROVIDER_ROUTING: 'model-config:save-provider-routing',
@@ -562,6 +563,11 @@ contextBridge.exposeInMainWorld('deepbot', {
   // Token 用量统计
   getTokenUsage: (startDate: string, endDate: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_TOKEN_USAGE, { startDate, endDate });
+  },
+
+  // 图片用量统计
+  getImageUsage: (startDate: string, endDate: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.GET_IMAGE_USAGE, { startDate, endDate });
   },
 
   // 图片生成配额状态

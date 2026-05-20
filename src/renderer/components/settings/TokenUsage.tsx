@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { Calendar, CalendarDays, CalendarRange, Search } from 'lucide-react';
+import { Calendar, CalendarDays, CalendarRange, Search, BarChart3, Image } from 'lucide-react';
 import { api } from '../../api';
 import { t, getLanguage } from '../../i18n';
 import { ThemeContext } from '../../App';
@@ -21,6 +21,13 @@ interface TokenUsageRecord {
   requestCount: number;
 }
 
+/** 图片用量记录 */
+interface ImageUsageRecord {
+  date: string;
+  provider: string;
+  count: number;
+}
+
 /** 按模型汇总的数据 */
 interface ModelSummary {
   modelId: string;
@@ -28,6 +35,12 @@ interface ModelSummary {
   outputTokens: number;
   totalTokens: number;
   requestCount: number;
+}
+
+/** 按提供商汇总的图片用量 */
+interface ProviderImageSummary {
+  provider: string;
+  count: number;
 }
 
 /** 格式化日期为 YYYY-MM-DD */
@@ -55,9 +68,11 @@ export function TokenUsage() {
   const [startDate, setStartDate] = useState<string>(() => formatDate(new Date()));
   const [endDate, setEndDate] = useState<string>(() => formatDate(new Date()));
   const [records, setRecords] = useState<TokenUsageRecord[]>([]);
+  const [imageRecords, setImageRecords] = useState<ImageUsageRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeQuickBtn, setActiveQuickBtn] = useState<'today' | 'week' | 'month' | ''>('today');
   const [imageQuota, setImageQuota] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'token' | 'image'>('token');
 
   // 加载图片配额状态
   useEffect(() => {
@@ -83,9 +98,27 @@ export function TokenUsage() {
     }
   }, []);
 
+  /** 查询图片用量 */
+  const fetchImageData = useCallback(async (start: string, end: string) => {
+    setLoading(true);
+    try {
+      const result = await api.getImageUsage(start, end);
+      if (result.success) {
+        setImageRecords(result.records || []);
+      } else {
+        setImageRecords([]);
+      }
+    } catch {
+      setImageRecords([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   /** 初始加载（当天数据） */
   useEffect(() => {
     fetchData(startDate, endDate);
+    fetchImageData(startDate, endDate);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 快捷按钮：当天 */
@@ -95,6 +128,7 @@ export function TokenUsage() {
     setEndDate(today);
     setActiveQuickBtn('today');
     fetchData(today, today);
+    fetchImageData(today, today);
   };
 
   /** 快捷按钮：最近一周 */
@@ -108,6 +142,7 @@ export function TokenUsage() {
     setEndDate(e);
     setActiveQuickBtn('week');
     fetchData(s, e);
+    fetchImageData(s, e);
   };
 
   /** 快捷按钮：最近30天 */
@@ -121,6 +156,7 @@ export function TokenUsage() {
     setEndDate(e);
     setActiveQuickBtn('month');
     fetchData(s, e);
+    fetchImageData(s, e);
   };
 
   /** 自定义日期查询 */
@@ -139,6 +175,7 @@ export function TokenUsage() {
     }
     setActiveQuickBtn('');
     fetchData(startDate, endDate);
+    fetchImageData(startDate, endDate);
   };
 
   /** 按模型汇总数据 */
@@ -164,6 +201,18 @@ export function TokenUsage() {
     return Array.from(map.values()).sort((a, b) => b.totalTokens - a.totalTokens);
   }, [records]);
 
+  /** 按提供商汇总图片用量 */
+  const providerImageSummaries: ProviderImageSummary[] = React.useMemo(() => {
+    const map = new Map<string, number>();
+    for (const record of imageRecords) {
+      const existing = map.get(record.provider) || 0;
+      map.set(record.provider, existing + record.count);
+    }
+    return Array.from(map.entries())
+      .map(([provider, count]) => ({ provider, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [imageRecords]);
+
   /** 总计 */
   const totals = React.useMemo(() => {
     return modelSummaries.reduce(
@@ -177,11 +226,39 @@ export function TokenUsage() {
     );
   }, [modelSummaries]);
 
+  /** 图片用量总计 */
+  const imageTotals = React.useMemo(() => {
+    return providerImageSummaries.reduce((acc, item) => acc + item.count, 0);
+  }, [providerImageSummaries]);
+
   return (
     <div style={{ padding: '24px', maxWidth: '800px' }}>
-      <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--settings-text)' }}>
-        {t('settings.tokenUsage')}
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--settings-text)', margin: 0 }}>
+          {t('settings.tokenUsage')}
+        </h3>
+        {/* 标签页切换 - SVG 按钮样式 */}
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button
+            onClick={() => setActiveTab('token')}
+            className={`skill-icon-button tab-toggle-button ${activeTab === 'token' ? 'tab-toggle-active' : ''}`}
+            title={lang === 'zh' ? '模型用量' : 'Token Usage'}
+            style={{ gap: '4px' }}
+          >
+            <BarChart3 size={14} />
+            <span style={{ fontSize: '12px' }}>{lang === 'zh' ? '模型用量' : 'Token'}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('image')}
+            className={`skill-icon-button tab-toggle-button ${activeTab === 'image' ? 'tab-toggle-active' : ''}`}
+            title={lang === 'zh' ? '图片用量' : 'Image Usage'}
+            style={{ gap: '4px' }}
+          >
+            <Image size={14} />
+            <span style={{ fontSize: '12px' }}>{lang === 'zh' ? '图片用量' : 'Image'}</span>
+          </button>
+        </div>
+      </div>
 
       {/* 图片生成配额 - 隐藏 */}
       {false && imageQuota && (
@@ -278,54 +355,108 @@ export function TokenUsage() {
         </div>
       </div>
 
-      {/* 数据表格 */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--settings-text-dim)' }}>
-          {lang === 'zh' ? '加载中...' : 'Loading...'}
-        </div>
-      ) : modelSummaries.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--settings-text-dim)' }}>
-          {lang === 'zh' ? '暂无数据' : 'No data'}
-        </div>
-      ) : (
-        <div style={{ border: '1px solid var(--settings-border)', borderRadius: '8px', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-            <thead>
-              <tr style={{ background: 'var(--settings-bg-secondary, rgba(0,0,0,0.03))' }}>
-                <th style={thStyle}>{lang === 'zh' ? '模型' : 'Model'}</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>{lang === 'zh' ? '字符消耗' : 'Characters'}</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>{lang === 'zh' ? '调用轮次' : 'Turns'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {modelSummaries.map((item) => (
-                <tr key={item.modelId} style={{ borderTop: '1px solid var(--settings-border)' }}>
-                  <td style={tdStyle}>
-                    <span style={{ fontWeight: 500, color: 'var(--settings-text)' }}>{item.modelId}</span>
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 500 }}>{formatTokenCount(item.totalTokens)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' }}>{formatTokenCount(item.requestCount)}</td>
-                </tr>
-              ))}
-            </tbody>
-            {/* 总计行 */}
-            <tfoot>
-              <tr style={{ borderTop: '2px solid var(--settings-border)', background: 'var(--settings-bg-secondary, rgba(0,0,0,0.03))' }}>
-                <td style={{ ...tdStyle, fontWeight: 600 }}>{lang === 'zh' ? '总计' : 'Total'}</td>
-                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>{formatTokenCount(totals.totalTokens)}</td>
-                <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>{formatTokenCount(totals.requestCount)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+      {/* 数据表格 - 模型用量 */}
+      {activeTab === 'token' && (
+        <>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--settings-text-dim)' }}>
+              {lang === 'zh' ? '加载中...' : 'Loading...'}
+            </div>
+          ) : modelSummaries.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--settings-text-dim)' }}>
+              {lang === 'zh' ? '暂无数据' : 'No data'}
+            </div>
+          ) : (
+            <div style={{ border: '1px solid var(--settings-border)', borderRadius: '8px', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: 'var(--settings-bg-secondary, rgba(0,0,0,0.03))' }}>
+                    <th style={thStyle}>{lang === 'zh' ? '模型' : 'Model'}</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>{lang === 'zh' ? '字符消耗' : 'Characters'}</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>{lang === 'zh' ? '调用轮次' : 'Turns'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modelSummaries.map((item) => (
+                    <tr key={item.modelId} style={{ borderTop: '1px solid var(--settings-border)' }}>
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: 500, color: 'var(--settings-text)' }}>{item.modelId}</span>
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 500 }}>{formatTokenCount(item.totalTokens)}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right' }}>{formatTokenCount(item.requestCount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                {/* 总计行 */}
+                <tfoot>
+                  <tr style={{ borderTop: '2px solid var(--settings-border)', background: 'var(--settings-bg-secondary, rgba(0,0,0,0.03))' }}>
+                    <td style={{ ...tdStyle, fontWeight: 600 }}>{lang === 'zh' ? '总计' : 'Total'}</td>
+                    <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>{formatTokenCount(totals.totalTokens)}</td>
+                    <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>{formatTokenCount(totals.requestCount)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+
+          {/* 说明 */}
+          <p style={{ marginTop: '16px', fontSize: '12px', color: 'var(--settings-text-dim)' }}>
+            {lang === 'zh' 
+              ? <>统计数据为实际消耗的字符数（中文=1，英文=0.5）。<span style={{ color: 'var(--settings-accent)', fontWeight: 500 }}>Token 因每个模型计算方式不一致，实际消耗以模型提供商账单为准。</span></>
+              : <>Statistics show actual characters consumed (CJK=1, English=0.5). <span style={{ color: 'var(--settings-accent)', fontWeight: 500 }}>Token usage varies by model tokenizer. Refer to your provider's billing for actual token consumption.</span></>}
+          </p>
+        </>
       )}
 
-      {/* 说明 */}
-      <p style={{ marginTop: '16px', fontSize: '12px', color: 'var(--settings-text-dim)' }}>
-        {lang === 'zh' 
-          ? <>统计数据为实际消耗的字符数（中文=1，英文=0.5）。<span style={{ color: 'var(--settings-accent)', fontWeight: 500 }}>Token 因每个模型计算方式不一致，实际消耗以模型提供商账单为准。</span></>
-          : <>Statistics show actual characters consumed (CJK=1, English=0.5). <span style={{ color: 'var(--settings-accent)', fontWeight: 500 }}>Token usage varies by model tokenizer. Refer to your provider's billing for actual token consumption.</span></>}
-      </p>
+      {/* 数据表格 - 图片用量 */}
+      {activeTab === 'image' && (
+        <>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--settings-text-dim)' }}>
+              {lang === 'zh' ? '加载中...' : 'Loading...'}
+            </div>
+          ) : providerImageSummaries.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--settings-text-dim)' }}>
+              {lang === 'zh' ? '暂无数据' : 'No data'}
+            </div>
+          ) : (
+            <div style={{ border: '1px solid var(--settings-border)', borderRadius: '8px', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: 'var(--settings-bg-secondary, rgba(0,0,0,0.03))' }}>
+                    <th style={thStyle}>{lang === 'zh' ? '提供商' : 'Provider'}</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>{lang === 'zh' ? '生成数量' : 'Count'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {providerImageSummaries.map((item) => (
+                    <tr key={item.provider} style={{ borderTop: '1px solid var(--settings-border)' }}>
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: 500, color: 'var(--settings-text)' }}>{item.provider}</span>
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 500 }}>{item.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                {/* 总计行 */}
+                <tfoot>
+                  <tr style={{ borderTop: '2px solid var(--settings-border)', background: 'var(--settings-bg-secondary, rgba(0,0,0,0.03))' }}>
+                    <td style={{ ...tdStyle, fontWeight: 600 }}>{lang === 'zh' ? '总计' : 'Total'}</td>
+                    <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600 }}>{imageTotals}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+
+          {/* 说明 */}
+          <p style={{ marginTop: '16px', fontSize: '12px', color: 'var(--settings-text-dim)' }}>
+            {lang === 'zh' 
+              ? <>统计数据为当前 DeepBot 实例生成的图片数量，按提供商分类统计。</>
+              : <>Statistics show the number of images generated by the current DeepBot instance, categorized by provider.</>}
+          </p>
+        </>
+      )}
     </div>
   );
 }

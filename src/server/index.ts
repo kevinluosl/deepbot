@@ -25,6 +25,7 @@ import { createTasksRouter } from './routes/tasks';
 import { createFilesRouter } from './routes/files';
 import { createSkillsRouter } from './routes/skills';
 import { createTokenUsageRouter } from './routes/token-usage';
+import { createImageUsageRouter } from './routes/image-usage';
 import { createModelProviderRoutingRouter } from './routes/model-provider-routing';
 import { createExternalRouter } from './routes/external';
 import { TIMEOUTS } from '../main/config/timeouts';
@@ -97,6 +98,7 @@ async function main(): Promise<void> {
   app.use('/api/files', authMiddleware, createFilesRouter(gatewayAdapter));
   app.use('/api/skills', authMiddleware, createSkillsRouter(gatewayAdapter));
   app.use('/api/token-usage', authMiddleware, createTokenUsageRouter());
+  app.use('/api/image-usage', authMiddleware, createImageUsageRouter());
   app.use('/api/model-provider-routing', authMiddleware, createModelProviderRoutingRouter());
   
   // 外部调用 API（使用 X-Secret 认证，不走 JWT Token）
