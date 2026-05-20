@@ -112,7 +112,7 @@ export function AppVersion({ initialUpdateInfo }: AppVersionProps) {
             />
             <div>
               <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--settings-text)' }}>
-                DeepBot Terminal
+                DeepBot Terminal - 吴大叔
               </div>
               <div style={{ fontSize: '13px', color: 'var(--settings-text-dim)', marginTop: '2px' }}>
                 {lang === 'zh' ? '版本' : 'Version'} {APP_VERSION}

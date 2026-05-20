@@ -589,7 +589,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
 
       {/* 顶部栏 */}
       <div className="terminal-header">
-        <div className="terminal-title">DeepBot Terminal</div>
+        <div className="terminal-title">DeepBot Terminal - 吴大叔</div>
         
         <div className="terminal-controls">
           {onOpenSkillManager && (
