@@ -34,7 +34,8 @@ export const TIMEOUTS = {
   COMMAND_EXECUTION_TIMEOUT: 5 * 1000,         // 5 秒
   
   // Exec 工具
-  EXEC_TOOL_TIMEOUT: 0,                          // 不超时（命令可能执行很长时间）
+  EXEC_TOOL_TIMEOUT: 60 * 60 * 1000,              // 60 分钟全局超时
+  EXEC_TOOL_NO_OUTPUT_TIMEOUT: 5 * 60 * 1000,    // 5 分钟无输出超时（仅在命令从未有过输出时生效）
   
   // 图片生成
   IMAGE_GENERATION_TIMEOUT: 60 * 1000,         // 60 秒

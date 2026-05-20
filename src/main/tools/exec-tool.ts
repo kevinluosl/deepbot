@@ -276,8 +276,11 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
           finalCommand = `chcp 65001 >nul 2>&1 && ${command}`;
         }
         
-        // 🔥 使用统一的超时配置
+        // 🔥 使用统一的超时配置，同时支持 Agent 传入的 timeout 参数
         const timeoutMs = TIMEOUTS.EXEC_TOOL_TIMEOUT;
+        // Agent 传入的 timeout 是秒为单位，优先使用
+        const agentTimeoutMs = options.timeout && options.timeout > 0 ? options.timeout * 1000 : 0;
+        const noOutputTimeoutMs = TIMEOUTS.EXEC_TOOL_NO_OUTPUT_TIMEOUT;
         const { spawn } = require('node:child_process');
         
         return new Promise((resolve) => {
@@ -286,72 +289,99 @@ export async function getExecTools(workspaceDir: string): Promise<AgentTool[]> {
             env,
             shell: true,
             stdio: ['ignore', 'pipe', 'pipe'],
-            timeout: timeoutMs,
+            timeout: agentTimeoutMs || timeoutMs, // 优先使用 Agent 指定的超时
           });
           
+          // 🔥 无输出超时机制：如果命令从未有过任何输出，5 分钟后强制终止
+          let noOutputTimer: ReturnType<typeof setTimeout> | null = null;
+          let resolved = false;
+          let hasReceivedOutput = false; // 是否曾经收到过输出
+          
+          // 启动无输出计时器（只在命令从未有过输出时生效）
+          if (noOutputTimeoutMs > 0) {
+            noOutputTimer = setTimeout(() => {
+              if (!resolved && !hasReceivedOutput) {
+                resolved = true;
+                child.kill();
+                const timeoutSec = Math.round(noOutputTimeoutMs / 1000);
+                const timeoutDisplay = timeoutSec >= 60 ? `${Math.round(timeoutSec / 60)} 分钟` : `${timeoutSec} 秒`;
+                const timeoutMsg = `命令执行超时：${timeoutDisplay}内没有任何输出，已强制终止。请检查命令是否正确，或尝试其他方式。`;
+                options.onData(Buffer.from(timeoutMsg, 'utf8'));
+                resolve({ exitCode: 124 }); // 124 是 timeout 的标准退出码
+              }
+            }, noOutputTimeoutMs);
+          }
+          
           child.on('error', (error: Error) => {
-            resolve({ exitCode: null });
+            if (!resolved) {
+              resolved = true;
+              if (noOutputTimer) clearTimeout(noOutputTimer);
+              resolve({ exitCode: null });
+            }
           });
           
           // 监听输出
           child.stdout?.on('data', (data: Buffer) => {
+            // 🔥 收到输出，标记并取消无输出计时器
+            if (!hasReceivedOutput) {
+              hasReceivedOutput = true;
+              if (noOutputTimer) { clearTimeout(noOutputTimer); noOutputTimer = null; }
+            }
+            
             // 🔥 Windows 中文编码处理
             let output: string;
             if (process.platform === 'win32') {
-              // Windows 使用 GBK 编码，需要转换为 UTF-8
               try {
-                // 尝试使用 iconv-lite 转换编码
                 const iconv = require('iconv-lite');
-                output = iconv.decode(data, 'cp936'); // cp936 是 GBK 编码
+                output = iconv.decode(data, 'cp936');
               } catch (error) {
-                // 如果 iconv-lite 不可用，使用默认处理
                 output = data.toString('utf8');
               }
             } else {
-              // Unix/Linux/macOS 使用 UTF-8
               output = data.toString('utf8');
             }
             
-            // 将字符串转换回 Buffer 传递给 onData
             options.onData(Buffer.from(output, 'utf8'));
           });
           
           child.stderr?.on('data', (data: Buffer) => {
+            // 🔥 收到输出，标记并取消无输出计时器
+            if (!hasReceivedOutput) {
+              hasReceivedOutput = true;
+              if (noOutputTimer) { clearTimeout(noOutputTimer); noOutputTimer = null; }
+            }
+            
             // 🔥 Windows 中文编码处理
             let output: string;
             if (process.platform === 'win32') {
-              // Windows 使用 GBK 编码，需要转换为 UTF-8
               try {
-                // 尝试使用 iconv-lite 转换编码
                 const iconv = require('iconv-lite');
-                output = iconv.decode(data, 'cp936'); // cp936 是 GBK 编码
+                output = iconv.decode(data, 'cp936');
               } catch (error) {
-                // 如果 iconv-lite 不可用，使用默认处理
                 output = data.toString('utf8');
               }
             } else {
-              // Unix/Linux/macOS 使用 UTF-8
               output = data.toString('utf8');
             }
             
-            // 将字符串转换回 Buffer 传递给 onData
             options.onData(Buffer.from(output, 'utf8'));
           });
           
           // 监听取消信号
           if (options.signal) {
             options.signal.addEventListener('abort', () => {
+              if (noOutputTimer) clearTimeout(noOutputTimer);
               child.kill();
             });
           }
           
           // 监听退出
           child.on('close', (code: number | null, signal: string | null) => {
-            resolve({ exitCode: code });
-          });
-          
-          child.on('error', (error: Error) => {
-            resolve({ exitCode: null });
+            if (!resolved) {
+              resolved = true;
+              if (noOutputTimer) clearTimeout(noOutputTimer);
+              resolve({ exitCode: code });
+            }
           });
         });
       },
