@@ -636,6 +636,11 @@ ${welcomeContent}
     // 如果是持久化 Tab，保存到数据库
     if (isPersistent && this.db) {
       try {
+        // 计算新 Tab 的 sortOrder（排在最后）
+        const maxSortOrder = Array.from(this.tabs.values())
+          .reduce((max, t) => Math.max(max, t.sortOrder ?? 0), 0);
+        tab.sortOrder = maxSortOrder + 1;
+
         saveTabConfig(this.db, {
           id: tabId,
           title: tabTitle,
@@ -648,6 +653,7 @@ ${welcomeContent}
           taskId: options.taskId,
           connectorId: options.connectorId,
           conversationId: options.conversationId,
+          sortOrder: tab.sortOrder,
         });
         
         console.log('[TabManager] 💾 Tab 配置已持久化:', tabId);
@@ -827,9 +833,10 @@ ${welcomeContent}
    */
   getAllTabs(): AgentTab[] {
     return Array.from(this.tabs.values()).sort((a, b) => {
+      // default Tab 始终排第一
       if (a.id === 'default') return -1;
       if (b.id === 'default') return 1;
-      // 优先按 sortOrder 排序，没有 sortOrder 的按 createdAt 排序
+      // 其余按 sortOrder 排序，没有 sortOrder 的按 createdAt
       const orderA = a.sortOrder ?? 9999;
       const orderB = b.sortOrder ?? 9999;
       if (orderA !== orderB) return orderA - orderB;

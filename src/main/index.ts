@@ -1128,6 +1128,16 @@ function registerIpcHandlers() {
       const { SystemConfigStore } = await import('./database/system-config-store');
       const db = SystemConfigStore.getInstance().getDb();
       updateTabSortOrder(db, tabOrders);
+      
+      // 同步更新内存中的 sortOrder
+      if (gateway) {
+        const tabManager = gateway.getTabManager();
+        for (const { id, sortOrder } of tabOrders) {
+          const tab = tabManager.getTab(id);
+          if (tab) tab.sortOrder = sortOrder;
+        }
+      }
+      
       return { success: true };
     } catch (error) {
       return { success: false, error: getErrorMessage(error) };

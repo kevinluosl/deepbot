@@ -166,8 +166,8 @@ export function saveTabConfig(db: Database.Database, config: TabConfig): void {
     INSERT OR REPLACE INTO agent_tabs (
       id, title, type, memory_file, agent_name,
       is_persistent, created_at, last_active_at,
-      task_id, connector_id, conversation_id, model_config
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      task_id, connector_id, conversation_id, model_config, sort_order
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   stmt.run(
@@ -182,7 +182,8 @@ export function saveTabConfig(db: Database.Database, config: TabConfig): void {
     config.taskId || null,
     config.connectorId || null,
     config.conversationId || null,
-    config.modelConfig ? JSON.stringify(config.modelConfig) : null
+    config.modelConfig ? JSON.stringify(config.modelConfig) : null,
+    config.sortOrder ?? 0
   );
   
   console.log(`[TabConfig] 💾 已保存 Tab 配置: ${config.id} (${config.title})`);
