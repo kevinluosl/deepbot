@@ -280,7 +280,7 @@ export interface SetDefaultSkillDirResponse {
 
 // 模型配置
 export interface ModelConfig {
-  providerType: 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'custom' | 'anthropic'; // 提供商类型（用于 UI 下拉选择）
+  providerType: 'deepbot' | 'qwen' | 'deepseek' | 'gemini' | 'minimax' | 'atlascloud' | 'custom' | 'anthropic'; // 提供商类型（用于 UI 下拉选择）
   providerId: string;
   providerName: string;
   baseUrl: string;

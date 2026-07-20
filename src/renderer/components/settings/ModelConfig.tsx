@@ -12,8 +12,10 @@ import { showToast } from '../../utils/toast';
 import { ApiKeyHelpModal } from './ApiKeyHelpModal';
 import { getLanguage } from '../../i18n';
 
+type ModelProviderType = 'deepbot' | 'atlascloud' | 'gemini' | 'custom' | 'anthropic';
+
 interface ModelConfig {
-  providerType: 'deepbot' | 'gemini' | 'custom' | 'anthropic';
+  providerType: ModelProviderType;
   providerId: string;
   providerName: string;
   baseUrl: string;
@@ -124,7 +126,7 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
   };
 
   // 处理提供商类型变化
-  const handleProviderTypeChange = (providerType: 'deepbot' | 'gemini' | 'custom' | 'anthropic') => {
+  const handleProviderTypeChange = (providerType: ModelProviderType) => {
     const preset = PROVIDER_PRESETS[providerType];
     
     setConfig({
@@ -281,10 +283,11 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
         </label>
         <select
           value={config.providerType}
-          onChange={(e) => handleProviderTypeChange(e.target.value as 'deepbot' | 'gemini' | 'custom' | 'anthropic')}
+          onChange={(e) => handleProviderTypeChange(e.target.value as ModelProviderType)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="deepbot">{lang === 'zh' ? 'DeepBot（推荐）' : 'DeepBot (Recommended)'}</option>
+          <option value="atlascloud">Atlas Cloud</option>
           <option value="custom">{lang === 'zh' ? 'OpenAI 兼容' : 'OpenAI Compatible'}</option>
           <option value="gemini">{lang === 'zh' ? 'Google Gemini 兼容' : 'Google Gemini Compatible'}</option>
           <option value="anthropic">{lang === 'zh' ? 'Anthropic 兼容' : 'Anthropic Compatible'}</option>
@@ -308,6 +311,8 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
               ? 'https://api.anthropic.com'
               : config.providerType === 'gemini'
               ? 'https://generativelanguage.googleapis.com/v1beta'
+              : config.providerType === 'atlascloud'
+              ? 'https://api.atlascloud.ai/v1'
               : 'https://api.example.com/v1'
           }
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -317,6 +322,8 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
             ? (lang === 'zh' ? '输入 Anthropic 兼容的 API 地址，不含 /v1/messages（如 https://api.anthropic.com）' : 'Enter Anthropic-compatible API URL without /v1/messages (e.g. https://api.anthropic.com)')
             : config.providerType === 'gemini'
             ? (lang === 'zh' ? '输入 Google Generative AI 格式的地址' : 'Enter Google Generative AI compatible URL')
+            : config.providerType === 'atlascloud'
+            ? (lang === 'zh' ? 'Atlas Cloud 的 OpenAI 兼容 API 地址' : 'Atlas Cloud OpenAI-compatible API URL')
             : config.providerType === 'custom'
             ? (lang === 'zh' ? '输入 OpenAI 兼容的 API 地址（如 https://api.openai.com/v1）' : 'Enter OpenAI-compatible API URL (e.g. https://api.openai.com/v1)')
             : (lang === 'zh' ? '预设提供商的 API 地址（可修改）' : 'Preset provider API URL (editable)')}
@@ -407,6 +414,8 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
                 ? 'gemini-3-pro-preview'
                 : config.providerType === 'anthropic'
                 ? 'claude-sonnet-4-6'
+                : config.providerType === 'atlascloud'
+                ? 'qwen/qwen3.5-flash'
                 : 'model-id'
             }
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -415,6 +424,7 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
         <p className="mt-1 text-xs text-gray-500">
           {config.providerType === 'deepbot' && (lang === 'zh' ? '推荐 DeepSeek V4 模型，从列表选择或输入自定义模型 ID' : 'DeepSeek V4 models recommended. Select from the list or enter a custom model ID')}
           {config.providerType === 'custom' && (lang === 'zh' ? '输入 OpenAI 兼容的模型 ID' : 'Enter OpenAI-compatible model ID')}
+          {config.providerType === 'atlascloud' && (lang === 'zh' ? '输入 Atlas Cloud 模型 ID（如 qwen/qwen3.5-flash）' : 'Enter an Atlas Cloud model ID (e.g. qwen/qwen3.5-flash)')}
           {config.providerType === 'anthropic' && (lang === 'zh' ? '输入 Claude 模型 ID（如 claude-sonnet-4-6）' : 'Enter Claude model ID (e.g. claude-sonnet-4-6)')}
           {config.providerType === 'gemini' && (lang === 'zh' ? '输入 Gemini 模型 ID' : 'Enter Gemini model ID')}
         </p>
@@ -438,6 +448,8 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
           placeholder={
             config.providerType === 'gemini' 
               ? 'AIza...' 
+              : config.providerType === 'atlascloud'
+              ? 'your-api-key-here'
               : config.providerType === 'anthropic' || config.apiType === 'anthropic-messages'
               ? 'sk-...'
               : 'sk-...'
@@ -447,6 +459,8 @@ export function ModelConfig({ onClose, tabId }: ModelConfigProps) {
         <p className="mt-1 text-xs text-gray-500">
           {config.providerType === 'gemini' 
             ? (lang === 'zh' ? 'Google AI Studio API Key（以 AIza 开头）将加密存储在本地' : 'Google AI Studio API Key (starts with AIza) will be encrypted and stored locally')
+            : config.providerType === 'atlascloud'
+            ? (lang === 'zh' ? 'Atlas Cloud API Key 将加密存储在本地' : 'Atlas Cloud API Key will be encrypted and stored locally')
             : config.providerType === 'anthropic' || config.apiType === 'anthropic-messages'
             ? (lang === 'zh' ? 'Anthropic API Key（用于 x-api-key 请求头）将加密存储在本地' : 'Anthropic API Key (used in x-api-key header) will be encrypted and stored locally')
             : (lang === 'zh' ? 'API 密钥将加密存储在本地' : 'API key will be encrypted and stored locally')}

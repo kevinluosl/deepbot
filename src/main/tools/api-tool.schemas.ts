@@ -57,11 +57,14 @@ export const SetWorkspaceConfigSchema = Type.Object({
  */
 export const SetModelConfigSchema = Type.Object({
   providerType: Type.Optional(Type.Union([
+    Type.Literal('deepbot', { description: 'DeepBot' }),
     Type.Literal('qwen', { description: '通义千问' }),
     Type.Literal('deepseek', { description: 'DeepSeek' }),
     Type.Literal('gemini', { description: 'Google Gemini' }),
     Type.Literal('minimax', { description: 'MiniMax' }),
+    Type.Literal('atlascloud', { description: 'Atlas Cloud' }),
     Type.Literal('custom', { description: '自定义提供商' }),
+    Type.Literal('anthropic', { description: 'Anthropic' }),
   ])),
   
   providerId: Type.Optional(Type.String({

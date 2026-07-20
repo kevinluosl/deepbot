@@ -22,20 +22,22 @@ export function clearModelConfigCache(): void {
  * 仅在数据库中没有配置时使用
  */
 function getModelConfigFromEnv(): ModelConfig | null {
-  const apiKey = process.env.AI_API_KEY;
-  const baseUrl = process.env.AI_BASE_URL;
-  const modelId = process.env.AI_MODEL_ID;
+  const hasAtlasEnv = !!process.env.ATLASCLOUD_API_KEY;
+  const apiKey = process.env.AI_API_KEY || process.env.ATLASCLOUD_API_KEY;
+  const baseUrl = process.env.AI_BASE_URL || (hasAtlasEnv ? process.env.ATLASCLOUD_API_BASE || 'https://api.atlascloud.ai/v1' : undefined);
+  const modelId = process.env.AI_MODEL_ID || (hasAtlasEnv ? process.env.ATLASCLOUD_MODEL || 'qwen/qwen3.5-flash' : undefined);
 
   // 三个核心字段都必须有才能构建有效配置
   if (!apiKey || !baseUrl || !modelId) return null;
 
   const apiType = process.env.AI_API_TYPE || 'openai-completions';
-  const modelId2 = process.env.AI_MODEL_ID_2 || undefined;
-  const providerName = process.env.AI_PROVIDER_NAME || '自定义';
+  const modelId2 = process.env.AI_MODEL_ID_2 || (hasAtlasEnv ? process.env.ATLASCLOUD_MODEL_2 || undefined : undefined);
+  const providerName = process.env.AI_PROVIDER_NAME || (hasAtlasEnv ? 'Atlas Cloud' : '自定义');
 
   // 根据 apiType 推断 providerType
   const providerType = apiType === 'google-generative-ai' ? 'gemini' 
     : apiType === 'anthropic-messages' ? 'anthropic' 
+    : hasAtlasEnv ? 'atlascloud'
     : 'custom';
 
   console.info('[ModelConfig] 使用环境变量中的模型配置（数据库中无配置）');
