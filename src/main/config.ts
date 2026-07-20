@@ -57,13 +57,14 @@ export function getConfig(): DeepBotConfig {
   }
   
   // 从环境变量读取配置
-  const apiKey = process.env.AI_API_KEY || '';
-  const baseUrl = process.env.AI_BASE_URL || '';
-  const modelId = process.env.AI_MODEL_ID || '';
-  const modelName = process.env.AI_MODEL_NAME || '';
-  const providerName = process.env.AI_PROVIDER_NAME || '';
+  const hasAtlasEnv = !!process.env.ATLASCLOUD_API_KEY;
+  const apiKey = process.env.AI_API_KEY || process.env.ATLASCLOUD_API_KEY || '';
+  const baseUrl = process.env.AI_BASE_URL || (hasAtlasEnv ? process.env.ATLASCLOUD_API_BASE || 'https://api.atlascloud.ai/v1' : '');
+  const modelId = process.env.AI_MODEL_ID || (hasAtlasEnv ? process.env.ATLASCLOUD_MODEL || 'qwen/qwen3.5-flash' : '');
+  const modelName = process.env.AI_MODEL_NAME || modelId;
+  const providerName = process.env.AI_PROVIDER_NAME || (hasAtlasEnv ? 'atlascloud' : '');
   const apiType = process.env.AI_API_TYPE || 'openai-completions'; // 默认 OpenAI 兼容
-  const modelId2 = process.env.AI_MODEL_ID_2 || ''; // 快速模型（选填）
+  const modelId2 = process.env.AI_MODEL_ID_2 || (hasAtlasEnv ? process.env.ATLASCLOUD_MODEL_2 || '' : ''); // 快速模型（选填）
   
   // 如果没有配置，抛出错误
   if (!apiKey || !baseUrl || !modelId) {
@@ -99,9 +100,10 @@ export function hasConfig(): boolean {
   }
   
   // 检查环境变量
-  const apiKey = process.env.AI_API_KEY || '';
-  const baseUrl = process.env.AI_BASE_URL || '';
-  const modelId = process.env.AI_MODEL_ID || '';
+  const hasAtlasEnv = !!process.env.ATLASCLOUD_API_KEY;
+  const apiKey = process.env.AI_API_KEY || process.env.ATLASCLOUD_API_KEY || '';
+  const baseUrl = process.env.AI_BASE_URL || (hasAtlasEnv ? process.env.ATLASCLOUD_API_BASE || 'https://api.atlascloud.ai/v1' : '');
+  const modelId = process.env.AI_MODEL_ID || (hasAtlasEnv ? process.env.ATLASCLOUD_MODEL || 'qwen/qwen3.5-flash' : '');
   
   return !!(apiKey && baseUrl && modelId);
 }

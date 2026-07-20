@@ -44,6 +44,13 @@ export const PROVIDER_PRESETS = {
     defaultModelId2: 'MiniMax-M2.5-highspeed',  // 快速模型
     apiType: 'openai-completions',
   },
+  atlascloud: {
+    name: 'Atlas Cloud',
+    baseUrl: 'https://api.atlascloud.ai/v1',
+    defaultModelId: 'qwen/qwen3.5-flash',
+    defaultModelId2: 'qwen/qwen3.5-flash',  // 快速模型
+    apiType: 'openai-completions',
+  },
   custom: {
     name: 'OpenAI 兼容',
     baseUrl: 'https://api.openai.com/v1',
