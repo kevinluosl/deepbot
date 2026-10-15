@@ -739,8 +739,9 @@ Place the Skill directory under `~/.agents/skills/` and restart DeepBot — it w
 - **Qwen** (Alibaba Cloud) — default model
 - **OpenAI** (GPT-4, GPT-3.5)
 - **Claude** (Anthropic)
+- **OpenAI-compatible gateways** via the custom provider preset
 
-Configure your API keys in System Settings to get started.
+Configure your API keys in System Settings to get started. For a custom OpenAI-compatible gateway, set the provider to **OpenAI 兼容**, then enter that service's base URL, API key, and model ID. For example, [A2Agent](https://a2agent.me/) documents `https://a2agent.me/v1` as its base URL; choose a model ID from its current catalog. The custom preset uses the `openai-completions` API type, so choose a model that supports Chat Completions and the features your workflow needs.
 
 ### ⚠️ Important: Avoid Reasoning Models
 
