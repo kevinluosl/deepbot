@@ -336,7 +336,7 @@ External customer service powered by WeCom KF API.
 | **Image Generation** | AI image generation | Create images, design assets, visual content |
 | **Media Analysis** | Image/video analysis | Image description, video understanding, OCR (DeepBot provider only) |
 | **Doc Analysis** | Document analysis | Read PDF/Word/Excel/PPT content (requires markitdown) |
-| **Web Search** | Web search (Tavily) | Real-time queries, research, data collection |
+| **Web Search** | Web search (Tavily or opt-in Parallel MCP) | Real-time queries, research, data collection |
 | **Web Fetch** | Fetch web content | Extract articles, download page data |
 | **Memory Tool** | Memory management | Store preferences, retrieve historical context |
 | **Skill Manager** | Skill management | Install, uninstall, and list skill packages |
@@ -762,6 +762,14 @@ DeepBot is optimized for standard conversational models. Models with built-in th
 | **Gemini** | Image generation (Imagen 3) | System Settings → Image Generation |
 
 ---
+
+### Public dependency documentation search
+
+In **System Settings → Tool Config → Web Search**, choose **Parallel MCP** and save to search public SDK/dependency documentation without an API key. Tavily remains the default, and switching back keeps your saved Tavily key. Queries are sent to Parallel. Use this provider only for public queries you explicitly request; do not include files, memory, system details, or other private context.
+
+For example, type: “Use web search to find the official public TypeScript dependency installation documentation. Search only this public question and cite the original source URLs.” The agent must set `publicQuery: true` for Parallel calls. This declaration is required by the tool; it does not automatically detect private information. Results use the existing search output and Markdown links. Parallel supports `maxResults` and local domain filtering; advanced depth, news topic, and time-range controls require Tavily. Empty results and service errors are shown through the existing tool response.
+
+See [Parallel MCP setup](https://docs.parallel.ai/integrations/mcp/quickstart). To opt out, select **Tavily** and save. To disable search altogether, disable **Web Search** in Tool Config.
 
 ## 🛠️ Development Guide
 

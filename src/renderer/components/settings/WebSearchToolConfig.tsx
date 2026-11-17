@@ -1,5 +1,5 @@
 /**
- * Web Search 工具配置页面（Tavily Search API）
+ * Web Search 工具配置页面
  */
 
 import React, { useState, useEffect } from 'react';
@@ -8,6 +8,7 @@ import { showToast } from '../../utils/toast';
 import { getLanguage } from '../../i18n';
 
 interface WebSearchToolConfig {
+  provider: 'tavily' | 'parallel';
   apiKey: string;
 }
 
@@ -17,7 +18,7 @@ interface WebSearchToolConfigProps {
 
 export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   const lang = getLanguage();
-  const [config, setConfig] = useState<WebSearchToolConfig>({ apiKey: '' });
+  const [config, setConfig] = useState<WebSearchToolConfig>({ provider: 'tavily', apiKey: '' });
   const [isSaving, setIsSaving] = useState(false);
   const hasLoadedRef = React.useRef(false);
 
@@ -31,7 +32,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
     try {
       const result = await api.getWebSearchToolConfig();
       if (result.success && result.config) {
-        setConfig({ apiKey: result.config.apiKey || '' });
+        setConfig({ provider: result.config.provider || 'tavily', apiKey: result.config.apiKey || '' });
       }
     } catch (error) {
       console.error('加载 Web Search 工具配置失败:', error);
@@ -39,7 +40,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
   };
 
   const handleSave = async () => {
-    if (!config.apiKey || !config.apiKey.trim()) {
+    if (config.provider === 'tavily' && (!config.apiKey || !config.apiKey.trim())) {
       showToast('error', lang === 'zh' ? '请输入 Tavily API Key' : 'Please enter Tavily API Key');
       return;
     }
@@ -67,13 +68,29 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
         <h4 className="text-base font-medium text-gray-900 mb-2">
           {lang === 'zh' ? 'Web Search 工具配置' : 'Web Search Tool Config'}
         </h4>
-        <p className="text-sm text-gray-600 mb-4">
-          {lang === 'zh'
-            ? '使用 Tavily Search API 获取实时网络信息、新闻、天气等数据。'
-            : 'Use Tavily Search API to get real-time web information, news, weather, and more.'}
-        </p>
+        <label className="block text-sm text-gray-700 mb-2" htmlFor="web-search-provider">
+          {lang === 'zh' ? '搜索提供商' : 'Search provider'}
+        </label>
+        <select
+          id="web-search-provider"
+          value={config.provider}
+          onChange={(e) => setConfig({ ...config, provider: e.target.value as WebSearchToolConfig['provider'] })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
+        >
+          <option value="tavily">Tavily</option>
+          <option value="parallel">Parallel MCP</option>
+        </select>
+        {config.provider === 'parallel' && (
+          <p className="text-sm text-gray-600 mb-4">
+            {lang === 'zh'
+              ? '无需 API Key。仅用于您明确要求的公开 SDK/依赖文档搜索。查询会发送给 Parallel；请勿包含私有信息。'
+              : 'No API key required. Use only for public SDK/dependency documentation searches you explicitly request. Queries are sent to Parallel; do not include private information.'}
+            {' '}<a href="https://docs.parallel.ai/integrations/mcp/quickstart" target="_blank" rel="noopener noreferrer" className="underline">Parallel MCP setup</a>
+          </p>
+        )}
 
         {/* 注册说明 */}
+        {config.provider === 'tavily' && (
         <div style={{
           padding: '12px 14px',
           background: 'rgba(59, 130, 246, 0.05)',
@@ -119,9 +136,11 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
             </>
           )}
         </div>
+        )}
       </div>
 
       {/* API Key 输入 */}
+      {config.provider === 'tavily' && (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Tavily API Key <span className="text-red-500">*</span>
@@ -129,7 +148,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
         <input
           type="password"
           value={config.apiKey}
-          onChange={(e) => setConfig({ apiKey: e.target.value })}
+          onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
           placeholder="tvly-..."
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -139,6 +158,7 @@ export function WebSearchToolConfig({ onClose }: WebSearchToolConfigProps) {
             : 'Get from tavily.com dashboard, usually starts with tvly-'}
         </p>
       </div>
+      )}
 
       {/* 保存按钮 */}
       <div className="flex justify-end pt-4 border-t">

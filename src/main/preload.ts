@@ -233,7 +233,7 @@ contextBridge.exposeInMainWorld('deepbot', {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_WEB_SEARCH_TOOL_CONFIG);
   },
 
-  saveWebSearchToolConfig: (config: { model: string; apiUrl: string; apiKey: string }) => {
+  saveWebSearchToolConfig: (config: { provider?: 'tavily' | 'parallel'; apiKey: string }) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SAVE_WEB_SEARCH_TOOL_CONFIG, { config });
   },
 

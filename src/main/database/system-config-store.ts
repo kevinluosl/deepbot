@@ -314,6 +314,12 @@ export class SystemConfigStore {
       console.warn('[SystemConfigStore] ⚠️ tool_config_web_search 迁移检查失败:', error);
     }
 
+    // 独立列名，避免旧版 provider/model/api_url 迁移在下次启动时删除搜索提供商。
+    const searchColumns = this.db.prepare('PRAGMA table_info(tool_config_web_search)').all() as any[];
+    if (!searchColumns.some((col: any) => col.name === 'search_provider')) {
+      this.db.exec("ALTER TABLE tool_config_web_search ADD COLUMN search_provider TEXT NOT NULL DEFAULT 'tavily'");
+    }
+
     // 迁移：添加 provider_type, context_window, last_fetched, api_type 字段到 model_config 表
     try {
       const tableInfo = this.db.prepare("PRAGMA table_info(model_config)").all() as any[];

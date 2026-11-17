@@ -68,7 +68,7 @@ export function deleteImageGenerationToolConfig(db: Database.Database): void {
 // ========== Web Search 工具配置 ==========
 
 /**
- * 获取 Web Search 工具配置（Tavily Search API）
+ * 获取 Web Search 工具配置
  */
 export function getWebSearchToolConfig(db: Database.Database): WebSearchToolConfig | null {
   try {
@@ -81,6 +81,7 @@ export function getWebSearchToolConfig(db: Database.Database): WebSearchToolConf
 
     return {
       apiKey: row.api_key,
+      provider: row.search_provider || 'tavily',
     };
   } catch (error) {
     console.error('[SystemConfigStore] 获取 Web Search 工具配置失败:', error);
@@ -89,18 +90,23 @@ export function getWebSearchToolConfig(db: Database.Database): WebSearchToolConf
 }
 
 /**
- * 保存 Web Search 工具配置（Tavily Search API）
+ * 保存 Web Search 工具配置
  */
 export function saveWebSearchToolConfig(db: Database.Database, config: WebSearchToolConfig): void {
+  // 仅更新 API Key 的旧调用方保留用户已选择的提供商。
+  const provider = config.provider ?? getWebSearchToolConfig(db)?.provider ?? 'tavily';
+  if (provider !== 'tavily' && provider !== 'parallel') {
+    throw new Error('不支持的 Web Search 提供商');
+  }
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO tool_config_web_search 
-    (id, api_key)
-    VALUES (1, ?)
+    (id, api_key, search_provider)
+    VALUES (1, ?, ?)
   `);
 
-  stmt.run(config.apiKey);
+  stmt.run(config.apiKey || '', provider);
 
-  console.info('[SystemConfigStore] ✅ Web Search 工具配置已保存（Tavily）');
+  console.info('[SystemConfigStore] ✅ Web Search 工具配置已保存');
 }
 
 /**
