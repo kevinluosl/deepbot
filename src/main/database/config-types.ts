@@ -57,9 +57,10 @@ export interface ImageGenerationToolConfig {
 }
 
 /**
- * 工具配置 - Web Search 工具（使用 Tavily Search API）
+ * 工具配置 - Web Search 工具
  */
 export interface WebSearchToolConfig {
+  provider?: 'tavily' | 'parallel'; // 未设置时使用 Tavily
   apiKey: string;          // Tavily API Key
 }
 

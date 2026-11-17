@@ -1,8 +1,7 @@
 /**
  * Web Search 工具
  *
- * 使用 Tavily Search API 进行网络搜索
- * 注册免费 API Key：https://tavily.com
+ * 使用 Tavily 或用户选择的 Parallel MCP 进行网络搜索
  */
 
 import { Type } from '@sinclair/typebox';
@@ -13,6 +12,8 @@ import { getErrorMessage } from '../../shared/utils/error-handler';
 import { httpPost } from '../../shared/utils/http-utils';
 import type { SystemConfigStore } from '../database/system-config-store';
 import type { ToolPlugin, ToolCreateOptions } from './registry/tool-interface';
+
+import { performParallelSearch } from './providers/parallel-search-provider';
 
 const TAVILY_API_URL = 'https://api.tavily.com/search';
 
@@ -36,6 +37,9 @@ function getApiKey(configStore: SystemConfigStore): string {
  * Web Search 参数
  */
 const WebSearchSchema = Type.Object({
+  publicQuery: Type.Optional(Type.Boolean({
+    description: '仅 Parallel：用户已明确要求搜索公开 SDK/依赖文档时设为 true。查询只能包含用户授权公开搜索的内容，不得包含文件、记忆、系统或其他私有上下文。',
+  })),
   query: Type.String({
     description: '搜索查询词（中文或英文）',
   }),
@@ -142,14 +146,14 @@ async function performTavilySearch(params: {
 }
 
 /**
- * 创建 Web Search 工具（Tavily）
+ * 创建 Web Search 工具
  */
 export function createWebSearchTool(configStore: SystemConfigStore): AgentTool {
   return {
     name: TOOL_NAMES.WEB_SEARCH,
     label: 'Web Search',
     description:
-      '网络搜索工具（Tavily Search API）。适用于需要实时信息、新闻、天气、股票等场景。',
+      '网络搜索工具（默认 Tavily Search API）。适用于需要实时信息、新闻、天气、股票等场景。用户选择 Parallel 时仅用于用户明确要求的公开 SDK/依赖文档查询，必须设置 publicQuery=true。不得发送私有上下文。返回的原始来源链接可用于引用。',
     parameters: WebSearchSchema,
     execute: async (_toolCallId: string, args: unknown, signal?: AbortSignal) => {
       try {
@@ -161,6 +165,7 @@ export function createWebSearchTool(configStore: SystemConfigStore): AgentTool {
 
         const params = args as {
           query: string;
+          publicQuery?: boolean;
           maxResults?: number;
           searchDepth?: string;
           topic?: string;
@@ -173,13 +178,16 @@ export function createWebSearchTool(configStore: SystemConfigStore): AgentTool {
           throw new Error('搜索查询词不能为空');
         }
 
-        const apiKey = getApiKey(configStore);
-
-        const { answer, results, responseTime } = await performTavilySearch({
-          ...params,
-          apiKey,
-          signal,
-        });
+        const provider = configStore.getWebSearchToolConfig()?.provider ?? 'tavily';
+        if (provider !== 'tavily' && provider !== 'parallel') {
+          throw new Error('不支持的 Web Search 提供商');
+        }
+        if (provider === 'parallel' && params.publicQuery !== true) {
+          throw new Error('Parallel 仅用于用户明确授权的公开 SDK/依赖文档查询，请设置 publicQuery=true；不得包含私有上下文。');
+        }
+        const { answer, results, responseTime } = provider === 'parallel'
+          ? await performParallelSearch(params, signal)
+          : await performTavilySearch({ ...params, apiKey: getApiKey(configStore), signal });
 
         console.log(`[Web Search] ✅ 搜索成功，返回 ${results.length} 条结果`);
 
@@ -194,7 +202,9 @@ export function createWebSearchTool(configStore: SystemConfigStore): AgentTool {
           resultText += `**搜索结果（${results.length} 条）**\n\n`;
           for (const [index, r] of results.entries()) {
             const relevance = r.score ? ` (相关度: ${(r.score * 100).toFixed(0)}%)` : '';
-            resultText += `${index + 1}. **[${r.title}](${r.url})**${relevance}\n`;
+            const title = provider === 'parallel' ? r.title.replace(/[\\`*_[\]<>]/g, '\\$&') : r.title;
+            const link = provider === 'parallel' ? `<${r.url.replace(/</g, '%3C').replace(/>/g, '%3E')}>` : r.url;
+            resultText += `${index + 1}. **[${title}](${link})**${relevance}\n`;
             if (r.content) {
               const snippet = r.content.length > 300 ? r.content.slice(0, 300) + '...' : r.content;
               resultText += `   ${snippet}\n`;
@@ -236,7 +246,7 @@ export function createWebSearchTool(configStore: SystemConfigStore): AgentTool {
                 {
                   success: false,
                   error: errorMessage,
-                  message: '搜索失败，请检查 API Key 和网络连接',
+                  message: '搜索失败，请检查搜索提供商设置和网络连接',
                 },
                 null,
                 2
@@ -261,7 +271,7 @@ export const webSearchToolPlugin: ToolPlugin = {
     id: 'web-search',
     name: 'Web 搜索',
     version: '2.0.0',
-    description: '使用 Tavily Search API 进行网络搜索',
+    description: '网络搜索（Tavily，或用户选择的 Parallel MCP 公开文档搜索）',
     author: 'DeepBot',
     category: 'network',
     tags: ['web', 'search', 'internet', 'tavily'],

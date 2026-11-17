@@ -779,6 +779,14 @@ DeepBot 集成了以下外部服务：
 
 ---
 
+### 公开依赖文档搜索
+
+在 **系统设置 → 工具配置 → Web Search** 中选择 **Parallel MCP** 并保存，可在无需 API Key 的情况下搜索公开 SDK/依赖文档。默认仍为 Tavily，切换回 Tavily 会保留已保存的 Key。查询会发送给 Parallel，请仅搜索您明确授权的公开问题，不要包含文件、记忆、系统信息或其他私有上下文。
+
+例如输入：“请使用网络搜索查找 TypeScript 依赖安装的官方公开文档，只搜索此公开问题，并引用原始来源链接。”代理调用 Parallel 时必须设置 `publicQuery: true`；这是调用声明，不能自动识别私有信息。结果使用现有搜索输出与 Markdown 链接。支持 `maxResults` 和本地域名筛选；高级搜索深度、新闻主题和时间范围仅适用于 Tavily。无结果和服务错误使用现有工具返回路径。
+
+参见 [Parallel MCP setup](https://docs.parallel.ai/integrations/mcp/quickstart)。切换回 **Tavily** 并保存即可退出；也可在工具配置中禁用 **Web Search**。
+
 ## 🛠️ 开发指南
 
 ### 项目结构
